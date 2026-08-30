@@ -1,0 +1,57 @@
+# .github/workflows/ci.yml
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+
+defaults:
+  run:
+    working-directory: API
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: API/package-lock.json
+
+      - run: npm ci
+
+      - name: Syntax check
+        run: git ls-files '*.js' | grep -v node_modules | xargs -n1 node --check
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Smoke test (boot + /health)
+        env:
+          PORT: 3443
+          JWT_SECRET: ci-smoke-secret
+          SSL_KEY_PATH: ./certs/key.pem
+          SSL_CERT_PATH: ./certs/cert.pem
+        run: |
+          mkdir -p certs
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout certs/key.pem -out certs/cert.pem -subj "/CN=localhost"
+          node server.js &
+          PID=$!
+          for i in $(seq 1 20); do
+            curl -ksf https://localhost:3443/health && break || sleep 1
+          done
+          curl -ksf https://localhost:3443/health
+          kill $PID
+
+  deploy:
+    needs: build-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Add real deploy step here (SSH / render / fly / etc.)"
