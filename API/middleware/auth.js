@@ -7,7 +7,7 @@ function requireAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: "Authentication required." });
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET, algorithms = ["HS256"]);
     const user = User.findById(payload.sub);
     if (!user) return res.status(401).json({ error: "Authentication required." });
     req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
