@@ -1,3 +1,4 @@
+// Inert code file, use this for Part 2 onwards as part 1 is only in-memory storage
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
