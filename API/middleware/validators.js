@@ -46,8 +46,9 @@ function validateLogin(req, res, next) {
   const b = req.body || {};
   const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
   const password = typeof b.password === "string" ? b.password : "";
-  if (!PATTERNS.email.test(email) || !password)
+  if (!validator.isEmail(email) || !password) {
     return fail(res, "Email and password are required.");
+  }
   req.body = { email, password };
   next();
 }

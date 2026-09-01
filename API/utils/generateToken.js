@@ -7,8 +7,8 @@ function generateToken(user) {
     process.env.JWT_SECRET,
     { 
       expiresIn: process.env.JWT_EXPIRES_IN || "1h" ,
-      algorithms: ["HS256"],
-      issuer: [process.env.APP_NAME],
+      algorithm: "HS256",
+      issuer: process.env.APP_NAME,
       audience: ["hustlehubClient"]
     }
   );
