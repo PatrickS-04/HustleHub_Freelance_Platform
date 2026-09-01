@@ -13,6 +13,7 @@ if (!process.env.JWT_SECRET) {
 const options = {
   key: fs.readFileSync(process.env.SSL_KEY_PATH),
   cert: fs.readFileSync(process.env.SSL_CERT_PATH),
+  minVersion: "TLSv1.2",
 };
 
 https.createServer(options, app).listen(PORT, () =>
