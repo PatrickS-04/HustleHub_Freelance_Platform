@@ -8,7 +8,7 @@ function generateToken(user) {
     { 
       expiresIn: process.env.JWT_EXPIRES_IN || "1h" ,
       algorithms: ["HS256"],
-      issuer: ["hustlehubAPI"],
+      issuer: [process.env.APP_NAME],
       audience: ["hustlehubClient"]
     }
   );
