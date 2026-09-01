@@ -32,7 +32,7 @@ jobs:
       - name: Smoke test (boot + /health)
         env:
           PORT: 3443
-          JWT_SECRET: ci-smoke-secret
+          JWT_SECRET: ci-smoke-secret-this-needs-to-be-32-characters-long-to-pass-added-verification
           SSL_KEY_PATH: ./certs/key.pem
           SSL_CERT_PATH: ./certs/cert.pem
         run: |

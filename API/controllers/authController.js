@@ -14,7 +14,32 @@ async function register(req, res, next) {
       return res.status(409).json({ error: "An account with this email already exists." });
     }
 
+    //Checking if name, email and password are populated
+    if (!name || !email || !password) 
+    {
+      return res.status(400).json({ error: 'Name, email, and password are required fields.' });
+    }
+
+    //Checking that name,email and password are string values
+    if ( typeof name !== 'string' || typeof email !== 'string' || typeof password !== 'string')
+    {
+      return res.status(400).json({ error: 'Name, email, and password must be text values.' });
+    }
+
+    //Checking that name,email and password are not empty strings
+    if (name.trim() === '' || email.trim() === '' || password.trim() === '')
+    {
+      return res.status(400).json({ error: 'Name, email, and password cannot be empty strings.' });
+    }
+
+    //Checking that the password entered is at least 8 characters long
+    if (password.length < 8) 
+    {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+    }
+
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
     const user = User.createUser({ name, email, passwordHash, role });
 
     const token = generateToken(user);
@@ -24,7 +49,12 @@ async function register(req, res, next) {
       token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
-  } catch (err) {
+  } 
+  catch (err) 
+  {
+    if (err.name === "ValidationError") {
+      return res.status(400).json({ error: err.message });
+    }
     next(err);
   }
 }
@@ -32,6 +62,11 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
+
+    //Checking if the email and password are populated
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required." });
+    }
 
     const user = User.findByEmail(email);
 
