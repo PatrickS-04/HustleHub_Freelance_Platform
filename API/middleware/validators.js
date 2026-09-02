@@ -19,7 +19,7 @@ function validateRegister(req, res, next) {
     if (
       !validator.isLength(name, { min: 2, max: 50}) || !validator.isAlpha(name, "en-US", { ignore: " '-" })
     ) {
-      return fail(res, "Name must be 2-50 letters.");
+      return fail(res, "Name is required and must be 2-50 letters.");
     }
 
     if (!validator.isEmail(email) || !validator.isLength(email, { max: 254 })) {
@@ -35,7 +35,7 @@ function validateRegister(req, res, next) {
         minSymbols: 0,
       })
     ) {
-      return fail(res, "Password must be 8-128 chars with an uppercase, lowercase and a number.");
+      return fail(res, "Password is required and must be 8-128 chars with an uppercase, lowercase and a number.");
     }
 
     if (role === null || !validator.isIn(role, ["client", "freelancer"])) {
