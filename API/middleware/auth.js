@@ -9,7 +9,7 @@ function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET, { 
       algorithms: ["HS256"],
-      issuer: ["process.env.APP_NAME"],
+      issuer: [process.env.APP_NAME],
       audience: ["hustlehubClient"]
     });
     const user = User.findById(payload.sub);
