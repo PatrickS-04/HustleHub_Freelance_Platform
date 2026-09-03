@@ -222,3 +222,10 @@ and `/me` is exercised with both the cookie and a `Bearer` header. See the
 accompanying Postman collection and screenshots within the PDF.
 
 The cookie-parsing helper has a small self-check: `node middleware/auth.check.js`.
+
+## References
+
+[1] 	Bitwarden, “What is password hashing?,” 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
+[2] 	S. Saha, “The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication,” Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
+
+
