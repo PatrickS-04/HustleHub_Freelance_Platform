@@ -137,14 +137,20 @@ router.post("/login", authLimiter, ...);
 ### Input Validation
 Input is validated in two layers, so that no single missed check lets bad data through.
 
-1. **Middleware** — `validateRegister` / `validateLogin` ([middleware/validators.js](API/middleware/validators.js)) run before the controller:
+1. **Middleware** — `validateRegister` / `validateLogin` ([middleware/validators.js](API/middleware/validators.js)) run before the controller.
+
+   `validateRegister` (`POST /api/auth/register`):
    - email is checked with `validator.isEmail` and normalised to lower case
    - password is checked with `validator.isStrongPassword` (8–128 characters, at least one uppercase, one lowercase, one number)
    - name is restricted to 2–50 letters (spaces, `'` and `-` allowed)
-   - **role is allow-listed** to `client` or `freelancer` only, so no one can register themselves as `admin`
+   - **`role` is a registration-only field.** It is allow-listed to `client` or `freelancer` only, so no one can register themselves as `admin`
    - the request body is then rebuilt from only the cleaned fields (`req.body = { name, email, password, role }`), which discards any extra properties an attacker adds
-   - any error thrown during validation is caught and returned as `400`, never a `500`
-2. **Controller** — `register` / `login` ([controllers/authController.js](API/controllers/authController.js)) repeat the presence, type and empty-string checks as defence in depth, and reject non-string values before they reach any lookup (this also blocks NoSQL-style object injection once the database is added in Part 2).
+
+   `validateLogin` (`POST /api/auth/login`):
+   - only `email` and `password` are accepted — **login does not take a `role`.** A user authenticates purely on their credentials; their role is a property of the account, not something the client states at sign-in. Any `role` sent in the login body is dropped when the body is rebuilt (`req.body = { email, password }`) and ignored. After login, the role is read from the signed JWT (see [JWT Authentication](#jwt-authentication) above), never from request input.
+
+   Any error thrown during validation is caught and returned as `400`, never a `500`.
+2. **Controller** — `register` / `login` ([controllers/authController.js](API/controllers/authController.js)) repeat the presence, type and empty-string checks as defence in depth, and reject non-string values before they reach any lookup (this also blocks NoSQL-style object injection once the database is added in Part 2). `login` destructures only `email` and `password`; it never reads `role`.
 
 Body size is capped at 10&nbsp;KB (`express.json({ limit: "10kb" })`, [app.js](API/app.js)) so an oversized payload cannot be used to exhaust memory.
 
@@ -165,12 +171,12 @@ Authentication errors are deliberately vague in the same way: login and registra
 
 ## API Endpoints
 
-| Method | Endpoint            | Auth required | Description                          |
-|--------|----------------------|:--------------:|---------------------------------------|
-| GET    | `/health`            | No             | Basic liveness check                  |
-| POST   | `/api/auth/register` | No             | Register a new user                   |
-| POST   | `/api/auth/login`    | No             | Authenticate and receive a JWT        |
-| GET    | `/api/auth/me`       | Yes            | Returns the authenticated user's info |
+| Method | Endpoint             | Auth required | Description |
+|--------|----------------------|:-------------:|-------------|
+| GET    | `/health`            | No            | Basic liveness check |
+| POST   | `/api/auth/register` | No            | Register a new user — body: `name`, `email`, `password`, `role` (`client` or `freelancer`) |
+| POST   | `/api/auth/login`    | No            | Authenticate and receive a JWT — body: `email`, `password` only (no `role`) |
+| GET    | `/api/auth/me`       | Yes           | Returns the authenticated user's info |
 
 Authenticated requests are identified by the `token` cookie (set automatically on login/register) or, for API clients, an `Authorization: Bearer <token>` header.
 
@@ -225,7 +231,7 @@ The cookie-parsing helper has a small self-check: `node middleware/auth.check.js
 
 ## References
 
-[1] 	Bitwarden, “What is password hashing?,” 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
-[2] 	S. Saha, “The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication,” Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
+- [1] 	Bitwarden, “What is password hashing?,” 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
+- [2] 	S. Saha, “The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication,” Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
 
 

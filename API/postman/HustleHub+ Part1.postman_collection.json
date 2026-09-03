@@ -7,22 +7,191 @@
   },
   "item": [
     {
+      "name": "Get User - No Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/me",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Get User - No Token",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "status": "Unauthorized",
+          "code": 401,
+          "_postman_previewlanguage": "JSON",
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests",
+              "type": "text"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin",
+              "type": "text"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin",
+              "type": "text"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1",
+              "type": "text"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer",
+              "type": "text"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=31536000; includeSubDomains",
+              "type": "text"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff",
+              "type": "text"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off",
+              "type": "text"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen",
+              "type": "text"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN",
+              "type": "text"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none",
+              "type": "text"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8",
+              "type": "text"
+            },
+            {
+              "key": "Content-Length",
+              "value": "36",
+              "type": "text"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"24-2ya6UNOy8AlxJkjNOyYmjYabP90\"",
+              "type": "text"
+            },
+            {
+              "key": "Date",
+              "value": "Wed, 02 Sep 2026 13:18:32 GMT",
+              "type": "text"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "type": "text"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5",
+              "type": "text"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"error\": \"Authentication required.\"\n}"
+        }
+      ]
+    },
+    {
       "name": "Register - Valid",
       "event": [
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "const data = pm.response.json();\r",
-              "if (data.token)\r",
-              "{\r",
-              "    pm.collectionVariables.set('token', data.token);\r",
-              "}\r",
-              "\r",
-              "pm.test('Status is 201', () => pm.response.to.have.status(201));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.token) {",
+              "    pm.collectionVariables.set(\"token\", body.token);",
+              "}",
+              "",
+              "pm.test(\"Status is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ]
           }
         }
       ],
@@ -203,17 +372,17 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "const data = pm.response.json();\r",
-              "if (data.token)\r",
-              "{\r",
-              "    pm.collectionVariables.set('token', data.token);\r",
-              "}\r",
-              "\r",
-              "pm.test('Status is 201', () => pm.response.to.have.status(201));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "const body = pm.response.json();",
+              "if (body.token) {",
+              "    pm.collectionVariables.set(\"token\", body.token);",
+              "}",
+              "",
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
           }
         }
       ],
@@ -394,11 +563,12 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "pm.test(\"Status is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
           }
         }
       ],
@@ -408,7 +578,7 @@
           "bearer": [
             {
               "key": "token",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInJvbGUiOiJjbGllbnQiLCJpYXQiOjE3ODgzNTM3OTYsImV4cCI6MTc4ODM1NzM5NiwiYXVkIjpbImh1c3RsZWh1YkNsaWVudCJdLCJpc3MiOiJIdXN0bGVIdWJQbHVzQVBJIn0.KjJH1jBfRdnBAI-pbiXebnRP2ldM5PL6Q8SwY2KZ_aM",
+              "value": "{{token}}",
               "type": "string"
             }
           ]
@@ -551,11 +721,12 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "pm.test('Status is 400', () => pm.response.to.have.status(400));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "pm.test(\"Status is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
           }
         }
       ],
@@ -564,7 +735,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -1168,11 +1339,12 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "pm.test('Status is 400', () => pm.response.to.have.status(400));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "pm.test(\"Status is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
           }
         }
       ],
@@ -1353,11 +1525,12 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "pm.test('Status is 409', () => pm.response.to.have.status(409));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "pm.test(\"Status is 409\", function () {",
+              "    pm.response.to.have.status(409);",
+              "});"
+            ]
           }
         }
       ],
@@ -1538,11 +1711,12 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "pm.test('Status is 401', () => pm.response.to.have.status(401));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "pm.test(\"Status is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
           }
         }
       ],
@@ -1723,11 +1897,12 @@
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "pm.test('Status is 401', () => pm.response.to.have.status(401));"
-            ],
             "type": "text/javascript",
-            "packages": {}
+            "exec": [
+              "pm.test(\"Status is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
           }
         }
       ],
@@ -1899,174 +2074,6 @@
           ],
           "cookie": [],
           "body": "{\n    \"error\": \"Invalid email or password.\"\n}"
-        }
-      ]
-    },
-    {
-      "name": "Get User - No Token",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Status is 401', () => pm.response.to.have.status(401));"
-            ],
-            "type": "text/javascript",
-            "packages": {}
-          }
-        }
-      ],
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
-      "request": {
-        "method": "GET",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{base_url}}/api/auth/me",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "me"
-          ]
-        }
-      },
-      "response": [
-        {
-          "name": "Get User - No Token",
-          "originalRequest": {
-            "method": "GET",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "me"
-              ]
-            }
-          },
-          "status": "Unauthorized",
-          "code": 401,
-          "_postman_previewlanguage": "JSON",
-          "header": [
-            {
-              "key": "Content-Security-Policy",
-              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests",
-              "type": "text"
-            },
-            {
-              "key": "Cross-Origin-Opener-Policy",
-              "value": "same-origin",
-              "type": "text"
-            },
-            {
-              "key": "Cross-Origin-Resource-Policy",
-              "value": "same-origin",
-              "type": "text"
-            },
-            {
-              "key": "Origin-Agent-Cluster",
-              "value": "?1",
-              "type": "text"
-            },
-            {
-              "key": "Referrer-Policy",
-              "value": "no-referrer",
-              "type": "text"
-            },
-            {
-              "key": "Strict-Transport-Security",
-              "value": "max-age=31536000; includeSubDomains",
-              "type": "text"
-            },
-            {
-              "key": "X-Content-Type-Options",
-              "value": "nosniff",
-              "type": "text"
-            },
-            {
-              "key": "X-DNS-Prefetch-Control",
-              "value": "off",
-              "type": "text"
-            },
-            {
-              "key": "X-Download-Options",
-              "value": "noopen",
-              "type": "text"
-            },
-            {
-              "key": "X-Frame-Options",
-              "value": "SAMEORIGIN",
-              "type": "text"
-            },
-            {
-              "key": "X-Permitted-Cross-Domain-Policies",
-              "value": "none",
-              "type": "text"
-            },
-            {
-              "key": "X-XSS-Protection",
-              "value": "0",
-              "type": "text"
-            },
-            {
-              "key": "Content-Type",
-              "value": "application/json; charset=utf-8",
-              "type": "text"
-            },
-            {
-              "key": "Content-Length",
-              "value": "36",
-              "type": "text"
-            },
-            {
-              "key": "ETag",
-              "value": "W/\"24-2ya6UNOy8AlxJkjNOyYmjYabP90\"",
-              "type": "text"
-            },
-            {
-              "key": "Date",
-              "value": "Wed, 02 Sep 2026 13:18:32 GMT",
-              "type": "text"
-            },
-            {
-              "key": "Connection",
-              "value": "keep-alive",
-              "type": "text"
-            },
-            {
-              "key": "Keep-Alive",
-              "value": "timeout=5",
-              "type": "text"
-            }
-          ],
-          "cookie": [],
-          "body": "{\n    \"error\": \"Authentication required.\"\n}"
         }
       ]
     }
