@@ -14,7 +14,7 @@ function validateRegister(req, res, next) {
     //Role must be confirmed as a string before checked agaisnt whitelist,
     //otherwise non-string roles throws inside validator.isIn() 
     //and gets an error with the a generic 500 c0de instead of the 400
-    const role = b.role === undefined ? "client" : typeof b.role === "string" ? b.role.trim() : null;
+    const role = typeof b.role === "string" ? b.role.trim() : null;
 
     if (
       !validator.isLength(name, { min: 2, max: 50}) || !validator.isAlpha(name, "en-US", { ignore: " '-" })

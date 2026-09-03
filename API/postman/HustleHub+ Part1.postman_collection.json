@@ -1015,6 +1015,150 @@
           ],
           "cookie": [],
           "body": "{\n    \"error\": \"Password is required and must be 8-128 chars with an uppercase, lowercase and a number.\"\n}"
+        },
+        {
+          "name": "Register - Missing Role Field",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "JSON",
+          "header": [
+            {
+              "key": "Content-Security-Policy",
+              "value": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests",
+              "type": "text"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin",
+              "type": "text"
+            },
+            {
+              "key": "Cross-Origin-Resource-Policy",
+              "value": "same-origin",
+              "type": "text"
+            },
+            {
+              "key": "Origin-Agent-Cluster",
+              "value": "?1",
+              "type": "text"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "no-referrer",
+              "type": "text"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=31536000; includeSubDomains",
+              "type": "text"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff",
+              "type": "text"
+            },
+            {
+              "key": "X-DNS-Prefetch-Control",
+              "value": "off",
+              "type": "text"
+            },
+            {
+              "key": "X-Download-Options",
+              "value": "noopen",
+              "type": "text"
+            },
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN",
+              "type": "text"
+            },
+            {
+              "key": "X-Permitted-Cross-Domain-Policies",
+              "value": "none",
+              "type": "text"
+            },
+            {
+              "key": "X-XSS-Protection",
+              "value": "0",
+              "type": "text"
+            },
+            {
+              "key": "RateLimit-Policy",
+              "value": "20;w=900",
+              "type": "text"
+            },
+            {
+              "key": "RateLimit-Limit",
+              "value": "20",
+              "type": "text"
+            },
+            {
+              "key": "RateLimit-Remaining",
+              "value": "19",
+              "type": "text"
+            },
+            {
+              "key": "RateLimit-Reset",
+              "value": "900",
+              "type": "text"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8",
+              "type": "text"
+            },
+            {
+              "key": "Content-Length",
+              "value": "50",
+              "type": "text"
+            },
+            {
+              "key": "ETag",
+              "value": "W/\"32-gnBj9OfAClPdFM6MOnghUzamn88\"",
+              "type": "text"
+            },
+            {
+              "key": "Date",
+              "value": "Thu, 03 Sep 2026 07:23:25 GMT",
+              "type": "text"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive",
+              "type": "text"
+            },
+            {
+              "key": "Keep-Alive",
+              "value": "timeout=5",
+              "type": "text"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"error\": \"Role must be 'client' or 'freelancer'.\"\n}"
         }
       ]
     },
