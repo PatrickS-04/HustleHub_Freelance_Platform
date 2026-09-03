@@ -46,8 +46,33 @@ The separation of db, authController, auth, validator, errorHandler, User, authR
 
 ## Security Decisions
 ### Password Hashing
+Password hashing is the process of converting a user's password into a fixed-length string data type object that is jumbled characters that are not easily decipherable or reversible [1]. A secure digital platform should never store passwords in plain text. Due to the nature of confidential and sensitive information data within the platform to ensure the security one of the choices is password hashing as a defense measure. With password hashing the platform can ensure the user's password remain protected from online attacks and HustleHub+ can protect its freelancers, clients and admins from password attacks. 
+
+`const bcrypt = require("bcryptjs");`  
+
+`const passwordHash = await bcrypt.hash(password, 12); `
+
+With these simple lines of code, the platform is able to maintain secure function and protect its user base.
 
 ### JWT Authentication
+JWT stands for JSON Web Tokens and at its core JWT is a JSON-based open standard format that allows for two parties to represent spefic claims in a secure process that ensure security [2]. On this platform securing an exchange of data between parties is vital as clients and freelancers should maintain secure data exchange otherwise there can fraud and scams on the platform. 
+
+```
+return jwt.sign(
+    { sub: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { 
+      expiresIn: process.env.JWT_EXPIRES_IN || "1h" ,
+      algorithm: "HS256",
+      issuer: process.env.APP_NAME,
+      audience: ["hustlehubClient"]
+    }
+```
+With this code segment the implementation of JWT is set and allows the platform the security of authentication of this form and some of the choices made with regards to JWT includes:
+- Minimum negative effects on security: The token only makes use of user's ID and role therefore other sensitive information remain protected incase of interception of token.
+- Short-lived token: The solution has JWT on a 1 hour expiry time creating a limit on stolen tokens usability.
+- Mandatory JWT secret: To maintain the 'signature' of the token a JWT secret is set and to secure the platform the server does not start without it.
+
 
 ### Input Validation
 
