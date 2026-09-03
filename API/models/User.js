@@ -26,4 +26,5 @@ function createUser({ name, email, passwordHash, role }) {
   return user;
 }
 
-module.exports = { users, findByEmail, findById, createUser };
+// `users` stays module-private - callers go through the accessors above.
+module.exports = { findByEmail, findById, createUser };

@@ -5,6 +5,13 @@ const generateToken = require("../utils/generateToken");
 const SALT_ROUNDS = 12;
 const COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour, matches the JWT expiry
 
+// The httpOnly cookie is the real token transport. The token is echoed in the
+// JSON body only when EXPOSE_TOKEN_IN_BODY=true (for Postman / Newman, which have
+// no cookie jar). Off by default, so a normal deployment never returns the token
+// in a response body.
+const tokenInBody = (token) =>
+  process.env.EXPOSE_TOKEN_IN_BODY === "true" ? { token } : {};
+
 // The JWT lives in an httpOnly cookie so page JavaScript can never read it.
 // Secure = HTTPS only; SameSite=Strict = not sent on cross-site requests (CSRF).
 function setAuthCookie(res, token) {
@@ -57,11 +64,9 @@ async function register(req, res, next) {
     const token = generateToken(user);
     setAuthCookie(res, token);
 
-    // token is also returned in the body for API-client testing (Postman /
-    // Newman have no cookie jar); the browser SPA uses the cookie only.
     return res.status(201).json({
       message: "User registered successfully.",
-      token,
+      ...tokenInBody(token),
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } 
@@ -101,7 +106,7 @@ async function login(req, res, next) {
 
     return res.status(200).json({
       message: "Login successful.",
-      token,
+      ...tokenInBody(token),
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {

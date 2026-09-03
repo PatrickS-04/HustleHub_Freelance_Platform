@@ -118,7 +118,7 @@ res.cookie("token", token, {
 - `Secure` means the cookie is only ever sent over HTTPS, never plain HTTP.
 - `SameSite=Strict` means the browser does not attach the cookie to requests that originate from other sites. This closes the CSRF hole that cookies would otherwise open, and it is backed up by the CORS allow-list (below).
 
-`requireAuth` reads the token from the cookie first and falls back to an `Authorization: Bearer <token>` header ([middleware/auth.js](API/middleware/auth.js)). The Part 2 React SPA uses the cookie exclusively. The token is *also* returned in the login/register response body **for API-client testing only** — Postman and Newman have no browser cookie jar — and the browser client ignores it.
+`requireAuth` reads the token from the cookie first and falls back to an `Authorization: Bearer <token>` header ([middleware/auth.js](API/middleware/auth.js)). The Part 2 React SPA uses the cookie exclusively. The token is returned in the login/register response body **only when `EXPOSE_TOKEN_IN_BODY=true`** — set for Postman/Newman runs, which have no browser cookie jar. It is off by default, so a normal deployment never puts the token in a response body.
 
 ### CORS
 ```js
@@ -207,9 +207,10 @@ APP_NAME=HustleHubPlusAPI
 CORS_ORIGIN=https://localhost:5173
 SSL_KEY_PATH=./certs/key.pem
 SSL_CERT_PATH=./certs/cert.pem
+EXPOSE_TOKEN_IN_BODY=true
 ```
 
-`JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one).
+`JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY=true` makes register/login echo the JWT in the response body so Postman/Newman (no cookie jar) can capture it — leave it unset in a real deployment, where the `httpOnly` cookie is the only token transport.
  
 And Then Lastly Run the server:
  
