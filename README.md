@@ -39,6 +39,9 @@ API/
 
 The separation of db, authController, auth, validator, errorHandler, User, authRoutes and generateToken javascript files within their respective folders allow the code solution to have isolated responsibilities to keep logic concise and easy to understand as well as easy to add to bolster the solution.
 
+## Architecture Diagram
+![alt text](HustleHub-Architecture-1.png)
+
 ## Security Decisions
 ### Password Hashing
 
