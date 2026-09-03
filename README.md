@@ -33,8 +33,10 @@ API/
 │   └── User.js                # In-memory user store (temporary, until Part 2 DB)
 ├── routes/
 │   └── authRoutes.js          # /api/auth routes, with rate limiting
-└── utils/
-    └── generateToken.js       # JWT signing
+├── utils/
+│   └── generateToken.js       # JWT signing
+└── postman/
+    └── HustleHub+ Part1.postman_collection.json       # Postman collection
 ```
 
 The separation of db, authController, auth, validator, errorHandler, User, authRoutes and generateToken javascript files within their respective folders allow the code solution to have isolated responsibilities to keep logic concise and easy to understand as well as easy to add to bolster the solution.
