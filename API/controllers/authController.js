@@ -3,6 +3,18 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 
 const SALT_ROUNDS = 12;
+const COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour, matches the JWT expiry
+
+// The JWT lives in an httpOnly cookie so page JavaScript can never read it.
+// Secure = HTTPS only; SameSite=Strict = not sent on cross-site requests (CSRF).
+function setAuthCookie(res, token) {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: COOKIE_MAX_AGE_MS,
+  });
+}
 
 async function register(req, res, next) {
   try {
@@ -43,7 +55,10 @@ async function register(req, res, next) {
     const user = await User.createUser({ name, email, passwordHash, role });
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
 
+    // token is also returned in the body for API-client testing (Postman /
+    // Newman have no cookie jar); the browser SPA uses the cookie only.
     return res.status(201).json({
       message: "User registered successfully.",
       token,
@@ -82,6 +97,7 @@ async function login(req, res, next) {
     }
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
 
     return res.status(200).json({
       message: "Login successful.",

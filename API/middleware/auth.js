@@ -1,13 +1,24 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-function requireAuth(req, res, next) {
+// Token is read from the httpOnly cookie first (browser clients), then from an
+// Authorization: Bearer header (Postman / Newman, which have no cookie jar).
+// ponytail: hand-rolled single-cookie read - not worth adding cookie-parser for one value
+function tokenFromRequest(req) {
+  const cookie = req.headers.cookie || "";
+  const match = cookie.match(/(?:^|;\s*)token=([^;]+)/);
+  if (match) return decodeURIComponent(match[1]);
+
   const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+}
+
+function requireAuth(req, res, next) {
+  const token = tokenFromRequest(req);
   if (!token) return res.status(401).json({ error: "Authentication required." });
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET, { 
+    const payload = jwt.verify(token, process.env.JWT_SECRET, {
       algorithms: ["HS256"],
       issuer: [process.env.APP_NAME],
       audience: ["hustlehubClient"]
@@ -31,4 +42,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+module.exports = { requireAuth, requireRole, tokenFromRequest };
