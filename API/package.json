@@ -10,6 +10,9 @@
     "test:auth": "node middleware/auth.check.js",
     "test:api": "npx --yes newman run \"postman/HustleHub+ Part1.postman_collection.json\" --insecure"
   },
+  "overrides": {
+    "qs": "6.16.0"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
