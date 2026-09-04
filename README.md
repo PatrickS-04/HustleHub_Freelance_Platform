@@ -42,10 +42,12 @@ API/
 The separation of db, authController, auth, validator, errorHandler, User, authRoutes and generateToken javascript files within their respective folders allow the code solution to have isolated responsibilities to keep logic concise and easy to understand as well as easy to add to bolster the solution.
 
 ## Architecture Diagram
-<img width="1065" height="1202" alt="HustleHub-Architecture" src="https://github.com/user-attachments/assets/efafc4bd-28d9-4ddc-955d-e24955a69ce5" />
 
+![HustleHub+ architecture](HustleHub-Architecture.png)
 
-The diagram shows the full target design. What is implemented in **Part 1**: HTTPS/TLS + HSTS, Helmet, CORS allow-list, auth rate limiting, two-layer input validation, bcrypt hashing, HS256 JWT in an `httpOnly` cookie, RBAC/ownership plumbing (`requireRole`), and the central error handler. Deferred to **Part 2**: MongoDB/Mongoose (users are in memory for now), `express-mongo-sanitize` + `hpp`, the domain services (Gigs, Bookings, Transactions, Income/Tax), structured logging, and the CI/CD pipeline. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is the same in both parts.
+Editable source: [`docs/HustleHub-Architecture.drawio`](docs/HustleHub-Architecture.drawio) (open at [app.diagrams.net](https://app.diagrams.net), export to replace the PNG).
+
+The diagram covers the full MERN target design. **Solid boxes are what this Part 1 submission actually implements:** HTTPS/TLS + HSTS (no plain-HTTP listener), Helmet + CSP, the CORS allow-list, auth rate limiting, two-layer input validation, the JWT auth middleware, RBAC/ownership plumbing (`requireRole`), bcrypt hashing, and the central error handler — plus the `400/401/403` controlled-failure paths. **Faded boxes are deferred:** to **Part 2** — the React SPA, MongoDB/Mongoose (users are in an in-memory store for now), `express-mongo-sanitize` + `hpp`, and the domain services (Gigs, Bookings, Transactions, Income/Tax); to **Part 3** — structured logging, the cloud log sink, the full CI/CD pipeline, and Docker Compose. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is identical in every part.
 
 ## Security Decisions
 
@@ -220,15 +222,38 @@ npm start
 The API will be available with the link: `https://localhost:3443`.
 
 ## Testing
-API endpoints (`/register`, `/login`, `/me`) were tested with Postman,
-covering successful registration and login, and invalid scenarios (missing
-fields, weak passwords, duplicate email, wrong credentials, no
-tokens). On a successful login/register the response sets the `token` cookie
-and also returns the token in the body; Postman stores the cookie automatically,
-and `/me` is exercised with both the cookie and a `Bearer` header. See the
-accompanying Postman collection and screenshots within the PDF.
 
-The cookie-parsing helper has a small self-check: `node middleware/auth.check.js`.
+### Postman / Newman
+The collection ([API/postman/HustleHub+ Part1.postman_collection.json](API/postman/HustleHub+%20Part1.postman_collection.json)) has **13 requests / 17 assertions**:
+
+- **Success** — register (`201`), login (`200`), `/me` with a `Bearer` token (`200`), `/health` (`200`).
+- **Auth failures** — `/me` with no token, wrong password, non-existent email (all `401`), duplicate email (`409`).
+- **Validation failures** — missing field, weak password (both `400`).
+- **Protocol / error-handler** — unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the exact controlled error message so nothing internal leaks.
+
+Run it headless with Newman:
+
+```bash
+cd API
+npm run test:api
+```
+
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **13/13 requests, 17/17 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
+
+### Unit self-check
+The cookie/header token-parsing helper has an assert-based self-check:
+
+```bash
+cd API
+npm run test:auth
+```
+
+## Demonstration Video
+
+<!-- TODO: paste the unlisted YouTube / OneDrive link here before submission -->
+_Link: (to be added)_
+
+The recording shows the API booting over HTTPS, a successful registration returning a token, a successful login, and a protected `/me` call succeeding with the token and returning `401` without it.
 
 ## References
 
