@@ -21,6 +21,8 @@ jobs:
           cache: npm
           cache-dependency-path: API/package-lock.json
 
+      - run: npm install -g npm@latest
+
       - run: npm ci
 
       - name: Syntax check
