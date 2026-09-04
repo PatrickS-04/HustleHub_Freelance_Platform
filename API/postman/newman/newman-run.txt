@@ -1,0 +1,83 @@
+# Command:  npx newman run "postman/HustleHub+ Part1.postman_collection.json" --insecure
+# Env:      EXPOSE_TOKEN_IN_BODY=true  (so /me can use the Bearer token)
+# Result:   13 requests, 17 assertions, 0 failures
+
+newman
+
+HustleHub+ Part1
+
+→ Get User - No Token
+  GET https://localhost:3443/api/auth/me [401 Unauthorized, 975B, 116ms]
+  √  Status is 401
+
+→ Register - Valid
+  POST https://localhost:3443/api/auth/register [201 Created, 1.73kB, 1016ms]
+  √  Status is 201
+
+→ Login - Valid
+  POST https://localhost:3443/api/auth/login [200 OK, 1.72kB, 912ms]
+  √  Status is 200
+
+→ Get User - Valid
+  GET https://localhost:3443/api/auth/me [200 OK, 1kB, 15ms]
+  √  Status is 200
+
+→ Register - Missing Field
+  POST https://localhost:3443/api/auth/register [400 Bad Request, 1.08kB, 11ms]
+  √  Status is 400
+
+→ Register - Weak Password
+  POST https://localhost:3443/api/auth/register [400 Bad Request, 1.13kB, 11ms]
+  √  Status is 400
+
+→ Register - Duplicate Email
+  POST https://localhost:3443/api/auth/register [409 Conflict, 1.09kB, 10ms]
+  √  Status is 409
+
+→ Login - Wrong Password
+  POST https://localhost:3443/api/auth/login [401 Unauthorized, 1.07kB, 903ms]
+  √  Status is 401
+
+→ Login - Non-existent Email
+  POST https://localhost:3443/api/auth/login [401 Unauthorized, 1.07kB, 11ms]
+  √  Status is 401
+
+→ Health Check
+  GET https://localhost:3443/health [200 OK, 943B, 9ms]
+  √  Status is 200
+  √  Body reports ok
+
+→ Unknown Route
+  GET https://localhost:3443/api/auth/nope [404 Not Found, 967B, 8ms]
+  √  Status is 404
+  √  Controlled error message
+
+→ Register - Malformed JSON
+  POST https://localhost:3443/api/auth/register [400 Bad Request, 981B, 14ms]
+  √  Status is 400
+  √  Controlled error message
+
+→ Register - Body Too Large
+  POST https://localhost:3443/api/auth/register [413 Payload Too Large, 982B, 15ms]
+  √  Status is 413
+  √  Controlled error message
+
+┌─────────────────────────┬────────────────────┬────────────────────┐
+│                         │           executed │             failed │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              iterations │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│                requests │                 13 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│            test-scripts │                 13 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│      prerequest-scripts │                  1 │                  0 │
+├─────────────────────────┼────────────────────┼────────────────────┤
+│              assertions │                 17 │                  0 │
+├─────────────────────────┴────────────────────┴────────────────────┤
+│ total run duration: 4.2s                                          │
+├───────────────────────────────────────────────────────────────────┤
+│ total data received: 1.22kB (approx)                              │
+├───────────────────────────────────────────────────────────────────┤
+│ average response time: 234ms [min: 8ms, max: 1016ms, s.d.: 390ms] │
+└───────────────────────────────────────────────────────────────────┘
