@@ -253,7 +253,28 @@ Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 
 ## References
 
-- [1] 	Bitwarden, “What is password hashing?,” 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
-- [2] 	S. Saha, “The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication,” Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
+## References
+
+- [1] 	Bitwarden, "What is password hashing?," 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
+- [2] 	S. Saha, "The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication," Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
+- [3] 	E. Rescorla, "The Transport Layer Security (TLS) Protocol Version 1.3," RFC 8446, Internet Engineering Task Force, August 2018. [Online]. Available: https://www.rfc-editor.org/rfc/rfc8446. [Accessed 5 September 2026].
+- [4] 	J. Hodges, C. Jackson and A. Barth, "HTTP Strict Transport Security (HSTS)," RFC 6797, Internet Engineering Task Force, November 2012. [Online]. Available: https://www.rfc-editor.org/rfc/rfc6797. [Accessed 5 September 2026].
+- [5] 	OWASP Foundation, "Transport Layer Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [6] 	Helmet.js, "Helmet — Help secure Express apps with various HTTP headers," 2025. [Online]. Available: https://helmetjs.github.io/. [Accessed 5 September 2026].
+- [7] 	Mozilla, "Content-Security-Policy," MDN Web Docs, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy. [Accessed 5 September 2026].
+- [8] 	Mozilla, "Cross-Origin Resource Sharing (CORS)," MDN Web Docs, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS. [Accessed 5 September 2026].
+- [9] 	OWASP Foundation, "Cross-Site Request Forgery Prevention Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [10] 	A. Barth, "HTTP State Management Mechanism," RFC 6265, Internet Engineering Task Force, April 2011. [Online]. Available: https://www.rfc-editor.org/rfc/rfc6265. [Accessed 5 September 2026].
+- [11] 	P. A. Grassi, J. L. Fenton, E. M. Newton et al., "Digital Identity Guidelines: Authentication and Lifecycle Management," NIST Special Publication 800-63B, National Institute of Standards and Technology, June 2017. [Online]. Available: https://pages.nist.gov/800-63-3/sp800-63b.html. [Accessed 5 September 2026].
+- [12] 	OWASP Foundation, "Session Management Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [13] 	M. Jones, J. Bradley and N. Sakimura, "JSON Web Token (JWT)," RFC 7519, Internet Engineering Task Force, May 2015. [Online]. Available: https://www.rfc-editor.org/rfc/rfc7519. [Accessed 5 September 2026].
+- [14] 	OWASP Foundation, "JSON Web Token for Java Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [15] 	OWASP Foundation, "Password Storage Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [16] 	OWASP Foundation, "Input Validation Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [17] 	OWASP Foundation, "OWASP Top 10:2021," OWASP Foundation, 2021. [Online]. Available: https://owasp.org/Top10/. [Accessed 5 September 2026].
+- [18] 	OWASP Foundation, "Blocking Brute Force Attacks," OWASP Foundation, 2023. [Online]. Available: https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks. [Accessed 5 September 2026].
+- [19] 	express-rate-limit, "express-rate-limit — Basic rate-limiting middleware for Express," npm, 2025. [Online]. Available: https://www.npmjs.com/package/express-rate-limit. [Accessed 5 September 2026].
+- [20] 	OWASP Foundation, "Error Handling Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [21] 	OWASP Foundation, "REST Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html. [Accessed 5 September 2026].
 
 
