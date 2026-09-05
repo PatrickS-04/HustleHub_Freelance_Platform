@@ -249,7 +249,7 @@ npm run test:auth
 
 ## Demonstration Video
 
-_Link: (to be added)_
+Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 
 ## References
 
