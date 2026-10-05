@@ -1,103 +1,228 @@
-// Placeholder data until the API has job/gig endpoints. Shaped per role so the
-// dashboard can swap in real fetches later without changing the components.
+// Placeholder data for the marketplace screens. Replace with API calls once the
+// gig / booking / transaction endpoints exist. Shapes mirror what those would return.
 
-export const dashboardData = {
-  client: {
-    stats: [
-      { label: 'Active jobs', value: '3' },
-      { label: 'Proposals received', value: '18' },
-      { label: 'Total spent', value: 'R 24,500' },
-      { label: 'Completed jobs', value: '9' },
-    ],
-    listTitle: 'Your posted jobs',
-    items: [
-      {
-        id: 1,
-        title: 'Logo and brand identity for a coffee shop',
-        meta: '7 proposals',
-        budget: 'R 4,500',
-        status: 'Open',
-        tags: ['Design', 'Branding'],
-      },
-      {
-        id: 2,
-        title: 'Build a landing page in React',
-        meta: '5 proposals',
-        budget: 'R 8,000',
-        status: 'In progress',
-        tags: ['Web', 'React'],
-      },
-      {
-        id: 3,
-        title: 'Product photography - 20 items',
-        meta: '6 proposals',
-        budget: 'R 3,200',
-        status: 'Open',
-        tags: ['Photography'],
-      },
-      {
-        id: 4,
-        title: 'Monthly social media content',
-        meta: 'Hired: Thandi M.',
-        budget: 'R 2,800',
-        status: 'Completed',
-        tags: ['Marketing'],
-      },
-    ],
-    activity: [
-      'Sipho K. sent a proposal on "Logo and brand identity"',
-      'Landing page milestone 2 was marked complete',
-      'You posted "Product photography - 20 items"',
-      'Payment of R 2,800 released to Thandi M.',
-    ],
+export const money = (n) => `R ${Number(n).toLocaleString('en-US')}`
+
+export const CATEGORIES = [
+  'Design',
+  'Web Development',
+  'Writing',
+  'Marketing',
+  'Photography',
+  'Video',
+  'Translation',
+]
+
+const otherGigs = [
+  {
+    id: 'g1',
+    title: 'I will design a modern logo and brand kit',
+    description:
+      'Three logo concepts, colour palette and typography guide delivered as PNG, SVG and PDF. Two rounds of revisions included.',
+    category: 'Design',
+    price: 1800,
+    deliveryDays: 5,
+    freelancerId: 'f-thandi',
+    freelancerName: 'Thandi Mokoena',
+    rating: 4.9,
   },
-  freelancer: {
-    stats: [
-      { label: 'Active contracts', value: '2' },
-      { label: 'Proposals sent', value: '11' },
-      { label: 'Earnings (month)', value: 'R 12,300' },
-      { label: 'Rating', value: '4.8 / 5' },
-    ],
-    listTitle: 'Recommended jobs',
-    items: [
-      {
-        id: 1,
-        title: 'Logo and brand identity for a coffee shop',
-        meta: 'Posted 2 hours ago',
-        budget: 'R 4,500',
-        status: 'Open',
-        tags: ['Design', 'Branding'],
-      },
-      {
-        id: 2,
-        title: 'Mobile app UI kit (Figma)',
-        meta: 'Posted yesterday',
-        budget: 'R 6,000',
-        status: 'Open',
-        tags: ['UI/UX', 'Figma'],
-      },
-      {
-        id: 3,
-        title: 'Fix checkout bugs on a Node.js store',
-        meta: 'Posted 2 days ago',
-        budget: 'R 5,200',
-        status: 'Open',
-        tags: ['Node.js', 'Bug fix'],
-      },
-      {
-        id: 4,
-        title: 'Translate website copy (EN to AF)',
-        meta: 'Posted 3 days ago',
-        budget: 'R 1,900',
-        status: 'Open',
-        tags: ['Writing'],
-      },
-    ],
-    activity: [
-      'Your proposal on "Mobile app UI kit" was viewed',
-      'New message from Anele P.',
-      'Contract "Landing page" reached milestone 2',
-      'Payment of R 4,100 was received',
-    ],
+  {
+    id: 'g2',
+    title: 'I will build a responsive React landing page',
+    description:
+      'A fast, accessible single-page site built with React and deployed for you. Includes contact form and basic SEO.',
+    category: 'Web Development',
+    price: 4500,
+    deliveryDays: 7,
+    freelancerId: 'f-sipho',
+    freelancerName: 'Sipho Khumalo',
+    rating: 4.8,
   },
+  {
+    id: 'g3',
+    title: 'I will write SEO blog posts for your business',
+    description:
+      'Four researched, original 800-word articles written in your brand voice with keyword optimisation.',
+    category: 'Writing',
+    price: 1200,
+    deliveryDays: 4,
+    freelancerId: 'f-anele',
+    freelancerName: 'Anele Pretorius',
+    rating: 4.7,
+  },
+  {
+    id: 'g4',
+    title: 'I will run your social media content for a month',
+    description:
+      'Twelve designed posts, captions and a posting schedule across Instagram and Facebook.',
+    category: 'Marketing',
+    price: 2800,
+    deliveryDays: 10,
+    freelancerId: 'f-lerato',
+    freelancerName: 'Lerato Dlamini',
+    rating: 4.6,
+  },
+  {
+    id: 'g5',
+    title: 'I will shoot and edit product photos',
+    description:
+      'Up to 20 products photographed on a clean background and retouched. Web-ready files delivered.',
+    category: 'Photography',
+    price: 3200,
+    deliveryDays: 6,
+    freelancerId: 'f-bheki',
+    freelancerName: 'Bheki Naidoo',
+    rating: 5.0,
+  },
+  {
+    id: 'g6',
+    title: 'I will edit your YouTube or promo video',
+    description:
+      'Cuts, colour correction, captions and music for videos up to 10 minutes long.',
+    category: 'Video',
+    price: 2200,
+    deliveryDays: 5,
+    freelancerId: 'f-zanele',
+    freelancerName: 'Zanele Botha',
+    rating: 4.8,
+  },
+  {
+    id: 'g7',
+    title: 'I will translate your website (EN to AF)',
+    description:
+      'Natural, native-quality Afrikaans translation of up to 2,000 words with a consistency check.',
+    category: 'Translation',
+    price: 1500,
+    deliveryDays: 3,
+    freelancerId: 'f-anele',
+    freelancerName: 'Anele Pretorius',
+    rating: 4.7,
+  },
+  {
+    id: 'g8',
+    title: 'I will create a mobile app UI kit in Figma',
+    description:
+      'Ten polished screens with reusable components and a clickable prototype.',
+    category: 'Design',
+    price: 5200,
+    deliveryDays: 9,
+    freelancerId: 'f-thandi',
+    freelancerName: 'Thandi Mokoena',
+    rating: 4.9,
+  },
+]
+
+// Builds the starting gigs + bookings for whoever is logged in so each role
+// has something realistic to look at.
+export function seedData(user) {
+  const isFreelancer = user.role === 'freelancer'
+
+  const ownGigs = isFreelancer
+    ? [
+        {
+          id: 'own1',
+          title: 'I will build your small business website',
+          description:
+            'A clean five-page website with contact form, mobile friendly and ready to launch.',
+          category: 'Web Development',
+          price: 6500,
+          deliveryDays: 10,
+          freelancerId: user.id,
+          freelancerName: user.name,
+          rating: 4.8,
+        },
+        {
+          id: 'own2',
+          title: 'I will fix bugs in your Node.js app',
+          description:
+            'Debugging and clean-up of Express APIs, with a short write-up of what was wrong.',
+          category: 'Web Development',
+          price: 1800,
+          deliveryDays: 3,
+          freelancerId: user.id,
+          freelancerName: user.name,
+          rating: 4.9,
+        },
+      ]
+    : []
+
+  const gigs = [...ownGigs, ...otherGigs]
+
+  const bookings = isFreelancer
+    ? [
+        {
+          id: 'b1',
+          transactionId: 'TX-1001',
+          gigId: 'own1',
+          gigTitle: ownGigs[0].title,
+          price: 6500,
+          clientId: 'c-1',
+          clientName: 'Palesa Nkosi',
+          freelancerId: user.id,
+          freelancerName: user.name,
+          date: '2026-10-12',
+          note: 'We need the site live before our December launch.',
+          status: 'Confirmed',
+        },
+        {
+          id: 'b2',
+          transactionId: 'TX-1002',
+          gigId: 'own2',
+          gigTitle: ownGigs[1].title,
+          price: 1800,
+          clientId: 'c-2',
+          clientName: 'Johan Venter',
+          freelancerId: user.id,
+          freelancerName: user.name,
+          date: '2026-09-28',
+          note: '',
+          status: 'Completed',
+        },
+        {
+          id: 'b3',
+          transactionId: 'TX-1003',
+          gigId: 'own1',
+          gigTitle: ownGigs[0].title,
+          price: 6500,
+          clientId: 'c-3',
+          clientName: 'Nomsa Zulu',
+          freelancerId: user.id,
+          freelancerName: user.name,
+          date: '2026-09-15',
+          note: 'Bakery website, photos to follow.',
+          status: 'Completed',
+        },
+      ]
+    : [
+        {
+          id: 'b1',
+          transactionId: 'TX-1001',
+          gigId: 'g1',
+          gigTitle: otherGigs[0].title,
+          price: 1800,
+          clientId: user.id,
+          clientName: user.name,
+          freelancerId: 'f-thandi',
+          freelancerName: 'Thandi Mokoena',
+          date: '2026-10-09',
+          note: 'Logo for a new coffee shop.',
+          status: 'Confirmed',
+        },
+        {
+          id: 'b2',
+          transactionId: 'TX-1002',
+          gigId: 'g3',
+          gigTitle: otherGigs[2].title,
+          price: 1200,
+          clientId: user.id,
+          clientName: user.name,
+          freelancerId: 'f-anele',
+          freelancerName: 'Anele Pretorius',
+          date: '2026-09-20',
+          note: '',
+          status: 'Completed',
+        },
+      ]
+
+  return { gigs, bookings }
 }
