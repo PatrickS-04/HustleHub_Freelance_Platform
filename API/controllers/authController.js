@@ -101,4 +101,11 @@ async function login(req, res, next) {
   }
 }
 
-module.exports = { register, login };
+// The cookie is httpOnly, so only the server can remove it. Attributes must
+// match those used in setAuthCookie or the browser will not clear it.
+function logout(req, res) {
+  res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "strict" });
+  return res.status(200).json({ message: "Logged out." });
+}
+
+module.exports = { register, login, logout };

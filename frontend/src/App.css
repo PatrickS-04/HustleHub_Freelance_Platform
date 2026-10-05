@@ -147,6 +147,72 @@
   outline-offset: 2px;
 }
 
+.field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.auth-switch {
+  margin-top: 20px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.link-btn {
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.profile {
+  margin: 0 0 24px;
+  padding: 16px;
+  background: var(--code-bg);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.profile dt {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile dd {
+  margin: 2px 0 12px;
+  color: var(--text-h);
+  word-break: break-all;
+}
+
+.profile dd:last-child {
+  margin-bottom: 0;
+}
+
+.role-badge {
+  text-transform: capitalize;
+}
+
 .welcome {
   margin: auto;
   padding: 24px;

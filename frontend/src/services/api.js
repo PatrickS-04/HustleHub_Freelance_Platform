@@ -34,4 +34,6 @@ export const register = (name, email, password, role) =>
     body: JSON.stringify({ name, email, password, role }),
   })
 
+export const logout = () => request('/api/auth/logout', { method: 'POST' })
+
 export const getMe = () => request('/api/auth/me')

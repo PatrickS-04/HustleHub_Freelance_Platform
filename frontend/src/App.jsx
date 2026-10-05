@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import LoginForm from './components/LoginForm'
+import RegisterForm from './components/RegisterForm'
+import Dashboard from './components/Dashboard'
 import { getMe } from './services/api'
 import './App.css'
 
 function App() {
   const [user, setUser] = useState(null)
   const [checking, setChecking] = useState(true)
+  const [view, setView] = useState('login')
 
   // If the auth cookie is still valid, restore the session on page load.
   useEffect(() => {
@@ -15,15 +18,24 @@ function App() {
       .finally(() => setChecking(false))
   }, [])
 
-  if (checking) return <p>Loading...</p>
+  if (checking) return <p className="welcome">Loading...</p>
 
-  if (!user) return <LoginForm onLogin={setUser} />
+  if (user) {
+    return (
+      <Dashboard
+        user={user}
+        onLogout={() => {
+          setUser(null)
+          setView('login')
+        }}
+      />
+    )
+  }
 
-  return (
-    <section className="welcome">
-      <h1>Welcome{user.name ? `, ${user.name}` : ''}</h1>
-      <p>Signed in as {user.email} ({user.role})</p>
-    </section>
+  return view === 'register' ? (
+    <RegisterForm onRegister={setUser} onSwitch={() => setView('login')} />
+  ) : (
+    <LoginForm onLogin={setUser} onSwitch={() => setView('register')} />
   )
 }
 

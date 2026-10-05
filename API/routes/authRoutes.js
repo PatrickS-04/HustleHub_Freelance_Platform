@@ -1,6 +1,6 @@
 const express = require("express");
 const rateLimit = require("express-rate-limit");
-const { register, login } = require("../controllers/authController");
+const { register, login, logout } = require("../controllers/authController");
 const { validateRegister, validateLogin } = require("../middleware/validators");
 const { requireAuth } = require("../middleware/auth");
 
@@ -17,6 +17,7 @@ const authLimiter = rateLimit({
 
 router.post("/register", authLimiter, validateRegister, register);
 router.post("/login", authLimiter, validateLogin, login);
+router.post("/logout", logout);
 
 // Protected route - proves the token is verified on each request.
 router.get("/me", requireAuth, (req, res) => res.status(200).json({ user: req.user }));
