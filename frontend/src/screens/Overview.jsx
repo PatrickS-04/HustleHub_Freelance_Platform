@@ -1,4 +1,4 @@
-import { money } from '../data/placeholder'
+import { activityFor, money } from '../data/placeholder'
 
 function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
   const myGigs = gigs.filter((g) => g.freelancerId === user.id)
@@ -40,40 +40,63 @@ function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
       </div>
 
       <section className="stats" aria-label="Summary">
-        {stats.map((s) => (
-          <div className="stat-card" key={s.label}>
+        {stats.map((s, i) => (
+          <div className={`stat-card tone-${i % 4}`} key={s.label}>
             <span className="stat-label">{s.label}</span>
             <span className="stat-value">{s.value}</span>
           </div>
         ))}
       </section>
 
+      <div className="dash-grid">
       <section className="panel">
         <h2>{isFreelancer ? 'Latest bookings' : 'Recent bookings'}</h2>
         {bookings.length === 0 ? (
           <p className="empty">Nothing here yet.</p>
         ) : (
-          <ul className="row-list">
+          <ul className="timeline">
             {bookings.slice(0, 4).map((b) => (
-              <li className="row" key={b.id}>
-                <div>
-                  <strong>{b.gigTitle}</strong>
-                  <span className="muted">
-                    {isFreelancer ? b.clientName : b.freelancerName} &middot;{' '}
-                    {b.date}
-                  </span>
-                </div>
-                <div className="row-end">
-                  <span className="job-budget">{money(b.price)}</span>
-                  <span className={`status status-${b.status.toLowerCase()}`}>
-                    {b.status}
-                  </span>
+              <li className="tl-item" key={b.id}>
+                <span className="tl-node" aria-hidden="true" />
+                <div className="tl-body">
+                  <div>
+                    <strong>{b.gigTitle}</strong>
+                    <span className="muted">
+                      {isFreelancer ? b.clientName : b.freelancerName} &middot;{' '}
+                      {b.date}
+                    </span>
+                  </div>
+                  <div className="row-end">
+                    <span className="job-budget">{money(b.price)}</span>
+                    <span className={`status status-${b.status.toLowerCase()}`}>
+                      {b.status}
+                    </span>
+                  </div>
                 </div>
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      <section className="panel">
+        <h2>Activity</h2>
+        <ul className="activity">
+          {activityFor(isFreelancer).map((a) => (
+            <li key={a.text}>
+              <span className="avatar sm" aria-hidden="true">
+                {a.who.charAt(0)}
+              </span>
+              <div>
+                <strong>{a.who}</strong>
+                <p>{a.text}</p>
+              </div>
+              <span className="muted">{a.when}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      </div>
     </>
   )
 }

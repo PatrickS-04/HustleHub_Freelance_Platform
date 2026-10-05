@@ -33,8 +33,8 @@ function Earnings({ bookings }) {
       </div>
 
       <section className="stats stats-3" aria-label="Earnings summary">
-        {stats.map((s) => (
-          <div className="stat-card" key={s.label}>
+        {stats.map((s, i) => (
+          <div className={`stat-card tone-${i % 4}`} key={s.label}>
             <span className="stat-label">{s.label}</span>
             <span className="stat-value">{s.value}</span>
           </div>

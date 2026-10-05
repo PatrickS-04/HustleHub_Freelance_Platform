@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { logout } from '../services/api'
-import { seedData } from '../data/placeholder'
+import { money, seedData } from '../data/placeholder'
+import ThemeToggle from './ThemeToggle'
 import Overview from '../screens/Overview'
 import BrowseGigs from '../screens/BrowseGigs'
 import ClientBookings from '../screens/ClientBookings'
@@ -83,13 +84,33 @@ function Dashboard({ user, onLogout }) {
     )
   }
 
+  const income = myBookings.reduce((sum, b) => sum + b.price, 0)
+  const activeTab = tabs.find((t) => t.id === view) || tabs[0]
+
   return (
     <div className="dash">
-      <header className="dash-header">
-        <span className="dash-brand">HustleHub+</span>
-        <div className="dash-user">
-          <span className="dash-user-name">{user.name}</span>
-          <span className="badge">{user.role}</span>
+      <header className="dash-top">
+        <div className="title-tab">
+          <span className="dash-brand">HustleHub+</span>
+          <h1 className="tab-title">{activeTab.label}</h1>
+        </div>
+
+        <nav className="pill-nav" aria-label="Main">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={view === t.id ? 'nav-pill active' : 'nav-pill'}
+              aria-current={view === t.id ? 'page' : undefined}
+              onClick={() => setView(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="top-actions">
+          <ThemeToggle />
           <button
             type="button"
             className="btn-outline"
@@ -101,21 +122,25 @@ function Dashboard({ user, onLogout }) {
         </div>
       </header>
 
-      <nav className="dash-nav" aria-label="Main">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={view === t.id ? 'nav-tab active' : 'nav-tab'}
-            aria-current={view === t.id ? 'page' : undefined}
-            onClick={() => setView(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
-
       <main className="dash-main">
+        <section className="profile-strip" aria-label="Your account">
+          <span className="avatar" aria-hidden="true">
+            {user.name.charAt(0).toUpperCase()}
+          </span>
+          <div className="strip-id">
+            <span className="strip-name">{user.name}</span>
+            <span className="badge">{user.role}</span>
+          </div>
+          <div className="strip-stat">
+            <span>{isFreelancer ? 'Bookings' : 'Booked'}</span>
+            <strong>{myBookings.length}</strong>
+          </div>
+          <div className="strip-stat">
+            <span>{isFreelancer ? 'Income' : 'Spent'}</span>
+            <strong>{money(income)}</strong>
+          </div>
+        </section>
+
         {screen}
         <p className="sample-note">Showing sample data.</p>
       </main>
