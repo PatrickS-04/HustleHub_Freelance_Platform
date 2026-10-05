@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CATEGORIES, money } from '../data/placeholder'
+import { FILTER_OPTIONS, money } from '../data/placeholder'
+import Select from '../components/Select'
 import BookingModal from './BookingModal'
 
 function BrowseGigs({ user, gigs, nextTransactionId, onBooked }) {
@@ -35,16 +36,12 @@ function BrowseGigs({ user, gigs, nextTransactionId, onBooked }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select
-          aria-label="Filter by category"
+        <Select
+          ariaLabel="Filter by category"
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option>All</option>
-          {CATEGORIES.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
+          onChange={setCategory}
+          options={FILTER_OPTIONS}
+        />
       </div>
 
       {visible.length === 0 ? (

@@ -13,6 +13,9 @@ export const CATEGORIES = [
   'Translation',
 ]
 
+export const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c, label: c }))
+export const FILTER_OPTIONS = [{ value: 'All', label: 'All categories' }, ...CATEGORY_OPTIONS]
+
 const otherGigs = [
   {
     id: 'g1',
@@ -111,6 +114,10 @@ const otherGigs = [
     rating: 4.9,
   },
 ]
+
+// Placeholder income for the five months before the current one (oldest first).
+// Real bookings are added on top of this by month in the Earnings chart.
+export const INCOME_HISTORY = [2900, 3400, 3100, 4600, 4000]
 
 export const activityFor = (isFreelancer) =>
   isFreelancer

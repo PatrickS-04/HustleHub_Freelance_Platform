@@ -35,7 +35,7 @@ function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
           className="btn-primary"
           onClick={() => goTo(isFreelancer ? 'gigs' : 'browse')}
         >
-          {isFreelancer ? 'Create a gig' : 'Browse gigs'}
+          {isFreelancer ? 'View gigs' : 'Browse gigs'}
         </button>
       </div>
 

@@ -881,3 +881,20 @@
     color: var(--text);
   }
 }
+
+/* Long unbroken text (e.g. a gig title with no spaces) wraps inside its tile
+   instead of stretching it. */
+.dash-main,
+.modal {
+  overflow-wrap: anywhere;
+}
+
+.gig-card,
+.panel,
+.stat-card {
+  min-width: 0;
+}
+
+.gig-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}

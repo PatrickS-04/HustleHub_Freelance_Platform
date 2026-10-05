@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { register } from '../services/api'
+import Select from './Select'
+
+const ROLE_OPTIONS = [
+  { value: 'client', label: 'Client (hiring)' },
+  { value: 'freelancer', label: 'Freelancer (offering services)' },
+]
 
 // Mirrors the server-side rules in API/middleware/validators.js. The server
 // remains the source of truth; this just gives instant feedback.
@@ -116,10 +122,12 @@ function RegisterForm({ onRegister, onSwitch }) {
 
         <div className="field">
           <label htmlFor="role">I am a</label>
-          <select id="role" value={form.role} onChange={update('role')}>
-            <option value="client">Client (hiring)</option>
-            <option value="freelancer">Freelancer (offering services)</option>
-          </select>
+          <Select
+            id="role"
+            value={form.role}
+            onChange={(v) => setForm((f) => ({ ...f, role: v }))}
+            options={ROLE_OPTIONS}
+          />
         </div>
 
         {error && (

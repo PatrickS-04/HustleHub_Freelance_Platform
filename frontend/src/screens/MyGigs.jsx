@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { CATEGORIES, money } from '../data/placeholder'
+import { CATEGORIES, CATEGORY_OPTIONS, money } from '../data/placeholder'
+import Select from '../components/Select'
 
 const empty = {
   title: '',
@@ -89,11 +90,12 @@ function MyGigs({ user, gigs, onCreate }) {
           <div className="form-row">
             <div className="field">
               <label htmlFor="g-cat">Category</label>
-              <select id="g-cat" value={form.category} onChange={update('category')}>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
+              <Select
+                id="g-cat"
+                value={form.category}
+                onChange={(v) => setForm((f) => ({ ...f, category: v }))}
+                options={CATEGORY_OPTIONS}
+              />
             </div>
             <div className="field">
               <label htmlFor="g-price">Price (R)</label>

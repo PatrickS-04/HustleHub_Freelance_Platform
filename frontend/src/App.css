@@ -38,6 +38,12 @@
   --t3: rgba(244, 241, 222, 0.7);
   --t3-fg: #0d1b2a;
 
+  --chart-1: #415a77;
+  --chart-2: #778d7a;
+  --chart-3: #c2ad86;
+  --chart-4: #1b263b;
+  --chart-5: #9fb3c8;
+
   --shadow: 0 30px 60px -28px rgba(13, 27, 42, 0.45);
   --tile-shadow: 0 10px 30px -14px rgba(13, 27, 42, 0.35);
   --blur: blur(18px) saturate(140%);
@@ -78,6 +84,12 @@
   --t2-fg: #f4f1de;
   --t3: rgba(244, 241, 222, 0.12);
   --t3-fg: #f4f1de;
+
+  --chart-1: #7f9cc0;
+  --chart-2: #778d7a;
+  --chart-3: #d4c4a8;
+  --chart-4: #f4f1de;
+  --chart-5: #4f6f95;
 
   --shadow: 0 30px 60px -28px rgba(0, 0, 0, 0.7);
   --tile-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.6);
