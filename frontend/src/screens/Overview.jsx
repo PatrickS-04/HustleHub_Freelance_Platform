@@ -1,21 +1,24 @@
-import { activityFor, money } from '../data/placeholder'
+import { activityFor, countsAsIncome, money } from '../data/placeholder'
 
 function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
   const myGigs = gigs.filter((g) => g.freelancerId === user.id)
-  const income = bookings.reduce((sum, b) => sum + b.price, 0)
-  const active = bookings.filter((b) => b.status === 'Confirmed').length
+  const income = bookings.filter(countsAsIncome).reduce((sum, b) => sum + b.price, 0)
+  const requests = bookings.filter((b) => b.status === 'Pending').length
+  const upcoming = bookings.filter(
+    (b) => b.status === 'Pending' || b.status === 'Accepted',
+  ).length
 
   const stats = isFreelancer
     ? [
         { label: 'Active listings', value: myGigs.length },
         { label: 'Bookings received', value: bookings.length },
-        { label: 'Pending jobs', value: active },
+        { label: 'Awaiting your reply', value: requests },
         { label: 'Total income', value: money(income) },
       ]
     : [
         { label: 'Gigs available', value: gigs.length },
         { label: 'Your bookings', value: bookings.length },
-        { label: 'Upcoming', value: active },
+        { label: 'Upcoming', value: upcoming },
         { label: 'Total spent', value: money(income) },
       ]
 

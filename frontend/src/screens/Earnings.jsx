@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { INCOME_HISTORY, money } from '../data/placeholder'
+import { INCOME_HISTORY, countsAsIncome, money } from '../data/placeholder'
 import { BarChart, DonutChart } from '../components/Charts'
 
-function Earnings({ bookings }) {
+function Earnings({ bookings: allBookings }) {
+  // Pending, declined and cancelled bookings earn nothing.
+  const bookings = allBookings.filter(countsAsIncome)
   const total = bookings.reduce((s, b) => s + b.price, 0)
   const paidOut = bookings
     .filter((b) => b.status === 'Completed')
@@ -46,7 +48,7 @@ function Earnings({ bookings }) {
   const stats = [
     { label: 'Total income', value: money(total) },
     { label: 'Paid out', value: money(paidOut) },
-    { label: 'Pending', value: money(pending) },
+    { label: 'In progress', value: money(pending) },
   ]
 
   return (

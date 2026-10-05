@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { logout } from '../services/api'
-import { money, seedData } from '../data/placeholder'
+import { STATUS_ACTIONS, countsAsIncome, money, seedData } from '../data/placeholder'
 import ThemeToggle from './ThemeToggle'
 import Overview from '../screens/Overview'
 import BrowseGigs from '../screens/BrowseGigs'
@@ -41,6 +41,19 @@ function Dashboard({ user, onLogout }) {
   const addBooking = (booking) =>
     setData((d) => ({ ...d, bookings: [booking, ...d.bookings] }))
 
+  // Applies a status change only if it is an allowed transition for this role
+  // from the booking's current status. Returns whether it was applied.
+  function updateStatus(id, to) {
+    const booking = data.bookings.find((b) => b.id === id)
+    const allowed = booking && (STATUS_ACTIONS[user.role === 'freelancer' ? 'freelancer' : 'client'][booking.status] || [])
+    if (!allowed || !allowed.some((a) => a.to === to)) return false
+    setData((d) => ({
+      ...d,
+      bookings: d.bookings.map((b) => (b.id === id ? { ...b, status: to } : b)),
+    }))
+    return true
+  }
+
   async function handleLogout() {
     setLoading(true)
     try {
@@ -64,9 +77,9 @@ function Dashboard({ user, onLogout }) {
     )
   } else if (view === 'bookings') {
     screen = isFreelancer ? (
-      <FreelancerBookings bookings={myBookings} />
+      <FreelancerBookings bookings={myBookings} onStatus={updateStatus} />
     ) : (
-      <ClientBookings bookings={myBookings} goTo={setView} />
+      <ClientBookings bookings={myBookings} goTo={setView} onStatus={updateStatus} />
     )
   } else if (view === 'gigs' && isFreelancer) {
     screen = <MyGigs user={user} gigs={data.gigs} onCreate={addGig} />
@@ -84,7 +97,9 @@ function Dashboard({ user, onLogout }) {
     )
   }
 
-  const income = myBookings.reduce((sum, b) => sum + b.price, 0)
+  const income = myBookings
+    .filter(countsAsIncome)
+    .reduce((sum, b) => sum + b.price, 0)
   const activeTab = tabs.find((t) => t.id === view) || tabs[0]
 
   return (

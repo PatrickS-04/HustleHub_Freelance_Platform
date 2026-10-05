@@ -34,7 +34,7 @@ function BookingModal({ gig, user, nextTransactionId, onClose, onBooked }) {
         freelancerName: gig.freelancerName,
         date,
         note: note.trim(),
-        status: 'Confirmed',
+        status: 'Pending',
       }
       onBooked(created)
       setBooking(created)
@@ -56,9 +56,10 @@ function BookingModal({ gig, user, nextTransactionId, onClose, onBooked }) {
             <div className="confirm-icon" aria-hidden="true">
               &#10003;
             </div>
-            <h2 id="modal-title">Booking confirmed</h2>
+            <h2 id="modal-title">Booking requested</h2>
             <p className="muted">
-              This was a simulated payment, no money was taken.
+              {booking.freelancerName} will accept or decline it. This was a
+              simulated payment, no money was taken.
             </p>
             <dl className="receipt">
               <dt>Transaction</dt>

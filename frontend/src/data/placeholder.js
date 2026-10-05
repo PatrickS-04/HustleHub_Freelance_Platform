@@ -13,6 +13,29 @@ export const CATEGORIES = [
   'Translation',
 ]
 
+// ---- Booking status flow ----
+// Pending -> Accepted -> Completed, with Declined (freelancer) and Cancelled
+// (client) as the ways out. Only these transitions are allowed, per role.
+export const STATUS_STEPS = ['Pending', 'Accepted', 'Completed']
+
+export const STATUS_ACTIONS = {
+  freelancer: {
+    Pending: [
+      { to: 'Accepted', label: 'Accept', primary: true },
+      { to: 'Declined', label: 'Decline', confirm: 'Decline this booking? The client will be told it was declined.' },
+    ],
+    Accepted: [{ to: 'Completed', label: 'Mark complete', primary: true }],
+  },
+  client: {
+    Pending: [
+      { to: 'Cancelled', label: 'Cancel', confirm: 'Cancel this booking request? The freelancer will no longer see it.' },
+    ],
+  },
+}
+
+// Only accepted and completed bookings count as income / spend.
+export const countsAsIncome = (b) => b.status === 'Accepted' || b.status === 'Completed'
+
 export const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c, label: c }))
 export const FILTER_OPTIONS = [{ value: 'All', label: 'All categories' }, ...CATEGORY_OPTIONS]
 
@@ -115,6 +138,41 @@ const otherGigs = [
   },
 ]
 
+// ---- Gig detail extras (placeholder) ----
+// Deterministic so a gig always shows the same details between renders.
+const hash = (s) => [...String(s)].reduce((n, c) => n + c.charCodeAt(0), 0)
+
+const INCLUDES = {
+  Design: ['Source files (SVG, PDF)', 'Print and web ready exports', 'Colour palette and fonts', 'Commercial usage rights'],
+  'Web Development': ['Responsive mobile-friendly layout', 'Clean, documented code', 'Basic SEO setup', 'Help with going live'],
+  Writing: ['Original, plagiarism-free text', 'Keyword research', 'Proofreading and edits', 'Delivered in Word or Google Docs'],
+  Marketing: ['Content calendar', 'Captions and hashtags', 'Branded post designs', 'Monthly summary report'],
+  Photography: ['Edited high-resolution images', 'Web-optimised copies', 'Background clean-up', 'Licence for commercial use'],
+  Video: ['Cuts, transitions and colour grading', 'Captions and subtitles', 'Licensed background music', 'Export for web and social'],
+  Translation: ['Native-quality translation', 'Consistency and terminology check', 'Formatting preserved', 'One free correction round'],
+}
+
+const REVIEW_POOL = [
+  { who: 'Mpho S.', rating: 5, text: 'Fast, friendly and exactly what I asked for. Would book again.', when: '2 weeks ago' },
+  { who: 'Karabo L.', rating: 5, text: 'Great communication throughout and delivered a day early.', when: '1 month ago' },
+  { who: 'Ruan D.', rating: 4, text: 'Good quality work. A couple of small tweaks needed but sorted quickly.', when: '2 months ago' },
+  { who: 'Naledi P.', rating: 5, text: 'Really professional. The result looked better than I imagined.', when: '3 months ago' },
+]
+
+export function gigDetails(gig) {
+  const h = hash(gig.id + gig.freelancerId)
+  return {
+    included: INCLUDES[gig.category] || INCLUDES.Design,
+    revisions: 1 + (h % 3),
+    reviews: [0, 1, 2].map((i) => REVIEW_POOL[(h + i) % REVIEW_POOL.length]),
+    freelancer: {
+      memberSince: 2022 + (h % 4),
+      completed: 18 + (h % 90),
+      response: `${1 + (h % 5)} hours`,
+    },
+  }
+}
+
 // Placeholder income for the five months before the current one (oldest first).
 // Real bookings are added on top of this by month in the Earnings chart.
 export const INCOME_HISTORY = [2900, 3400, 3100, 4600, 4000]
@@ -184,7 +242,7 @@ export function seedData(user) {
           freelancerName: user.name,
           date: '2026-10-12',
           note: 'We need the site live before our December launch.',
-          status: 'Confirmed',
+          status: 'Accepted',
         },
         {
           id: 'b2',
@@ -214,6 +272,20 @@ export function seedData(user) {
           note: 'Bakery website, photos to follow.',
           status: 'Completed',
         },
+        {
+          id: 'b4',
+          transactionId: 'TX-1004',
+          gigId: 'own2',
+          gigTitle: ownGigs[1].title,
+          price: 1800,
+          clientId: 'c-4',
+          clientName: 'Lindiwe Mahlangu',
+          freelancerId: user.id,
+          freelancerName: user.name,
+          date: '2026-10-20',
+          note: 'Need this fixed before month end.',
+          status: 'Pending',
+        },
       ]
     : [
         {
@@ -228,7 +300,7 @@ export function seedData(user) {
           freelancerName: 'Thandi Mokoena',
           date: '2026-10-09',
           note: 'Logo for a new coffee shop.',
-          status: 'Confirmed',
+          status: 'Pending',
         },
         {
           id: 'b2',
@@ -243,6 +315,20 @@ export function seedData(user) {
           date: '2026-09-20',
           note: '',
           status: 'Completed',
+        },
+        {
+          id: 'b3',
+          transactionId: 'TX-1003',
+          gigId: 'g6',
+          gigTitle: otherGigs[5].title,
+          price: 2200,
+          clientId: user.id,
+          clientName: user.name,
+          freelancerId: 'f-zanele',
+          freelancerName: 'Zanele Botha',
+          date: '2026-10-15',
+          note: '',
+          status: 'Accepted',
         },
       ]
 

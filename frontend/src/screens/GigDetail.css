@@ -1,0 +1,292 @@
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 8px 16px 8px 12px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: var(--pill);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  border-color: var(--accent-ink);
+}
+
+.back-btn:focus-visible,
+.title-link:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.detail-main,
+.detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dash-main .detail-main .panel + .panel,
+.dash-main .detail-side .panel + .panel {
+  margin-top: 0;
+}
+
+.detail-hero h1 {
+  margin: 12px 0 10px;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.6px;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.rating {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.detail-desc {
+  margin-bottom: 20px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.detail-sub {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.checklist svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 2px;
+  box-sizing: content-box;
+  width: 16px;
+  height: 16px;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.reviews {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reviews li {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.reviews li:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.reviews li:last-child {
+  padding-bottom: 0;
+}
+
+.reviews li > div {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.review-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  margin-bottom: 4px;
+}
+
+.review-top strong {
+  color: var(--text-h);
+}
+
+.stars {
+  letter-spacing: 1px;
+  color: var(--accent-ink);
+}
+
+/* Price card: a tinted glass tile with one sharp corner, like the stat cards */
+.price-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px;
+  color: var(--t0-fg);
+  background: var(--t0);
+  border: 1px solid var(--glass-border);
+  border-radius: 36px 36px 36px 10px;
+  box-shadow: var(--tile-shadow);
+  -webkit-backdrop-filter: var(--blur);
+  backdrop-filter: var(--blur);
+}
+
+.price {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+}
+
+.price-facts {
+  margin: 8px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.price-facts li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.book-btn {
+  width: 100%;
+  padding: 13px;
+  font-size: 15px;
+  color: #0d1b2a;
+  font-weight: 700;
+  background: #f4f1de;
+  border: 1px solid var(--glass-border);
+}
+
+.price-card .book-btn {
+  color: #0d1b2a;
+  font-weight: 700;
+  background: #f4f1de;
+}
+
+:root[data-theme='dark'] .price-card .book-btn {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.price-note {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.freelancer-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.freelancer-head > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.freelancer-name {
+  color: var(--text-h);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.facts dt {
+  color: var(--text);
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-h);
+}
+
+/* Link-styled button used for gig titles */
+.title-link {
+  display: inline;
+  padding: 0;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.title-link:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--accent-ink);
+  text-underline-offset: 3px;
+}
+
+.foot-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.foot-actions .btn-sm {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.gig-card .gig-foot {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .checklist {
+    grid-template-columns: 1fr;
+  }
+}
