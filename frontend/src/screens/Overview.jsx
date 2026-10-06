@@ -1,7 +1,9 @@
 import { activityFor, countsAsIncome, money } from '../data/placeholder'
 
 function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
-  const myGigs = gigs.filter((g) => g.freelancerId === user.id)
+  // Paused gigs don't count as live.
+  const liveGigs = gigs.filter((g) => g.active !== false)
+  const myGigs = liveGigs.filter((g) => g.freelancerId === user.id)
   const income = bookings.filter(countsAsIncome).reduce((sum, b) => sum + b.price, 0)
   const requests = bookings.filter((b) => b.status === 'Pending').length
   const upcoming = bookings.filter(
@@ -16,7 +18,7 @@ function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
         { label: 'Total income', value: money(income) },
       ]
     : [
-        { label: 'Gigs available', value: gigs.length },
+        { label: 'Gigs available', value: liveGigs.length },
         { label: 'Your bookings', value: bookings.length },
         { label: 'Upcoming', value: upcoming },
         { label: 'Total spent', value: money(income) },

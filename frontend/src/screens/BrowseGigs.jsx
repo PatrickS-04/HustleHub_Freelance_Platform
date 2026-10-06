@@ -4,21 +4,43 @@ import Select from '../components/Select'
 import BookingModal from './BookingModal'
 import GigDetail from './GigDetail'
 
+// "recommended" keeps the original order (sort is stable, so 0 = unchanged).
+const SORTS = {
+  recommended: () => 0,
+  'price-asc': (a, b) => a.price - b.price,
+  'price-desc': (a, b) => b.price - a.price,
+  rating: (a, b) => b.rating - a.rating,
+  fastest: (a, b) => a.deliveryDays - b.deliveryDays,
+}
+
+const SORT_OPTIONS = [
+  { value: 'recommended', label: 'Recommended' },
+  { value: 'price-asc', label: 'Price: low to high' },
+  { value: 'price-desc', label: 'Price: high to low' },
+  { value: 'rating', label: 'Top rated' },
+  { value: 'fastest', label: 'Fastest delivery' },
+]
+
 function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [selected, setSelected] = useState(null)
   const [detailId, setDetailId] = useState(null)
+  const [sort, setSort] = useState('recommended')
+
+  // Paused gigs are hidden from clients; your own gigs never show in browse.
+  const available = gigs.filter((g) => g.active !== false && g.freelancerId !== user.id)
 
   const q = query.trim().toLowerCase()
-  const visible = gigs.filter(
-    (g) =>
-      g.freelancerId !== user.id &&
-      (category === 'All' || g.category === category) &&
-      (!q ||
-        g.title.toLowerCase().includes(q) ||
-        g.freelancerName.toLowerCase().includes(q)),
-  )
+  const visible = available
+    .filter(
+      (g) =>
+        (category === 'All' || g.category === category) &&
+        (!q ||
+          g.title.toLowerCase().includes(q) ||
+          g.freelancerName.toLowerCase().includes(q)),
+    )
+    .sort(SORTS[sort] || SORTS.recommended)
 
   const detailGig = gigs.find((g) => g.id === detailId)
 
@@ -32,7 +54,7 @@ function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
       {detailGig ? (
         <GigDetail
           gig={detailGig}
-          gigs={gigs.filter((g) => g.freelancerId !== user.id)}
+          gigs={available}
           userReviews={reviews.filter((r) => r.gigId === detailGig.id)}
           onBack={() => setDetailId(null)}
           onOpen={openDetail}
@@ -61,6 +83,12 @@ function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
               value={category}
               onChange={setCategory}
               options={FILTER_OPTIONS}
+            />
+            <Select
+              ariaLabel="Sort gigs"
+              value={sort}
+              onChange={setSort}
+              options={SORT_OPTIONS}
             />
           </div>
 

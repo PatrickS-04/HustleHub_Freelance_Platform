@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CATEGORIES, CATEGORY_OPTIONS, money } from '../data/placeholder'
 import Select from '../components/Select'
+import ConfirmDialog from '../components/ConfirmDialog'
+import '../components/Bookings.css'
+import './MyGigs.css'
 
 const empty = {
   title: '',
@@ -27,53 +30,114 @@ function validate(f) {
   return ''
 }
 
-function MyGigs({ user, gigs, onCreate }) {
-  const [creating, setCreating] = useState(false)
+const isActive = (g) => g.active !== false
+
+function MyGigs({ user, gigs, onCreate, onUpdate, onDelete }) {
+  // null = form closed, 'new' = creating, otherwise the id of the gig being edited
+  const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(empty)
   const [error, setError] = useState('')
+  const [deleting, setDeleting] = useState(null)
+  const [notice, setNotice] = useState('')
 
   const mine = gigs.filter((g) => g.freelancerId === user.id)
   const update = (field) => (e) =>
     setForm((f) => ({ ...f, [field]: e.target.value }))
+
+  // Auto-dismiss the confirmation message.
+  useEffect(() => {
+    if (!notice) return
+    const t = setTimeout(() => setNotice(''), 4000)
+    return () => clearTimeout(t)
+  }, [notice])
+
+  function closeForm() {
+    setEditing(null)
+    setForm(empty)
+    setError('')
+  }
+
+  function startEdit(gig) {
+    setForm({
+      title: gig.title,
+      category: gig.category,
+      price: String(gig.price),
+      deliveryDays: String(gig.deliveryDays),
+      description: gig.description,
+    })
+    setError('')
+    setEditing(gig.id)
+    window.scrollTo({ top: 0 })
+  }
 
   function handleSubmit(e) {
     e.preventDefault()
     const problem = validate(form)
     if (problem) return setError(problem)
 
-    onCreate({
-      id: `gig-${Date.now()}`,
+    const fields = {
       title: form.title.trim(),
       description: form.description.trim(),
       category: form.category,
       price: Number(form.price),
       deliveryDays: Number(form.deliveryDays),
-      freelancerId: user.id,
-      freelancerName: user.name,
-      rating: 5,
-    })
-    setForm(empty)
-    setError('')
-    setCreating(false)
+    }
+
+    if (editing === 'new') {
+      onCreate({
+        id: `gig-${Date.now()}`,
+        ...fields,
+        freelancerId: user.id,
+        freelancerName: user.name,
+        rating: 5,
+        active: true,
+      })
+      setNotice('Gig published.')
+    } else if (onUpdate(editing, fields)) {
+      setNotice('Changes saved.')
+    } else {
+      setNotice('That gig could not be changed.')
+    }
+    closeForm()
   }
+
+  function togglePause(gig) {
+    const next = !isActive(gig)
+    if (onUpdate(gig.id, { active: next })) {
+      setNotice(next ? 'Gig is live again.' : 'Gig paused and hidden from clients.')
+    }
+  }
+
+  const formOpen = editing !== null
 
   return (
     <>
       <div className="dash-title-row">
         <div>
           <h1>My gigs</h1>
-          <p>Create and manage your listings.</p>
+          <p>Create, edit, pause and remove your listings.</p>
         </div>
-        {!creating && (
-          <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
+        {!formOpen && (
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              setForm(empty)
+              setEditing('new')
+            }}
+          >
             Create a gig
           </button>
         )}
       </div>
 
-      {creating && (
+      <p className="notice" role="status" aria-live="polite">
+        {notice}
+      </p>
+
+      {formOpen && (
         <form className="panel gig-form" onSubmit={handleSubmit} noValidate>
-          <h2>New gig</h2>
+          <h2>{editing === 'new' ? 'New gig' : 'Edit gig'}</h2>
 
           <div className="field">
             <label htmlFor="g-title">Title</label>
@@ -142,19 +206,11 @@ function MyGigs({ user, gigs, onCreate }) {
           )}
 
           <div className="modal-actions">
-            <button
-              type="button"
-              className="btn-outline"
-              onClick={() => {
-                setCreating(false)
-                setError('')
-                setForm(empty)
-              }}
-            >
+            <button type="button" className="btn-outline" onClick={closeForm}>
               Cancel
             </button>
             <button type="submit" className="btn-primary">
-              Publish gig
+              {editing === 'new' ? 'Publish gig' : 'Save changes'}
             </button>
           </div>
         </form>
@@ -165,7 +221,7 @@ function MyGigs({ user, gigs, onCreate }) {
       ) : (
         <div className="gig-grid">
           {mine.map((g) => (
-            <article className="gig-card" key={g.id}>
+            <article className={isActive(g) ? 'gig-card' : 'gig-card paused'} key={g.id}>
               <span className="tag">{g.category}</span>
               <h3>{g.title}</h3>
               <p className="gig-desc">{g.description}</p>
@@ -174,11 +230,36 @@ function MyGigs({ user, gigs, onCreate }) {
                   <strong>{money(g.price)}</strong>
                   <span className="muted"> &middot; {g.deliveryDays} days</span>
                 </div>
-                <span className="status status-open">Live</span>
+                <span className={isActive(g) ? 'status status-open' : 'status status-paused'}>
+                  {isActive(g) ? 'Live' : 'Paused'}
+                </span>
+              </div>
+              <div className="gig-manage">
+                <button type="button" className="btn-outline" onClick={() => startEdit(g)}>
+                  Edit
+                </button>
+                <button type="button" className="btn-outline" onClick={() => togglePause(g)}>
+                  {isActive(g) ? 'Pause' : 'Resume'}
+                </button>
+                <button type="button" className="btn-outline danger-text" onClick={() => setDeleting(g)}>
+                  Delete
+                </button>
               </div>
             </article>
           ))}
         </div>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          message={`Delete "${deleting.title}"? Existing bookings keep their records, but clients will no longer see this gig.`}
+          confirmLabel="Delete gig"
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => {
+            if (onDelete(deleting.id)) setNotice('Gig deleted.')
+            setDeleting(null)
+          }}
+        />
       )}
     </>
   )

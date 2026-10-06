@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { STATUS_ACTIONS, STATUS_STEPS, money } from '../data/placeholder'
+import ConfirmDialog from './ConfirmDialog'
+import ReceiptModal from './ReceiptModal'
 import ReviewModal from './ReviewModal'
 import './Bookings.css'
 
@@ -37,47 +39,19 @@ function StatusTrack({ status }) {
   )
 }
 
-function ConfirmDialog({ message, confirmLabel, onConfirm, onCancel }) {
-  useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onCancel()
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onCancel])
-
-  return (
-    <div className="modal-backdrop" role="presentation" onClick={onCancel}>
-      <div
-        className="modal modal-sm"
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 id="confirm-title">Are you sure?</h2>
-        <p className="muted">{message}</p>
-        <div className="modal-actions">
-          <button type="button" className="btn-outline" onClick={onCancel} autoFocus>
-            Keep it
-          </button>
-          <button type="button" className="btn-danger" onClick={onConfirm}>
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // Shared bookings table for both roles. `role` decides who the counterparty is
 // and which status actions are offered.
 function BookingsTable({ bookings, role, onStatus, onReview }) {
   const [filter, setFilter] = useState('All')
   const [confirming, setConfirming] = useState(null)
   const [notice, setNotice] = useState('')
+  const [receipt, setReceipt] = useState(null)
   const [reviewing, setReviewing] = useState(null)
 
   const isFreelancer = role === 'freelancer'
   const actionsFor = (b) => STATUS_ACTIONS[role][b.status] || []
+  // Money only moves once a booking is accepted, so only those get a receipt.
+  const hasReceipt = (b) => b.status === 'Accepted' || b.status === 'Completed'
 
   // Auto-dismiss the confirmation message.
   useEffect(() => {
@@ -204,7 +178,16 @@ function BookingsTable({ bookings, role, onStatus, onReview }) {
                           <span className="sr-only"> rated {b.review.rating} out of 5</span>
                         </span>
                       )}
-                      {actionsFor(b).length === 0 && (isFreelancer || b.status !== 'Completed') && (
+                      {hasReceipt(b) && (
+                        <button
+                          type="button"
+                          className="btn-outline"
+                          onClick={() => setReceipt(b)}
+                        >
+                          Receipt
+                        </button>
+                      )}
+                      {actionsFor(b).length === 0 && !hasReceipt(b) && (
                         <span className="muted">&mdash;</span>
                       )}
                     </div>
@@ -215,6 +198,8 @@ function BookingsTable({ bookings, role, onStatus, onReview }) {
           </table>
         </div>
       )}
+
+      {receipt && <ReceiptModal booking={receipt} onClose={() => setReceipt(null)} />}
 
       {reviewing && (
         <ReviewModal

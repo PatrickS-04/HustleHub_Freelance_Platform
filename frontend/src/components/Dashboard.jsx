@@ -40,6 +40,23 @@ function Dashboard({ user, onLogout }) {
   )
 
   const addGig = (gig) => setData((d) => ({ ...d, gigs: [gig, ...d.gigs] }))
+
+  // Freelancers may only change or remove their own gigs. Both return whether
+  // the change was applied.
+  const ownsGig = (id) => data.gigs.some((g) => g.id === id && g.freelancerId === user.id)
+  function updateGig(id, patch) {
+    if (!ownsGig(id)) return false
+    setData((d) => ({
+      ...d,
+      gigs: d.gigs.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+    }))
+    return true
+  }
+  function deleteGig(id) {
+    if (!ownsGig(id)) return false
+    setData((d) => ({ ...d, gigs: d.gigs.filter((g) => g.id !== id) }))
+    return true
+  }
   const addBooking = (booking) =>
     setData((d) => ({ ...d, bookings: [booking, ...d.bookings] }))
 
@@ -133,7 +150,15 @@ function Dashboard({ user, onLogout }) {
       />
     )
   } else if (view === 'gigs' && isFreelancer) {
-    screen = <MyGigs user={user} gigs={data.gigs} onCreate={addGig} />
+    screen = (
+      <MyGigs
+        user={user}
+        gigs={data.gigs}
+        onCreate={addGig}
+        onUpdate={updateGig}
+        onDelete={deleteGig}
+      />
+    )
   } else if (view === 'spending' && !isFreelancer) {
     screen = <Spending bookings={myBookings} gigs={data.gigs} />
   } else if (view === 'earnings' && isFreelancer) {
