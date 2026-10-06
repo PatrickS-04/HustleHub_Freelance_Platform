@@ -9,6 +9,7 @@ import MyGigs from '../screens/MyGigs'
 import FreelancerBookings from '../screens/FreelancerBookings'
 import Earnings from '../screens/Earnings'
 import Spending from '../screens/Spending'
+import Settings from '../screens/Settings'
 import './Dashboard.css'
 
 const CLIENT_TABS = [
@@ -16,19 +17,24 @@ const CLIENT_TABS = [
   { id: 'browse', label: 'Browse gigs' },
   { id: 'bookings', label: 'My bookings' },
   { id: 'spending', label: 'Spending' },
+  { id: 'settings', label: 'Settings' },
 ]
 const FREELANCER_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'gigs', label: 'My gigs' },
   { id: 'bookings', label: 'Bookings' },
   { id: 'earnings', label: 'Earnings' },
+  { id: 'settings', label: 'Settings' },
 ]
 
-function Dashboard({ user, onLogout }) {
+function Dashboard({ user: authUser, onLogout }) {
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState('overview')
+  // The display name can be edited in Settings (placeholder only, no API yet).
+  const [displayName, setDisplayName] = useState(authUser.name)
+  const user = { ...authUser, name: displayName }
   // Placeholder state; becomes API calls once the endpoints exist.
-  const [data, setData] = useState(() => seedData(user))
+  const [data, setData] = useState(() => seedData(authUser))
 
   // Unknown roles (e.g. admin) get the client view for now.
   const isFreelancer = user.role === 'freelancer'
@@ -59,6 +65,19 @@ function Dashboard({ user, onLogout }) {
   }
   const addBooking = (booking) =>
     setData((d) => ({ ...d, bookings: [booking, ...d.bookings] }))
+
+  // Renaming also updates the name stored on this user's gigs and bookings.
+  function changeName(name) {
+    setDisplayName(name)
+    setData((d) => ({
+      gigs: d.gigs.map((g) => (g.freelancerId === user.id ? { ...g, freelancerName: name } : g)),
+      bookings: d.bookings.map((b) => ({
+        ...b,
+        clientName: b.clientId === user.id ? name : b.clientName,
+        freelancerName: b.freelancerId === user.id ? name : b.freelancerName,
+      })),
+    }))
+  }
 
   // A client can review their own completed booking once, with a 1-5 rating and
   // an optional short comment. Nudges the gig's rating toward the new score.
@@ -149,6 +168,8 @@ function Dashboard({ user, onLogout }) {
         onReview={addReview}
       />
     )
+  } else if (view === 'settings') {
+    screen = <Settings user={user} onNameChange={changeName} />
   } else if (view === 'gigs' && isFreelancer) {
     screen = (
       <MyGigs

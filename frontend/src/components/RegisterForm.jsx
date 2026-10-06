@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { register } from '../services/api'
 import Select from './Select'
+import PasswordStrength from './PasswordStrength'
 
 const ROLE_OPTIONS = [
   { value: 'client', label: 'Client (hiring)' },
@@ -118,6 +119,7 @@ function RegisterForm({ onRegister, onSwitch }) {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
+          <PasswordStrength password={form.password} />
         </div>
 
         <div className="field">
