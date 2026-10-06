@@ -342,3 +342,22 @@ body {
     padding: 30px 20px;
   }
 }
+
+/* Info banner on the login screen (e.g. "you were signed out") */
+.auth-info {
+  margin: 0 0 16px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+}
+
+.denied {
+  max-width: 520px;
+}
+
+.denied .btn-primary {
+  margin-top: 14px;
+}

@@ -10,6 +10,10 @@ import FreelancerBookings from '../screens/FreelancerBookings'
 import Earnings from '../screens/Earnings'
 import Spending from '../screens/Spending'
 import Settings from '../screens/Settings'
+import AccessDenied from '../screens/AccessDenied'
+import IdleWarning from './IdleWarning'
+import { useIdleLogout } from '../hooks/useIdleLogout'
+import { IDLE_MS, WARN_MS } from '../config'
 import './Dashboard.css'
 
 const CLIENT_TABS = [
@@ -135,16 +139,24 @@ function Dashboard({ user: authUser, onLogout }) {
     return true
   }
 
-  async function handleLogout() {
+  // `reason` ('idle') tells the login screen why the user was signed out.
+  async function handleLogout(reason) {
     setLoading(true)
     try {
       await logout()
     } finally {
       // Clear local state even if the request failed; the server cookie
       // expires on its own after an hour.
-      onLogout()
+      onLogout(reason)
     }
   }
+
+  // Sign out after a period of inactivity, warning shortly beforehand.
+  const { secondsLeft, stay } = useIdleLogout({
+    idleMs: IDLE_MS,
+    warnMs: WARN_MS,
+    onExpire: () => handleLogout('idle'),
+  })
 
   let screen
   if (view === 'browse' && !isFreelancer) {
@@ -184,7 +196,7 @@ function Dashboard({ user: authUser, onLogout }) {
     screen = <Spending bookings={myBookings} gigs={data.gigs} />
   } else if (view === 'earnings' && isFreelancer) {
     screen = <Earnings bookings={myBookings} />
-  } else {
+  } else if (view === 'overview') {
     screen = (
       <Overview
         user={user}
@@ -194,6 +206,9 @@ function Dashboard({ user: authUser, onLogout }) {
         goTo={setView}
       />
     )
+  } else {
+    // Any page the current role isn't allowed to see (or an unknown one).
+    screen = <AccessDenied onBack={() => setView('overview')} />
   }
 
   const income = myBookings
@@ -228,7 +243,7 @@ function Dashboard({ user: authUser, onLogout }) {
           <button
             type="button"
             className="btn-outline"
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
             disabled={loading}
           >
             {loading ? 'Logging out...' : 'Log out'}
@@ -258,6 +273,14 @@ function Dashboard({ user: authUser, onLogout }) {
         {screen}
         <p className="sample-note">Showing sample data.</p>
       </main>
+
+      {secondsLeft !== null && (
+        <IdleWarning
+          secondsLeft={secondsLeft}
+          onStay={stay}
+          onLogout={() => handleLogout()}
+        />
+      )}
     </div>
   )
 }
