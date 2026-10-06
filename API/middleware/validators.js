@@ -1,6 +1,7 @@
 const validator = require("validator");
 const mongoose = require("mongoose");
 const { CATEGORIES } = require("../models/Gig");
+const { STATUSES } = require("../models/Booking");
 
 const fail = (res, message) => res.status(400).json({ error: message });
 
@@ -141,4 +142,65 @@ function validateId(req, res, next, id) {
   next();
 }
 
-module.exports = { validateRegister, validateLogin, validateGig, validateId };
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function validateBooking(req, res, next) {
+  try {
+    const b = req.body || {};
+    if (typeof b.gigId !== "string" || !mongoose.isValidObjectId(b.gigId)) {
+      return fail(res, "A valid gig is required.");
+    }
+
+    const date = typeof b.date === "string" ? b.date : "";
+    if (!validator.isDate(date, { format: "YYYY-MM-DD", strictMode: true })) {
+      return fail(res, "Start date must be a valid date (YYYY-MM-DD).");
+    }
+    // One day of slack so a client ahead of UTC can still book "today".
+    const start = Date.parse(`${date}T00:00:00Z`);
+    if (start < Date.now() - 2 * DAY_MS) return fail(res, "The start date cannot be in the past.");
+    if (start > Date.now() + 365 * DAY_MS) return fail(res, "The start date must be within a year.");
+
+    const note = b.note === undefined ? "" : b.note;
+    if (typeof note !== "string" || note.trim().length > 300) {
+      return fail(res, "Notes must be 300 characters or fewer.");
+    }
+
+    // Price, client and freelancer are never taken from the body.
+    req.body = { gigId: b.gigId, date, note: note.trim() };
+    next();
+  } catch (err) {
+    return fail(res, "Invalid request data.");
+  }
+}
+
+function validateStatus(req, res, next) {
+  const status = req.body?.status;
+  if (typeof status !== "string" || !STATUSES.includes(status) || status === "Pending") {
+    return fail(res, "Status must be Accepted, Declined, Completed or Cancelled.");
+  }
+  req.body = { status };
+  next();
+}
+
+function validateReview(req, res, next) {
+  const b = req.body || {};
+  if (!Number.isInteger(b.rating) || b.rating < 1 || b.rating > 5) {
+    return fail(res, "Rating must be a whole number from 1 to 5.");
+  }
+  const text = b.text === undefined ? "" : b.text;
+  if (typeof text !== "string" || text.trim().length > 300) {
+    return fail(res, "Comments must be 300 characters or fewer.");
+  }
+  req.body = { rating: b.rating, text: text.trim() };
+  next();
+}
+
+module.exports = {
+  validateRegister,
+  validateLogin,
+  validateGig,
+  validateId,
+  validateBooking,
+  validateStatus,
+  validateReview,
+};

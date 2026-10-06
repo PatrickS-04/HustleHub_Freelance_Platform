@@ -13,11 +13,12 @@ const bookingSchema = new mongoose.Schema(
     gigTitle: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     date: { type: Date, required: true },
-    note: { type: String, trim: true, maxlength: 500, default: "" },
+    note: { type: String, trim: true, maxlength: 300, default: "" },
     status: { type: String, enum: STATUSES, default: "Pending" },
     review: {
       rating: { type: Number, min: 1, max: 5 },
-      text: { type: String, trim: true, maxlength: 500 },
+      text: { type: String, trim: true, maxlength: 300 },
+      createdAt: Date,
     },
   },
   { timestamps: true }
