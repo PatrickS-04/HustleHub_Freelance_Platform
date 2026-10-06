@@ -12,11 +12,14 @@ const CATEGORIES = [
 
 const gigSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, trim: true, minlength: 10, maxlength: 100 },
-    description: { type: String, required: true, trim: true, minlength: 20, maxlength: 1000 },
+    // Limits match the MyGigs form validation in the frontend.
+    title: { type: String, required: true, trim: true, minlength: 5, maxlength: 80 },
+    description: { type: String, required: true, trim: true, minlength: 20, maxlength: 500 },
     category: { type: String, required: true, enum: CATEGORIES },
-    price: { type: Number, required: true, min: 50, max: 1000000 },
-    deliveryDays: { type: Number, required: true, min: 1, max: 90 },
+    price: { type: Number, required: true, min: 50, max: 100000 },
+    deliveryDays: { type: Number, required: true, min: 1, max: 60 },
+    // Paused gigs are hidden from browsing but kept for their owner.
+    active: { type: Boolean, default: true },
     // Owner - every update/delete is checked against this.
     freelancer: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   },

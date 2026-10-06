@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test:auth": "node middleware/auth.check.js",
+    "test:gigs": "node controllers/gig.check.js",
     "test:api": "npx --yes newman run \"postman/HustleHub+ Part1.postman_collection.json\" --insecure"
   },
   "overrides": {
