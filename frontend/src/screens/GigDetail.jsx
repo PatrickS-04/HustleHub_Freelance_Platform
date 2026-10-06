@@ -3,8 +3,10 @@ import './GigDetail.css'
 
 const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n)
 
-function GigDetail({ gig, gigs, onBack, onOpen, onBook }) {
+function GigDetail({ gig, gigs, userReviews = [], onBack, onOpen, onBook }) {
   const d = gigDetails(gig)
+  // Newest real reviews first, then the sample ones.
+  const reviews = [...userReviews, ...d.reviews].slice(0, 5)
 
   // More from the same freelancer, falling back to similar gigs in the category.
   const byFreelancer = gigs.filter(
@@ -36,7 +38,7 @@ function GigDetail({ gig, gigs, onBack, onOpen, onBook }) {
             <div className="detail-meta">
               <span className="rating">&#9733; {gig.rating.toFixed(1)}</span>
               <span className="muted">
-                {d.reviews.length} recent reviews
+                {reviews.length} recent reviews
               </span>
               <span className="muted">&middot; by {gig.freelancerName}</span>
             </div>
@@ -62,7 +64,7 @@ function GigDetail({ gig, gigs, onBack, onOpen, onBook }) {
           <section className="panel">
             <h2>Reviews</h2>
             <ul className="reviews">
-              {d.reviews.map((r) => (
+              {reviews.map((r) => (
                 <li key={r.who + r.when}>
                   <span className="avatar sm" aria-hidden="true">
                     {r.who.charAt(0)}

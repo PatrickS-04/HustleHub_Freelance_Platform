@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { money } from '../data/placeholder'
+import DatePicker from '../components/DatePicker'
 
-const today = () => new Date().toISOString().slice(0, 10)
+// Local date as YYYY-MM-DD (toISOString would give the UTC date, which can be
+// "yesterday" or "tomorrow" around midnight).
+const today = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 // Simulated booking: no payment is taken. Confirming creates a booking plus a
 // transaction record linking the client and the freelancer.
@@ -86,12 +92,11 @@ function BookingModal({ gig, user, nextTransactionId, onClose, onBooked }) {
 
             <div className="field">
               <label htmlFor="book-date">Start date</label>
-              <input
+              <DatePicker
                 id="book-date"
-                type="date"
                 min={today()}
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={setDate}
               />
             </div>
 

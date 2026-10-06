@@ -1,6 +1,6 @@
 import BookingsTable from '../components/BookingsTable'
 
-function ClientBookings({ bookings, goTo, onStatus }) {
+function ClientBookings({ bookings, goTo, onStatus, onReview }) {
   return (
     <>
       <div className="dash-title-row">
@@ -13,7 +13,12 @@ function ClientBookings({ bookings, goTo, onStatus }) {
         </button>
       </div>
 
-      <BookingsTable bookings={bookings} role="client" onStatus={onStatus} />
+      <BookingsTable
+        bookings={bookings}
+        role="client"
+        onStatus={onStatus}
+        onReview={onReview}
+      />
     </>
   )
 }

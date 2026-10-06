@@ -4,7 +4,7 @@ import Select from '../components/Select'
 import BookingModal from './BookingModal'
 import GigDetail from './GigDetail'
 
-function BrowseGigs({ user, gigs, nextTransactionId, onBooked }) {
+function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [selected, setSelected] = useState(null)
@@ -33,6 +33,7 @@ function BrowseGigs({ user, gigs, nextTransactionId, onBooked }) {
         <GigDetail
           gig={detailGig}
           gigs={gigs.filter((g) => g.freelancerId !== user.id)}
+          userReviews={reviews.filter((r) => r.gigId === detailGig.id)}
           onBack={() => setDetailId(null)}
           onOpen={openDetail}
           onBook={setSelected}

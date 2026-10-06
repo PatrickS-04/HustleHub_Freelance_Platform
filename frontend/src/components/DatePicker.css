@@ -1,0 +1,124 @@
+.dp-placeholder {
+  color: var(--text);
+}
+
+.dp-icon {
+  flex-shrink: 0;
+  color: var(--accent-ink);
+}
+
+.dp-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: 300px;
+  max-width: calc(100vw - 48px);
+  box-sizing: border-box;
+  padding: 14px;
+  background: var(--modal);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  backdrop-filter: blur(26px) saturate(150%);
+}
+
+.dp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--text-h);
+}
+
+.dp-nav {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0 0 2px;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text-h);
+  background: var(--pill);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dp-nav:hover:not(:disabled) {
+  border-color: var(--accent-ink);
+}
+
+.dp-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  justify-items: center;
+}
+
+.dp-dow {
+  padding: 4px 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.dp-day {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-h);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dp-day:hover:not(:disabled) {
+  background: var(--accent-bg);
+}
+
+.dp-day:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 1px;
+}
+
+.dp-day.today {
+  border-color: var(--accent-ink);
+}
+
+.dp-day.selected {
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.dp-day:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dp-today {
+  display: block;
+  margin: 10px auto 0;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: var(--accent-bg);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}

@@ -8,12 +8,14 @@ import ClientBookings from '../screens/ClientBookings'
 import MyGigs from '../screens/MyGigs'
 import FreelancerBookings from '../screens/FreelancerBookings'
 import Earnings from '../screens/Earnings'
+import Spending from '../screens/Spending'
 import './Dashboard.css'
 
 const CLIENT_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'browse', label: 'Browse gigs' },
   { id: 'bookings', label: 'My bookings' },
+  { id: 'spending', label: 'Spending' },
 ]
 const FREELANCER_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -40,6 +42,49 @@ function Dashboard({ user, onLogout }) {
   const addGig = (gig) => setData((d) => ({ ...d, gigs: [gig, ...d.gigs] }))
   const addBooking = (booking) =>
     setData((d) => ({ ...d, bookings: [booking, ...d.bookings] }))
+
+  // A client can review their own completed booking once, with a 1-5 rating and
+  // an optional short comment. Nudges the gig's rating toward the new score.
+  function addReview(id, review) {
+    const booking = data.bookings.find((b) => b.id === id)
+    const valid =
+      booking &&
+      booking.clientId === user.id &&
+      booking.status === 'Completed' &&
+      !booking.review &&
+      Number.isInteger(review.rating) &&
+      review.rating >= 1 &&
+      review.rating <= 5 &&
+      typeof review.text === 'string' &&
+      review.text.length <= 300
+    if (!valid) return false
+    setData((d) => ({
+      gigs: d.gigs.map((g) =>
+        g.id === booking.gigId
+          ? { ...g, rating: Math.round(((g.rating * 9 + review.rating) / 10) * 10) / 10 }
+          : g,
+      ),
+      bookings: d.bookings.map((b) =>
+        b.id === id ? { ...b, review: { ...review, when: 'Just now' } } : b,
+      ),
+    }))
+    return true
+  }
+
+  // Reviews left by clients, shown on each gig's detail page.
+  const shortName = (full) => {
+    const [first, ...rest] = full.split(' ')
+    return rest.length ? `${first} ${rest[rest.length - 1].charAt(0)}.` : first
+  }
+  const gigReviews = data.bookings
+    .filter((b) => b.review)
+    .map((b) => ({
+      gigId: b.gigId,
+      who: shortName(b.clientName),
+      rating: b.review.rating,
+      text: b.review.text,
+      when: b.review.when,
+    }))
 
   // Applies a status change only if it is an allowed transition for this role
   // from the booking's current status. Returns whether it was applied.
@@ -71,6 +116,7 @@ function Dashboard({ user, onLogout }) {
       <BrowseGigs
         user={user}
         gigs={data.gigs}
+        reviews={gigReviews}
         nextTransactionId={`TX-${1001 + data.bookings.length}`}
         onBooked={addBooking}
       />
@@ -79,10 +125,17 @@ function Dashboard({ user, onLogout }) {
     screen = isFreelancer ? (
       <FreelancerBookings bookings={myBookings} onStatus={updateStatus} />
     ) : (
-      <ClientBookings bookings={myBookings} goTo={setView} onStatus={updateStatus} />
+      <ClientBookings
+        bookings={myBookings}
+        goTo={setView}
+        onStatus={updateStatus}
+        onReview={addReview}
+      />
     )
   } else if (view === 'gigs' && isFreelancer) {
     screen = <MyGigs user={user} gigs={data.gigs} onCreate={addGig} />
+  } else if (view === 'spending' && !isFreelancer) {
+    screen = <Spending bookings={myBookings} gigs={data.gigs} />
   } else if (view === 'earnings' && isFreelancer) {
     screen = <Earnings bookings={myBookings} />
   } else {

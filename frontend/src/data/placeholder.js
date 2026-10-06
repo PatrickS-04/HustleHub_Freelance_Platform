@@ -177,6 +177,9 @@ export function gigDetails(gig) {
 // Real bookings are added on top of this by month in the Earnings chart.
 export const INCOME_HISTORY = [2900, 3400, 3100, 4600, 4000]
 
+// Same idea for a client's spending.
+export const SPEND_HISTORY = [1500, 2200, 1800, 3100, 2600]
+
 export const activityFor = (isFreelancer) =>
   isFreelancer
     ? [
@@ -271,6 +274,7 @@ export function seedData(user) {
           date: '2026-09-15',
           note: 'Bakery website, photos to follow.',
           status: 'Completed',
+          review: { rating: 5, text: 'Brilliant work, thank you!', when: '1 week ago' },
         },
         {
           id: 'b4',

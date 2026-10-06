@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { INCOME_HISTORY, countsAsIncome, money } from '../data/placeholder'
 import { BarChart, DonutChart } from '../components/Charts'
+import { monthlySeries } from '../utils/months'
 
 function Earnings({ bookings: allBookings }) {
   // Pending, declined and cancelled bookings earn nothing.
@@ -23,18 +24,7 @@ function Earnings({ bookings: allBookings }) {
 
   // Last six months: placeholder history plus real bookings by month.
   const [now] = useState(() => new Date())
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
-    return {
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-      label: d.toLocaleString('en-US', { month: 'short' }),
-      value: i < 5 ? INCOME_HISTORY[i] : 0,
-    }
-  })
-  bookings.forEach((b) => {
-    const month = months.find((m) => m.key === b.date.slice(0, 7))
-    if (month) month.value += b.price
-  })
+  const months = monthlySeries(bookings, INCOME_HISTORY, now)
 
   // Top gigs by income; anything beyond the top four is grouped as "Other".
   const tidy = (t) => {

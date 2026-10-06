@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { STATUS_ACTIONS, STATUS_STEPS, money } from '../data/placeholder'
+import ReviewModal from './ReviewModal'
 import './Bookings.css'
 
 const FILTERS = [
@@ -69,10 +70,11 @@ function ConfirmDialog({ message, confirmLabel, onConfirm, onCancel }) {
 
 // Shared bookings table for both roles. `role` decides who the counterparty is
 // and which status actions are offered.
-function BookingsTable({ bookings, role, onStatus }) {
+function BookingsTable({ bookings, role, onStatus, onReview }) {
   const [filter, setFilter] = useState('All')
   const [confirming, setConfirming] = useState(null)
   const [notice, setNotice] = useState('')
+  const [reviewing, setReviewing] = useState(null)
 
   const isFreelancer = role === 'freelancer'
   const actionsFor = (b) => STATUS_ACTIONS[role][b.status] || []
@@ -155,6 +157,12 @@ function BookingsTable({ bookings, role, onStatus }) {
                     {isFreelancer && b.note && (
                       <span className="muted note">&ldquo;{b.note}&rdquo;</span>
                     )}
+                    {isFreelancer && b.review && (
+                      <span className="muted note">
+                        <span className="review-stars">{'★'.repeat(b.review.rating)}</span>
+                        {b.review.text && <> &ldquo;{b.review.text}&rdquo;</>}
+                      </span>
+                    )}
                   </td>
                   <td data-label={isFreelancer ? 'Client' : 'Freelancer'}>
                     {isFreelancer ? b.clientName : b.freelancerName}
@@ -181,7 +189,24 @@ function BookingsTable({ bookings, role, onStatus }) {
                           {a.label}
                         </button>
                       ))}
-                      {actionsFor(b).length === 0 && <span className="muted">&mdash;</span>}
+                      {!isFreelancer && b.status === 'Completed' && !b.review && (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => setReviewing(b)}
+                        >
+                          Review
+                        </button>
+                      )}
+                      {!isFreelancer && b.review && (
+                        <span className="review-chip" title="Your review">
+                          <span className="review-stars">{'★'.repeat(b.review.rating)}</span>
+                          <span className="sr-only"> rated {b.review.rating} out of 5</span>
+                        </span>
+                      )}
+                      {actionsFor(b).length === 0 && (isFreelancer || b.status !== 'Completed') && (
+                        <span className="muted">&mdash;</span>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -189,6 +214,18 @@ function BookingsTable({ bookings, role, onStatus }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {reviewing && (
+        <ReviewModal
+          booking={reviewing}
+          onClose={() => setReviewing(null)}
+          onSubmit={(id, review) => {
+            const ok = onReview(id, review)
+            if (ok) setNotice('Thanks, your review was posted.')
+            return ok
+          }}
+        />
       )}
 
       {confirming && (

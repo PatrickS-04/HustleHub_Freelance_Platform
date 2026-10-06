@@ -174,3 +174,28 @@
     justify-content: flex-end;
   }
 }
+
+/* Review stars shown in tables */
+.review-stars {
+  letter-spacing: 1px;
+  color: var(--accent-ink);
+}
+
+.review-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 13px;
+  background: var(--pill);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
