@@ -10,6 +10,7 @@
     "test:auth": "node middleware/auth.check.js",
     "test:gigs": "node controllers/gig.check.js",
     "test:bookings": "node controllers/booking.check.js",
+    "test:income": "node controllers/income.check.js",
     "test:api": "npx --yes newman run \"postman/HustleHub+ Part1.postman_collection.json\" --insecure"
   },
   "overrides": {
