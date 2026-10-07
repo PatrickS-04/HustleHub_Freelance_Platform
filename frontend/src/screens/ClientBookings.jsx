@@ -1,4 +1,4 @@
-import BookingsTable from '../components/BookingsTable'
+import BookingsList from '../components/BookingsList'
 
 function ClientBookings({ bookings, goTo, onStatus, onReview }) {
   return (
@@ -13,7 +13,7 @@ function ClientBookings({ bookings, goTo, onStatus, onReview }) {
         </button>
       </div>
 
-      <BookingsTable
+      <BookingsList
         bookings={bookings}
         role="client"
         onStatus={onStatus}

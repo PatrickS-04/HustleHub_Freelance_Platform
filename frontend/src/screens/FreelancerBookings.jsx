@@ -1,4 +1,4 @@
-import BookingsTable from '../components/BookingsTable'
+import BookingsList from '../components/BookingsList'
 
 function FreelancerBookings({ bookings, onStatus }) {
   return (
@@ -10,7 +10,7 @@ function FreelancerBookings({ bookings, onStatus }) {
         </div>
       </div>
 
-      <BookingsTable bookings={bookings} role="freelancer" onStatus={onStatus} />
+      <BookingsList bookings={bookings} role="freelancer" onStatus={onStatus} />
     </>
   )
 }

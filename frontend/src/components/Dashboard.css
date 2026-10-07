@@ -19,7 +19,6 @@
 .stat-card,
 .panel,
 .gig-card,
-.table-wrap,
 .nav-pill,
 .receipt {
   -webkit-backdrop-filter: var(--blur);
@@ -707,46 +706,6 @@
   margin-bottom: 0;
 }
 
-/* ---- Tables ---- */
-.table-wrap {
-  overflow-x: auto;
-  background: var(--card);
-  border-radius: 32px;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.table th,
-.table td {
-  padding: 14px 18px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-
-.table th {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.table td {
-  color: var(--text-h);
-}
-
-.note {
-  display: block;
-  margin-top: 2px;
-}
-
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .dash {
@@ -819,31 +778,6 @@
     align-items: flex-start;
   }
 
-  /* Tables become stacked cards on phones. */
-  .table thead {
-    display: none;
-  }
-
-  .table tr {
-    display: block;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .table td {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 4px 0;
-    border: none;
-    text-align: right;
-  }
-
-  .table td::before {
-    content: attr(data-label);
-    text-align: left;
-    color: var(--text);
-  }
 }
 
 /* Long unbroken text (e.g. a gig title with no spaces) wraps inside its tile

@@ -152,8 +152,7 @@
 
 /* ---------- No tiles: panels become flat sections ---------- */
 .panel,
-.profile-strip,
-.table-wrap {
+.profile-strip {
   background: none;
   border: none;
   border-radius: 0;
@@ -233,12 +232,6 @@
 
 .tl-item:not(:last-child)::before {
   left: 14px;
-}
-
-/* Tables: ruled, not boxed */
-.table-wrap {
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
 }
 
 /* ---------- Gig cards become list rows ---------- */
