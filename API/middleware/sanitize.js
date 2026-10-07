@@ -4,7 +4,7 @@ const xss = require('xss');
 
 const stripHtml = (value) => 
     xss(value, {
-        whitelist: {},
+        whiteList: {},
         stripIgnoreTag: true,
         stripIgnoreTagBody: ['script', 'style']
     }).trim();
