@@ -12,6 +12,11 @@ defaults:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
     steps:
       - uses: actions/checkout@v4
 
@@ -48,6 +53,7 @@ jobs:
           JWT_SECRET: ci-smoke-secret-this-needs-to-be-32-characters-long-to-pass-added-verification
           SSL_KEY_PATH: ./certs/key.pem
           SSL_CERT_PATH: ./certs/cert.pem
+          MONGO_URL: mongodb://localhost:27017/hustlehub-ci
         run: |
           mkdir -p certs
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \

@@ -13,7 +13,7 @@ function tokenFromRequest(req) {
   return header.startsWith("Bearer ") ? header.slice(7) : null;
 }
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const token = tokenFromRequest(req);
   if (!token) return res.status(401).json({ error: "Authentication required." });
 
@@ -23,7 +23,9 @@ function requireAuth(req, res, next) {
       issuer: [process.env.APP_NAME],
       audience: ["hustlehubClient"]
     });
-    const user = User.findById(payload.sub);
+    // Also rejects tokens for deleted users. A malformed sub throws a CastError,
+    // which lands in the catch below as a 401.
+    const user = await User.findById(payload.sub);
     if (!user) return res.status(401).json({ error: "Authentication required." });
     req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
     next();
