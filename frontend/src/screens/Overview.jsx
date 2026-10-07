@@ -89,14 +89,14 @@ function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
         <ul className="activity">
           {activityFor(isFreelancer).map((a) => (
             <li key={a.text}>
-              <span className="avatar sm" aria-hidden="true">
-                {a.who.charAt(0)}
-              </span>
-              <div>
+              <div className="activity-head">
+                <span className="avatar sm" aria-hidden="true">
+                  {a.who.charAt(0)}
+                </span>
                 <strong>{a.who}</strong>
-                <p>{a.text}</p>
+                <span className="muted">{a.when}</span>
               </div>
-              <span className="muted">{a.when}</span>
+              <p>{a.text}</p>
             </li>
           ))}
         </ul>

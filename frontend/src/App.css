@@ -1,7 +1,7 @@
 /* ---- Theme tokens ----
    Palette: #0D1B2A navy, #1B263B deep blue, #415A77 slate, #778D7A sage,
-   #D4C4A8 sand, #F4F1DE cream. Surfaces are translucent so the tiles read
-   as frosted glass over the page gradient. */
+   #D4C4A8 sand, #F4F1DE cream. Surfaces are translucent over a solid page
+   colour. */
 :root {
   color-scheme: light;
   --text-h: #0d1b2a;
@@ -95,24 +95,14 @@
   --tile-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.6);
 }
 
-/* Gradient page, cream at the top fading to navy like the palette poster */
+/* Plain solid page colour: cream in light mode, navy in dark mode */
 body {
   min-height: 100svh;
-  background-color: #d4c4a8;
-  background-image:
-    radial-gradient(700px 500px at 12% 18%, rgba(65, 90, 119, 0.4), transparent 62%),
-    radial-gradient(650px 480px at 88% 70%, rgba(119, 141, 122, 0.42), transparent 62%),
-    linear-gradient(180deg, #f4f1de 0%, #d4c4a8 38%, #415a77 100%);
-  background-attachment: fixed;
+  background-color: #f4f1de;
 }
 
 :root[data-theme='dark'] body {
   background-color: #0d1b2a;
-  background-image:
-    radial-gradient(700px 500px at 14% 12%, rgba(65, 90, 119, 0.5), transparent 62%),
-    radial-gradient(650px 480px at 88% 78%, rgba(119, 141, 122, 0.3), transparent 62%),
-    linear-gradient(180deg, #1b263b 0%, #0d1b2a 100%);
-  background-attachment: fixed;
 }
 
 #root {

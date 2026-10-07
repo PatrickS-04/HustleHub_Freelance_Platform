@@ -20,7 +20,6 @@
 .panel,
 .gig-card,
 .table-wrap,
-.activity li,
 .nav-pill,
 .receipt {
   -webkit-backdrop-filter: var(--blur);
@@ -29,7 +28,6 @@
   box-shadow: var(--tile-shadow);
 }
 
-.activity li,
 .receipt {
   box-shadow: none;
 }
@@ -370,7 +368,6 @@
 
 /* ---- Lists ---- */
 .row-list,
-.activity,
 .timeline {
   margin: 0;
   padding: 0;
@@ -433,8 +430,8 @@
   bottom: 0;
   left: 14px;
   width: 2px;
-  background: linear-gradient(var(--accent-ink), transparent);
-  opacity: 0.45;
+  background: var(--accent-ink);
+  opacity: 0.3;
 }
 
 .tl-node {
@@ -463,39 +460,6 @@
   justify-content: space-between;
   gap: 8px 12px;
   min-width: 0;
-}
-
-.activity li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
-  margin-bottom: 8px;
-  background: var(--pill);
-  border-radius: 22px;
-}
-
-.activity li:nth-child(even) {
-  border-radius: 22px 22px 6px 22px;
-}
-
-.activity li:last-child {
-  margin-bottom: 0;
-}
-
-.activity li > div {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-}
-
-.activity strong {
-  color: var(--text-h);
-  font-weight: 700;
-}
-
-.activity p {
-  margin-top: 2px;
 }
 
 .status {
