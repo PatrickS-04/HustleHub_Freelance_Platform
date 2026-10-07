@@ -1,0 +1,24 @@
+.btn-danger {
+  padding: 10px 20px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: #b3382f;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  filter: brightness(1.08);
+}
+
+.btn-danger:focus-visible {
+  outline: 2px solid var(--text-h);
+  outline-offset: 2px;
+}
+
+.modal.modal-sm {
+  max-width: 380px;
+}

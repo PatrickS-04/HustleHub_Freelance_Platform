@@ -40,7 +40,7 @@ async function register(req, res, next) {
         .json({ error: "Name, email, password and role are required." });
     }
 
-    const existing = await User.findByEmail(email);
+    const existing = await User.exists({ email });
     if (existing) {
       // 409 Conflict - generic enough not to help enumerate accounts further
       return res
@@ -49,7 +49,7 @@ async function register(req, res, next) {
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const user = await User.createUser({ name, email, passwordHash, role });
+    const user = await User.create({ name, email, passwordHash, role });
 
     const token = generateToken(user);
     setAuthCookie(res, token);
@@ -61,7 +61,13 @@ async function register(req, res, next) {
     });
   } catch (err) {
     if (err.name === "ValidationError") {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: "Invalid registration data." });
+    }
+    // Unique index caught a duplicate that slipped past the exists() check (race).
+    if (err.code === 11000) {
+      return res
+        .status(409)
+        .json({ error: "An account with this email already exists." });
     }
     next(err);
   }
@@ -75,7 +81,7 @@ async function login(req, res, next) {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    const user = await User.findByEmail(email);
+    const user = await User.findOne({ email }).select("+passwordHash");
 
     // Deliberately identical response whether the email doesn't exist or the
     // password is wrong - prevents attackers from enumerating valid accounts.
@@ -101,4 +107,11 @@ async function login(req, res, next) {
   }
 }
 
-module.exports = { register, login };
+// The cookie is httpOnly, so only the server can remove it. Attributes must
+// match those used in setAuthCookie or the browser will not clear it.
+function logout(req, res) {
+  res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "strict" });
+  return res.status(200).json({ message: "Logged out." });
+}
+
+module.exports = { register, login, logout };

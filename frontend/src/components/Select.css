@@ -1,0 +1,112 @@
+.select {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 18px;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  color: var(--text-h);
+  background: var(--pill);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.select-trigger:hover {
+  border-color: var(--accent-ink);
+}
+
+.select-trigger:focus-visible,
+.select-trigger[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--accent-ink);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--accent-ink);
+  transition: transform 0.15s;
+}
+
+.chevron.open {
+  transform: rotate(180deg);
+}
+
+.select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  min-width: 100%;
+  max-height: 280px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  list-style: none;
+  background: var(--modal);
+  border: 1px solid var(--glass-border);
+  border-radius: 26px;
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  backdrop-filter: blur(26px) saturate(150%);
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 15px;
+  color: var(--text-h);
+  white-space: nowrap;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.select-option.active {
+  background: var(--accent-bg);
+}
+
+.select-option.selected {
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+/* Filter bars: a fixed-width dropdown beside the search box */
+.filters .select {
+  width: 230px;
+  flex-shrink: 0;
+}
+
+.filters .select-trigger {
+  padding: 11px 18px;
+  font-size: 15px;
+}
+
+@media (max-width: 700px) {
+  .filters .select {
+    width: 100%;
+  }
+}
+
+/* A tile containing an open menu must paint above the tiles that follow it
+   (each glass tile is its own stacking context). */
+.panel:has(.select-menu) {
+  position: relative;
+  z-index: 5;
+}

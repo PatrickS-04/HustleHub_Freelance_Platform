@@ -1,0 +1,156 @@
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.axis-text {
+  font-size: 12px;
+  fill: var(--text);
+}
+
+.bar {
+  fill: var(--chart-1);
+  opacity: 0.55;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: grow 0.6s ease-out both;
+}
+
+.bar-last {
+  fill: var(--chart-1);
+  opacity: 1;
+}
+
+.bar:hover {
+  opacity: 1;
+}
+
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
+}
+
+/* Donut */
+.donut-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.donut {
+  flex-shrink: 0;
+  width: 170px;
+  height: 170px;
+}
+
+.donut-track {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 26;
+}
+
+.donut-slice {
+  fill: none;
+  stroke-width: 26;
+  stroke-linecap: round;
+}
+
+.slice-0 {
+  stroke: var(--chart-1);
+}
+.slice-1 {
+  stroke: var(--chart-2);
+}
+.slice-2 {
+  stroke: var(--chart-3);
+}
+.slice-3 {
+  stroke: var(--chart-4);
+}
+.slice-4 {
+  stroke: var(--chart-5);
+}
+
+.donut-total {
+  font-size: 22px;
+  font-weight: 800;
+  fill: var(--text-h);
+}
+
+.donut-sub {
+  font-size: 11px;
+  fill: var(--text);
+}
+
+.legend {
+  flex: 1;
+  min-width: 160px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.swatch {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.slice-bg-0 {
+  background: var(--chart-1);
+}
+.slice-bg-1 {
+  background: var(--chart-2);
+}
+.slice-bg-2 {
+  background: var(--chart-3);
+}
+.slice-bg-3 {
+  background: var(--chart-4);
+}
+.slice-bg-4 {
+  background: var(--chart-5);
+}
+
+.legend-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-h);
+}
+
+.legend-value {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.charts-grid {
+  margin-bottom: 16px;
+}

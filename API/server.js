@@ -2,6 +2,7 @@ require("dotenv").config();
 const fs = require("fs");
 const https = require("https");
 const app = require("./app");
+const connectDB = require("./config/db");
 
 const PORT = process.env.PORT || 3443;
 
@@ -22,6 +23,14 @@ const options = {
   minVersion: "TLSv1.2",
 };
 
-https.createServer(options, app).listen(PORT, () =>
-  console.log(`HTTPS API listening on https://localhost:${PORT}`)
+if (!process.env.MONGO_URL) {
+  console.error("MONGO_URL is not set. Refusing to start.");
+  process.exit(1);
+}
+
+// Only accept traffic once the database is reachable (connectDB exits on failure).
+connectDB().then(() =>
+  https.createServer(options, app).listen(PORT, () =>
+    console.log(`HTTPS API listening on https://localhost:${PORT}`)
+  )
 );

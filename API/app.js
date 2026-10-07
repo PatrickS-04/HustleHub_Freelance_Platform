@@ -3,6 +3,9 @@ const securityHeaders = require("./middleware/securityHeaders");
 const cors = require("cors");
 const { globalLimiter } = require("./middleware/rateLimiters");
 const authRoutes = require("./routes/authRoutes");
+const gigRoutes = require("./routes/gigRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
+const incomeRoutes = require("./routes/incomeRoutes");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 const { noSqlInjection, parameterPollution } = require("./middleware/sanitize");
 
@@ -23,6 +26,9 @@ app.use(parameterPollution);
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
+app.use("/api/gigs", gigRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/income", incomeRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
