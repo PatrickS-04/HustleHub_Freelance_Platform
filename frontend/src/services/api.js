@@ -94,5 +94,11 @@ export const updateBookingStatus = (id, status) =>
 export const reviewBooking = (id, rating, text) =>
   request(`/api/bookings/${encodeURIComponent(id)}/review`, send('POST', { rating, text })).then((d) => d.booking)
 
+// ---- Users (admin only) ----
+export const listUsers = () => request('/api/users').then((d) => d.users)
+export const getUser = (id) => request(`/api/users/${encodeURIComponent(id)}`).then((d) => d.user)
+export const deleteUser = (id) =>
+  request(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
 // ---- Income (freelancers) ----
 export const getIncome = () => request('/api/income')

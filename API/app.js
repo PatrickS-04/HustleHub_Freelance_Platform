@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const gigRoutes = require("./routes/gigRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
+const userRoutes = require("./routes/userRoutes");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 const { noSqlInjection, parameterPollution } = require("./middleware/sanitize");
 
@@ -29,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/income", incomeRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

@@ -9,8 +9,9 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const api = env.VITE_API_URL || 'https://localhost:3443'
 
-  // `vite build` serves nothing, so don't require the certs (they're absent in CI).
-  const https = command === 'build' ? undefined : {
+  // `vite build` and the unit tests serve nothing, so don't require the certs
+  // (they're absent in CI).
+  const https = command === 'build' || mode === 'test' ? undefined : {
     key: fs.readFileSync('../API/certs/key.pem'),
     cert: fs.readFileSync('../API/certs/cert.pem'),
   }
@@ -28,7 +29,8 @@ export default defineConfig(({ command, mode }) => {
   const csp = [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self'",
+    "object-src 'none'",
     "img-src 'self' data:",
     "font-src 'self'",
     `connect-src 'self' ${api}`,
@@ -39,6 +41,12 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    test: {
+      environment: 'jsdom',
+      globals: true,
+      setupFiles: './src/test/setup.js',
+      css: false,
+    },
     server: { port: 5173, strictPort: true, https, headers: baseHeaders },
     preview: {
       port: 5173,
