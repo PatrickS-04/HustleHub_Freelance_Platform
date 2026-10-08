@@ -247,6 +247,27 @@ cd API
 npm run test:auth
 ```
 
+### Frontend tests
+The React app is tested with [Vitest](https://vitest.dev/) (the Vite-native test runner, using the same `describe` / `it` / `expect` / mock style as Jest) and React Testing Library, which renders components in a simulated browser (jsdom) and interacts with them the way a user does. The API client is mocked, so no backend or database is needed.
+
+```bash
+cd frontend
+npm install
+npm run test:run
+```
+
+`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **7 test files, 46 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
+
+| Test file | What it checks |
+|-----------|----------------|
+| `LoginForm.test.jsx` | renders; trimmed credentials sent; API error shown and password cleared; cooldown after a `429`; switch to register |
+| `RegisterForm.test.jsx` | renders; weak password, bad email and a script-like name are rejected before any API call; valid sign-up defaults to `client`; duplicate-email error shown |
+| `PasswordStrength.test.jsx` | strength meter label for each level |
+| `Dashboard.test.jsx` | role-based navigation: client, freelancer and admin each see only their own tabs, and an admin triggers no gig or booking requests |
+| `AdminUsers.test.jsx` | user list, role filter and search; detail page; delete only after confirmation; refused deletes shown; no delete option for your own account |
+| `password.test.js` | password rule: accepted case plus too short, missing upper/lower/number, too long |
+| `api.test.js` | `4xx` messages shown; `429` friendly message; `5xx` never leaks server internals; `401` on a protected route signs the user out |
+
 ## Demonstration Video
 
 Youtube Video Link: https://youtu.be/LDcBwhAfzEg

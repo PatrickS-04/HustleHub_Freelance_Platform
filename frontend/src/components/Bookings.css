@@ -1,0 +1,388 @@
+/* Filter chips */
+.chip-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chip-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip-tab:hover {
+  color: var(--text-h);
+}
+
+.chip-tab.active {
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: transparent;
+}
+
+.chip-tab:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.chip-count {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding-inline: 6px;
+  box-sizing: border-box;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-h);
+  background: var(--pill);
+  border-radius: 999px;
+}
+
+.notice {
+  min-height: 20px;
+  margin: 0 0 10px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+/* Status chips for the new states */
+.status-pending {
+  color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.status-accepted {
+  color: var(--accent-ink);
+  background: var(--accent-bg);
+}
+
+.status-declined,
+.status-cancelled {
+  color: var(--err);
+  background: var(--err-bg);
+}
+
+/* Three-dot progress track */
+.track {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track li {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  margin-right: 18px;
+  border: 2px solid var(--text);
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+.track li:last-child {
+  margin-right: 0;
+}
+
+.track li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 12px;
+  width: 18px;
+  height: 2px;
+  background: var(--text);
+  opacity: 0.6;
+}
+
+.track li.done,
+.track li.current {
+  opacity: 1;
+  background: var(--accent);
+  border-color: var(--text-h);
+}
+
+.track li.done:not(:last-child)::after {
+  background: var(--text-h);
+  opacity: 1;
+}
+
+.track li.current {
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Row actions */
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Review stars shown in the bookings list */
+.review-stars {
+  letter-spacing: 1px;
+  color: var(--accent-ink);
+}
+
+.review-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 13px;
+  background: var(--pill);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Bookings list ---------- */
+.booking-group {
+  margin-bottom: 20px;
+}
+
+.group-title {
+  display: flex;
+  grid-column: 1 / 3; /* spans the date and title columns */
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.booking-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Rows and the header share one set of fixed column widths, so every column
+   lines up from row to row: date | title + people | status | amount | actions.
+   The coloured rail on the left shows the stage at a glance. */
+.booking,
+.booking-head {
+  --cols: 52px minmax(0, 1fr) 128px 96px 232px;
+  display: grid;
+  grid-template-columns: var(--cols);
+  column-gap: 20px;
+}
+
+.booking-head {
+  align-items: center;
+  padding: 0 0 8px 21px; /* 3px rail + 18px row padding, so it matches the rows */
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.booking-head span:nth-child(3) {
+  text-align: right;
+}
+
+.booking {
+  --rail: var(--border);
+  align-items: center;
+  row-gap: 6px;
+  padding: 11px 0 11px 18px;
+  border-top: 1px solid var(--border);
+  border-left: 3px solid var(--rail);
+}
+
+.booking-list .booking:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.rail-pending {
+  --rail: var(--warn);
+}
+.rail-accepted {
+  --rail: var(--accent-ink);
+}
+.rail-completed {
+  --rail: var(--ok);
+}
+.rail-declined,
+.rail-cancelled {
+  --rail: var(--err);
+}
+
+/* Calendar-style start date */
+.b-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  text-align: center;
+  line-height: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+.b-month {
+  width: 100%;
+  padding: 3px 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--on-accent);
+  background: var(--rail);
+}
+
+.b-day {
+  padding: 5px 0 2px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.b-year {
+  padding-bottom: 4px;
+  font-size: 9px;
+  color: var(--text);
+}
+
+.b-title {
+  margin: 0 0 3px;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+.b-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.avatar.xs {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  border-width: 1.5px;
+  border-radius: 5px;
+}
+
+.b-tx {
+  padding: 1px 7px;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  background: var(--code-bg);
+  border-radius: var(--r-sm, 3px);
+}
+
+.b-note {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text);
+}
+
+.b-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.b-amount {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-h);
+}
+
+.booking .row-actions {
+  justify-content: flex-end;
+}
+
+.booking .row-actions button {
+  padding: 6px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Narrower: the heading keeps just its title; the column labels go */
+@media (max-width: 1100px) {
+  .booking-head {
+    display: block;
+    padding-left: 0;
+  }
+
+  .booking-head span {
+    display: none;
+  }
+
+  .booking {
+    --cols: 52px minmax(0, 1fr) 120px 90px;
+  }
+
+  .b-status {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .b-amount {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .booking .row-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .booking {
+    --cols: 52px minmax(0, 1fr);
+    column-gap: 14px;
+    padding-left: 12px;
+  }
+
+  .b-status,
+  .b-amount,
+  .booking .row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .b-status {
+    grid-row: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .b-amount {
+    grid-row: auto;
+    text-align: left;
+  }
+}

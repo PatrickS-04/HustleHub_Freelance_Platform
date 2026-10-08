@@ -1,0 +1,30 @@
+.gig-manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.gig-card .gig-manage button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+/* A paused gig is dimmed so it is obvious clients can't see it */
+.gig-card.paused {
+  opacity: 0.7;
+  border-style: dashed;
+}
+
+.status-paused {
+  color: var(--text);
+  background: var(--code-bg);
+}
+
+.gig-card .gig-manage .danger-text {
+  color: var(--err);
+}
+
+.gig-card .gig-manage .danger-text:hover {
+  border-color: var(--err);
+}

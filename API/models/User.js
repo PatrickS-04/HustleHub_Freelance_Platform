@@ -1,30 +1,17 @@
-// In-memory storage
-// This will be swapped for a MongoDB (Mongoose) model in a later part
+const mongoose = require("mongoose");
 
-const users = [];
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
+    email: { type: String, required: true, unique: true, trim: true, lowercase: true, maxlength: 254 },
+    // Never returned by queries unless explicitly asked for with .select("+passwordHash").
+    passwordHash: { type: String, required: true, select: false },
+    role: { type: String, enum: ["client", "freelancer", "admin"], default: "client" },
+    // Tokens issued before this are rejected, so changing the password signs
+    // out every other session (see requireAuth).
+    passwordChangedAt: Date,
+  },
+  { timestamps: true }
+);
 
-let nextId = 1;
-
-function findByEmail(email) {
-  return users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-}
-
-function findById(id) {
-  return users.find((u) => u.id === id);
-}
-
-function createUser({ name, email, passwordHash, role }) {
-  const user = {
-    id: nextId++,
-    name,
-    email,
-    passwordHash,
-    role: role || "client", // "client" | "freelancer" | "admin"
-    createdAt: new Date().toISOString(),
-  };
-  users.push(user);
-  return user;
-}
-
-// `users` stays module-private - callers go through the accessors above.
-module.exports = { findByEmail, findById, createUser };
+module.exports = mongoose.model("User", userSchema);

@@ -1,0 +1,58 @@
+# Command:  npm run test:run -- --reporter=verbose
+# Result:   7 test files, 46 tests, 0 failures
+
+
+ RUN  v5.0.3 frontend
+
+ ✓ src/utils/password.test.js > passwordProblem > accepts a password that meets the rule
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is too short
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing an uppercase letter
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing a lowercase letter
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing a number
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is too long
+ ✓ src/services/api.test.js > api client > sends credentials as JSON with the cookie included
+ ✓ src/services/api.test.js > api client > shows the API message for 4xx errors
+ ✓ src/services/api.test.js > api client > maps 429 to a friendly rate-limit message
+ ✓ src/services/api.test.js > api client > never shows server internals for 5xx errors
+ ✓ src/services/api.test.js > api client > reports an unreachable server
+ ✓ src/services/api.test.js > api client > signs the user out when a protected request returns 401
+ ✓ src/services/api.test.js > api client > does not sign out on a 401 from login or the startup session check
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > renders nothing for an empty password
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates abc as Too weak
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates abcdefgh as Weak
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefgh as Fair
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefg1 as Good
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefg1! as Strong
+ ✓ src/components/LoginForm.test.jsx > LoginForm > renders the email and password fields and the submit button
+ ✓ src/components/LoginForm.test.jsx > LoginForm > shows the notice it is given (e.g. why the user was signed out)
+ ✓ src/components/LoginForm.test.jsx > LoginForm > toggles password visibility
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > renders the registration fields
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > lists every user with name, email and role
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > filters by role using the chips
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > shows a client the browse, bookings and spending tabs
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > shows a freelancer the gigs, bookings and earnings tabs
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > gives an admin only user management and settings, and loads no gigs or bookings
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > moves between tabs when a tab is clicked
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > logs out through the API and tells the app
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > filters by name or email using the search box
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > shows the API error when the list cannot be loaded
+ ✓ src/components/LoginForm.test.jsx > LoginForm > sends trimmed credentials and passes the user up on success
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > opens a user detail page and goes back
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects a weak password without calling the API
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > deletes a user only after confirmation and removes them from the list
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > keeps the user when the delete is cancelled
+ ✓ src/components/LoginForm.test.jsx > LoginForm > shows the API error and clears the password on a failed login
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > shows the API's reason when a delete is refused
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > does not offer to delete the admin's own account
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects an invalid email without calling the API
+ ✓ src/components/LoginForm.test.jsx > LoginForm > pauses the button after the API rate-limits the user (429)
+ ✓ src/components/LoginForm.test.jsx > LoginForm > switches to registration
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects a name containing script characters
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > registers a valid user as a client by default
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > shows the API error when the email is already taken
+
+ Test Files  7 passed (7)
+      Tests  46 passed (46)
+   
+   Duration  5.05s (tests 53%, environment 34%, setup 6%, transform 4%, import 3%)
+
