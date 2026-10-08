@@ -176,7 +176,7 @@ function Dashboard({ user: authUser, onLogout }) {
   } else if (view === 'spending' && !isFreelancer) {
     screen = <Spending bookings={bookings} gigs={gigs} />
   } else if (view === 'earnings' && isFreelancer) {
-    screen = <Earnings bookings={bookings} />
+    screen = <Earnings />
   } else if (view === 'overview') {
     screen = (
       <Overview
@@ -257,7 +257,6 @@ function Dashboard({ user: authUser, onLogout }) {
           </p>
         )}
         {screen}
-        <p className="sample-note">Showing sample data.</p>
       </main>
 
       {secondsLeft !== null && (

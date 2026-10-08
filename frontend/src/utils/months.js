@@ -1,17 +1,29 @@
-// Last six months ending at `now`: placeholder `history` (5 values, oldest
-// first) for the earlier months, plus real bookings added by start-date month.
-export function monthlySeries(bookings, history, now) {
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+
+// Six months of totals from `totals` ({ 'YYYY-MM': amount }), grouped by the
+// booking's start date. Bookings start today or later, so the window ends at
+// the latest month with data, or the current month if that is later.
+export function monthlySeries(totals, now) {
+  const latest = Object.keys(totals).sort().pop()
+  const current = monthKey(now)
+  const end = latest && latest > current ? latest : current
+  const [year, month] = end.split('-').map(Number)
+
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(year, month - 1 - (5 - i), 1)
+    const key = monthKey(d)
     return {
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+      key,
       label: d.toLocaleString('en-US', { month: 'short' }),
-      value: i < 5 ? history[i] : 0,
+      value: totals[key] || 0,
     }
   })
-  bookings.forEach((b) => {
-    const month = months.find((m) => m.key === b.date.slice(0, 7))
-    if (month) month.value += b.price
-  })
-  return months
 }
+
+// { 'YYYY-MM': total price } for a list of bookings.
+export const totalsByMonth = (bookings) =>
+  bookings.reduce((acc, b) => {
+    const key = b.date.slice(0, 7)
+    acc[key] = (acc[key] || 0) + b.price
+    return acc
+  }, {})
