@@ -64,8 +64,10 @@ jobs:
           MONGO_URL: mongodb://localhost:27017/hustlehub-ci
           CORS_ORIGIN: https://localhost:5173
           APP_NAME: HustleHubPlusAPI
-          # Newman has no cookie jar, so the login/register response must
-          # echo the token in the body for /me to be testable.
+          # The collection authenticates with bearer tokens (it disables the
+          # cookie jar per request), so register/login must echo the token in
+          # the body. The API starts fresh each run: the rate limiters are
+          # per process, and the collection uses up some of their allowance.
           EXPOSE_TOKEN_IN_BODY: "true"
         run: |
           mkdir -p certs
@@ -90,7 +92,8 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          # Vitest 5 and jsdom 30 need Node 22+ (Node 20 crashes loading undici).
+          node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -98,6 +101,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:run
 
       - name: Build
         run: npm run build
