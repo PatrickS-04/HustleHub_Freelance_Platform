@@ -72,6 +72,8 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
   const [notice, setNotice] = useState('')
   const [receipt, setReceipt] = useState(null)
   const [reviewing, setReviewing] = useState(null)
+  // Id of the booking whose status change is in flight (its buttons are disabled).
+  const [busy, setBusy] = useState(null)
 
   const isFreelancer = role === 'freelancer'
   const actionsFor = (b) => STATUS_ACTIONS[role][b.status] || []
@@ -85,13 +87,18 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
     return () => clearTimeout(t)
   }, [notice])
 
-  function apply(booking, action) {
-    const ok = onStatus(booking.id, action.to)
-    setNotice(
-      ok
-        ? `${booking.transactionId} ${VERB[action.to]}.`
-        : 'That change is no longer available for this booking.',
-    )
+  // The API has the final say: if the booking changed in the meantime it
+  // answers 409 with a reason, which is shown instead.
+  async function apply(booking, action) {
+    setBusy(booking.id)
+    try {
+      await onStatus(booking.id, action.to)
+      setNotice(`${booking.transactionId} ${VERB[action.to]}.`)
+    } catch (err) {
+      setNotice(err.message)
+    } finally {
+      setBusy(null)
+    }
   }
 
   function handleAction(booking, action) {
@@ -189,6 +196,7 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
                         key={a.to}
                         type="button"
                         className={a.primary ? 'btn-primary' : 'btn-outline'}
+                        disabled={busy === b.id}
                         onClick={() => handleAction(b, a)}
                       >
                         {a.label}
@@ -232,10 +240,9 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
         <ReviewModal
           booking={reviewing}
           onClose={() => setReviewing(null)}
-          onSubmit={(id, review) => {
-            const ok = onReview(id, review)
-            if (ok) setNotice('Thanks, your review was posted.')
-            return ok
+          onSubmit={async (id, review) => {
+            await onReview(id, review)
+            setNotice('Thanks, your review was posted.')
           }}
         />
       )}

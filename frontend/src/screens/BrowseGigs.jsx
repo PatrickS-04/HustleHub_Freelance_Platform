@@ -19,7 +19,7 @@ const SORT_OPTIONS = [
   { value: 'fastest', label: 'Fastest delivery' },
 ]
 
-function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
+function BrowseGigs({ user, gigs, reviews = [], onBooked }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [selected, setSelected] = useState(null)
@@ -142,8 +142,6 @@ function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
       {selected && (
         <BookingModal
           gig={selected}
-          user={user}
-          nextTransactionId={nextTransactionId}
           onClose={() => setSelected(null)}
           onBooked={onBooked}
         />

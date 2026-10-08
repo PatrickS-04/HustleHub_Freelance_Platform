@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as api from '../services/api'
-import { STATUS_ACTIONS, countsAsIncome, money } from '../constants'
-import { seedData } from '../data/placeholder'
+import { countsAsIncome, money } from '../constants'
 import ThemeToggle from './ThemeToggle'
 import Overview from '../screens/Overview'
 import BrowseGigs from '../screens/BrowseGigs'
@@ -38,29 +37,32 @@ function Dashboard({ user: authUser, onLogout }) {
   // The display name can be edited in Settings (placeholder only, no API yet).
   const [displayName, setDisplayName] = useState(authUser.name)
   const user = { ...authUser, name: displayName }
-  // Bookings are still sample data until they are wired to the API.
-  const [data, setData] = useState(() => ({ bookings: seedData(authUser).bookings }))
-  // Gigs come from the API: a freelancer gets their own (paused ones too),
-  // everyone else gets the live gigs they can browse.
+  // Gigs: a freelancer gets their own (paused ones too), everyone else gets the
+  // live gigs they can browse. Bookings: the API only ever returns the user's
+  // own (clients: ones they made, freelancers: ones on their gigs).
   const [gigs, setGigs] = useState([])
-  const [loadingGigs, setLoadingGigs] = useState(true)
+  const [bookings, setBookings] = useState([])
+  const [loadingData, setLoadingData] = useState(true)
   const [loadError, setLoadError] = useState('')
 
   // Unknown roles (e.g. admin) get the client view for now.
   const isFreelancer = user.role === 'freelancer'
   const tabs = isFreelancer ? FREELANCER_TABS : CLIENT_TABS
+  // GET /api/bookings/mine is for clients and freelancers only (403 otherwise).
+  const hasBookings = user.role === 'client' || isFreelancer
 
   useEffect(() => {
-    ;(isFreelancer ? api.listMyGigs() : api.listGigs())
-      .then(setGigs)
+    Promise.all([
+      isFreelancer ? api.listMyGigs() : api.listGigs(),
+      hasBookings ? api.listMyBookings() : [],
+    ])
+      .then(([g, b]) => {
+        setGigs(g)
+        setBookings(b)
+      })
       .catch((err) => setLoadError(err.message))
-      .finally(() => setLoadingGigs(false))
-  }, [isFreelancer])
-
-  // Only the logged-in user's own records are shown in their booking views.
-  const myBookings = data.bookings.filter((b) =>
-    isFreelancer ? b.freelancerId === user.id : b.clientId === user.id,
-  )
+      .finally(() => setLoadingData(false))
+  }, [isFreelancer, hasBookings])
 
   // Gig changes go to the API first; local state only updates once it succeeds.
   // Ownership is checked by the API (403 for someone else's gig). Errors are
@@ -77,43 +79,28 @@ function Dashboard({ user: authUser, onLogout }) {
     await api.deleteGig(id)
     setGigs((gs) => gs.filter((g) => g.id !== id))
   }
-  const addBooking = (booking) =>
-    setData((d) => ({ ...d, bookings: [booking, ...d.bookings] }))
+  // The booking (and its transaction) was already created by the API.
+  const addBooking = (booking) => setBookings((bs) => [booking, ...bs])
+  const replaceBooking = (booking) =>
+    setBookings((bs) => bs.map((b) => (b.id === booking.id ? booking : b)))
 
   // Renaming also updates the name stored on this user's gigs and bookings.
   function changeName(name) {
     setDisplayName(name)
     setGigs((gs) => gs.map((g) => (g.freelancerId === user.id ? { ...g, freelancerName: name } : g)))
-    setData((d) => ({
-      bookings: d.bookings.map((b) => ({
+    setBookings((bs) =>
+      bs.map((b) => ({
         ...b,
         clientName: b.clientId === user.id ? name : b.clientName,
         freelancerName: b.freelancerId === user.id ? name : b.freelancerName,
       })),
-    }))
+    )
   }
 
-  // A client can review their own completed booking once, with a 1-5 rating and
-  // an optional short comment.
-  function addReview(id, review) {
-    const booking = data.bookings.find((b) => b.id === id)
-    const valid =
-      booking &&
-      booking.clientId === user.id &&
-      booking.status === 'Completed' &&
-      !booking.review &&
-      Number.isInteger(review.rating) &&
-      review.rating >= 1 &&
-      review.rating <= 5 &&
-      typeof review.text === 'string' &&
-      review.text.length <= 300
-    if (!valid) return false
-    setData((d) => ({
-      bookings: d.bookings.map((b) =>
-        b.id === id ? { ...b, review: { ...review, when: 'Just now' } } : b,
-      ),
-    }))
-    return true
+  // A client can review their own completed booking once. The API checks the
+  // rating, the owner, the status and that it hasn't been reviewed already.
+  async function addReview(id, review) {
+    replaceBooking(await api.reviewBooking(id, review.rating, review.text))
   }
 
   // Reviews left by clients, shown on each gig's detail page.
@@ -121,27 +108,20 @@ function Dashboard({ user: authUser, onLogout }) {
     const [first, ...rest] = full.split(' ')
     return rest.length ? `${first} ${rest[rest.length - 1].charAt(0)}.` : first
   }
-  const gigReviews = data.bookings
+  const gigReviews = bookings
     .filter((b) => b.review)
     .map((b) => ({
       gigId: b.gigId,
       who: shortName(b.clientName),
       rating: b.review.rating,
       text: b.review.text,
-      when: b.review.when,
+      when: new Date(b.review.createdAt).toLocaleDateString('en-ZA'),
     }))
 
-  // Applies a status change only if it is an allowed transition for this role
-  // from the booking's current status. Returns whether it was applied.
-  function updateStatus(id, to) {
-    const booking = data.bookings.find((b) => b.id === id)
-    const allowed = booking && (STATUS_ACTIONS[user.role === 'freelancer' ? 'freelancer' : 'client'][booking.status] || [])
-    if (!allowed || !allowed.some((a) => a.to === to)) return false
-    setData((d) => ({
-      ...d,
-      bookings: d.bookings.map((b) => (b.id === id ? { ...b, status: to } : b)),
-    }))
-    return true
+  // The API decides whether this role may make this change from the booking's
+  // current status (409 with a reason if not). Errors go back to the screen.
+  async function updateStatus(id, to) {
+    replaceBooking(await api.updateBookingStatus(id, to))
   }
 
   // `reason` ('idle') tells the login screen why the user was signed out.
@@ -164,24 +144,18 @@ function Dashboard({ user: authUser, onLogout }) {
   })
 
   let screen
-  if (loadingGigs && view !== 'settings') {
+  if (loadingData && view !== 'settings') {
     screen = <p className="empty">Loading...</p>
   } else if (view === 'browse' && !isFreelancer) {
     screen = (
-      <BrowseGigs
-        user={user}
-        gigs={gigs}
-        reviews={gigReviews}
-        nextTransactionId={`TX-${1001 + data.bookings.length}`}
-        onBooked={addBooking}
-      />
+      <BrowseGigs user={user} gigs={gigs} reviews={gigReviews} onBooked={addBooking} />
     )
   } else if (view === 'bookings') {
     screen = isFreelancer ? (
-      <FreelancerBookings bookings={myBookings} onStatus={updateStatus} />
+      <FreelancerBookings bookings={bookings} onStatus={updateStatus} />
     ) : (
       <ClientBookings
-        bookings={myBookings}
+        bookings={bookings}
         goTo={setView}
         onStatus={updateStatus}
         onReview={addReview}
@@ -200,16 +174,16 @@ function Dashboard({ user: authUser, onLogout }) {
       />
     )
   } else if (view === 'spending' && !isFreelancer) {
-    screen = <Spending bookings={myBookings} gigs={gigs} />
+    screen = <Spending bookings={bookings} gigs={gigs} />
   } else if (view === 'earnings' && isFreelancer) {
-    screen = <Earnings bookings={myBookings} />
+    screen = <Earnings bookings={bookings} />
   } else if (view === 'overview') {
     screen = (
       <Overview
         user={user}
         isFreelancer={isFreelancer}
         gigs={gigs}
-        bookings={myBookings}
+        bookings={bookings}
         goTo={setView}
       />
     )
@@ -218,7 +192,7 @@ function Dashboard({ user: authUser, onLogout }) {
     screen = <AccessDenied onBack={() => setView('overview')} />
   }
 
-  const income = myBookings
+  const income = bookings
     .filter(countsAsIncome)
     .reduce((sum, b) => sum + b.price, 0)
   const activeTab = tabs.find((t) => t.id === view) || tabs[0]
@@ -269,7 +243,7 @@ function Dashboard({ user: authUser, onLogout }) {
           </div>
           <div className="strip-stat">
             <span>{isFreelancer ? 'Bookings' : 'Booked'}</span>
-            <strong>{myBookings.length}</strong>
+            <strong>{bookings.length}</strong>
           </div>
           <div className="strip-stat">
             <span>{isFreelancer ? 'Income' : 'Spent'}</span>
