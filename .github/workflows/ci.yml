@@ -64,8 +64,10 @@ jobs:
           MONGO_URL: mongodb://localhost:27017/hustlehub-ci
           CORS_ORIGIN: https://localhost:5173
           APP_NAME: HustleHubPlusAPI
-          # Newman has no cookie jar, so the login/register response must
-          # echo the token in the body for /me to be testable.
+          # The collection authenticates with bearer tokens (it disables the
+          # cookie jar per request), so register/login must echo the token in
+          # the body. The API starts fresh each run: the rate limiters are
+          # per process, and the collection uses up some of their allowance.
           EXPOSE_TOKEN_IN_BODY: "true"
         run: |
           mkdir -p certs
