@@ -7,6 +7,9 @@ const userSchema = new mongoose.Schema(
     // Never returned by queries unless explicitly asked for with .select("+passwordHash").
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ["client", "freelancer", "admin"], default: "client" },
+    // Tokens issued before this are rejected, so changing the password signs
+    // out every other session (see requireAuth).
+    passwordChangedAt: Date,
   },
   { timestamps: true }
 );

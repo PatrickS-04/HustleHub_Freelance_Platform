@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { money } from '../data/placeholder'
+import { money } from '../constants'
 import './ReceiptModal.css'
 
 // Printable receipt for a booking's transaction record. Rendered through a

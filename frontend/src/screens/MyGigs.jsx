@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CATEGORIES, CATEGORY_OPTIONS, money } from '../data/placeholder'
+import { CATEGORIES, CATEGORY_OPTIONS, money } from '../constants'
 import Select from '../components/Select'
 import ConfirmDialog from '../components/ConfirmDialog'
 import '../components/Bookings.css'
@@ -39,6 +39,7 @@ function MyGigs({ user, gigs, onCreate, onUpdate, onDelete }) {
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(null)
   const [notice, setNotice] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const mine = gigs.filter((g) => g.freelancerId === user.id)
   const update = (field) => (e) =>
@@ -70,7 +71,8 @@ function MyGigs({ user, gigs, onCreate, onUpdate, onDelete }) {
     window.scrollTo({ top: 0 })
   }
 
-  function handleSubmit(e) {
+  // Checked here for quick feedback; the API validates the same rules again.
+  async function handleSubmit(e) {
     e.preventDefault()
     const problem = validate(form)
     if (problem) return setError(problem)
@@ -83,28 +85,43 @@ function MyGigs({ user, gigs, onCreate, onUpdate, onDelete }) {
       deliveryDays: Number(form.deliveryDays),
     }
 
-    if (editing === 'new') {
-      onCreate({
-        id: `gig-${Date.now()}`,
-        ...fields,
-        freelancerId: user.id,
-        freelancerName: user.name,
-        rating: 5,
-        active: true,
-      })
-      setNotice('Gig published.')
-    } else if (onUpdate(editing, fields)) {
-      setNotice('Changes saved.')
-    } else {
-      setNotice('That gig could not be changed.')
+    setError('')
+    setSaving(true)
+    try {
+      if (editing === 'new') {
+        await onCreate(fields)
+        setNotice('Gig published.')
+      } else {
+        await onUpdate(editing, fields)
+        setNotice('Changes saved.')
+      }
+      closeForm()
+    } catch (err) {
+      // Keep the form open so nothing typed is lost.
+      setError(err.message)
+    } finally {
+      setSaving(false)
     }
-    closeForm()
   }
 
-  function togglePause(gig) {
+  async function togglePause(gig) {
     const next = !isActive(gig)
-    if (onUpdate(gig.id, { active: next })) {
+    try {
+      await onUpdate(gig.id, { active: next })
       setNotice(next ? 'Gig is live again.' : 'Gig paused and hidden from clients.')
+    } catch (err) {
+      setNotice(err.message)
+    }
+  }
+
+  async function confirmDelete() {
+    const gig = deleting
+    setDeleting(null)
+    try {
+      await onDelete(gig.id)
+      setNotice('Gig deleted.')
+    } catch (err) {
+      setNotice(err.message)
     }
   }
 
@@ -209,8 +226,8 @@ function MyGigs({ user, gigs, onCreate, onUpdate, onDelete }) {
             <button type="button" className="btn-outline" onClick={closeForm}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary">
-              {editing === 'new' ? 'Publish gig' : 'Save changes'}
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? 'Saving...' : editing === 'new' ? 'Publish gig' : 'Save changes'}
             </button>
           </div>
         </form>
@@ -255,10 +272,7 @@ function MyGigs({ user, gigs, onCreate, onUpdate, onDelete }) {
           message={`Delete "${deleting.title}"? Existing bookings keep their records, but clients will no longer see this gig.`}
           confirmLabel="Delete gig"
           onCancel={() => setDeleting(null)}
-          onConfirm={() => {
-            if (onDelete(deleting.id)) setNotice('Gig deleted.')
-            setDeleting(null)
-          }}
+          onConfirm={confirmDelete}
         />
       )}
     </>

@@ -1,36 +1,46 @@
-import { useState } from 'react'
-import { INCOME_HISTORY, countsAsIncome, money } from '../data/placeholder'
+import { useEffect, useState } from 'react'
+import { money } from '../constants'
+import { getIncome } from '../services/api'
 import { BarChart, DonutChart } from '../components/Charts'
 import { monthlySeries } from '../utils/months'
 
-function Earnings({ bookings: allBookings }) {
-  // Pending, declined and cancelled bookings earn nothing.
-  const bookings = allBookings.filter(countsAsIncome)
-  const total = bookings.reduce((s, b) => s + b.price, 0)
-  const paidOut = bookings
-    .filter((b) => b.status === 'Completed')
-    .reduce((s, b) => s + b.price, 0)
-  const pending = total - paidOut
+const tidy = (t) => {
+  const s = t.replace(/^I will /i, '')
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
-  // Income grouped per gig so the freelancer can see what earns the most.
-  const byGig = Object.values(
-    bookings.reduce((acc, b) => {
-      acc[b.gigId] ||= { title: b.gigTitle, count: 0, total: 0 }
-      acc[b.gigId].count += 1
-      acc[b.gigId].total += b.price
-      return acc
-    }, {}),
-  ).sort((a, b) => b.total - a.total)
+// Income summary from GET /api/income. The API works it out from this
+// freelancer's transaction records (filtered by the JWT, never a parameter):
+// only Accepted and Completed bookings count, refunded ones don't.
+function Earnings() {
+  const [income, setIncome] = useState(null)
+  const [error, setError] = useState('')
 
-  // Last six months: placeholder history plus real bookings by month.
+  // Fetched each time the tab opens, so it reflects the latest status changes.
+  useEffect(() => {
+    getIncome()
+      .then(setIncome)
+      .catch((err) => setError(err.message))
+  }, [])
+
   const [now] = useState(() => new Date())
-  const months = monthlySeries(bookings, INCOME_HISTORY, now)
+
+  if (error) {
+    return (
+      <p className="auth-error" role="alert">
+        {error}
+      </p>
+    )
+  }
+  if (!income) return <p className="empty">Loading...</p>
+
+  const { total, paidOut, inProgress, byMonth, byGig, transactions } = income
+  const months = monthlySeries(
+    Object.fromEntries(byMonth.map((m) => [m.month, m.total])),
+    now,
+  )
 
   // Top gigs by income; anything beyond the top four is grouped as "Other".
-  const tidy = (t) => {
-    const s = t.replace(/^I will /i, '')
-    return s.charAt(0).toUpperCase() + s.slice(1)
-  }
   const slices = byGig.slice(0, 4).map((g) => ({ label: tidy(g.title), value: g.total }))
   const rest = byGig.slice(4).reduce((s, g) => s + g.total, 0)
   if (rest > 0) slices.push({ label: 'Other', value: rest })
@@ -38,7 +48,7 @@ function Earnings({ bookings: allBookings }) {
   const stats = [
     { label: 'Total income', value: money(total) },
     { label: 'Paid out', value: money(paidOut) },
-    { label: 'In progress', value: money(pending) },
+    { label: 'In progress', value: money(inProgress) },
   ]
 
   return (
@@ -89,19 +99,19 @@ function Earnings({ bookings: allBookings }) {
       <div className="dash-grid earnings-lists">
         <section className="panel">
           <h2>Income transactions</h2>
-          {bookings.length === 0 ? (
+          {transactions.length === 0 ? (
             <p className="empty">No income yet.</p>
           ) : (
             <ul className="row-list">
-              {bookings.map((b) => (
-                <li className="row" key={b.id}>
+              {transactions.map((t) => (
+                <li className="row" key={t.reference}>
                   <div>
-                    <strong>{b.transactionId}</strong>
+                    <strong>{t.reference}</strong>
                     <span className="muted">
-                      {b.gigTitle} &middot; from {b.clientName}
+                      {t.gigTitle} &middot; from {t.clientName}
                     </span>
                   </div>
-                  <span className="job-budget">+ {money(b.price)}</span>
+                  <span className="job-budget">+ {money(t.amount)}</span>
                 </li>
               ))}
             </ul>
@@ -115,7 +125,7 @@ function Earnings({ bookings: allBookings }) {
           ) : (
             <ul className="row-list">
               {byGig.map((g) => (
-                <li className="row" key={g.title}>
+                <li className="row" key={g.gigId}>
                   <div>
                     <strong>{g.title}</strong>
                     <span className="muted">

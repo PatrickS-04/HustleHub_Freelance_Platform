@@ -490,12 +490,6 @@
   border-radius: 999px;
 }
 
-.sample-note {
-  margin-top: 22px;
-  font-size: 13px;
-  text-align: center;
-}
-
 /* ---- Browse / gig cards ---- */
 .filters {
   display: flex;

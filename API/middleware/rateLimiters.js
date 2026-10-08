@@ -32,10 +32,18 @@ function createRateLimiter({ windowMs, max, message, keyGenerator }) {
     keyGenerator: (req) => (req.user ? `user:${req.user.id}` : req.ip)
   });
 
+  // Per user: stops someone with a stolen session guessing the current password.
+  const passwordLimiter = createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: 'Too many password change attempts, please try again in 15 minutes.',
+    keyGenerator: (req) => (req.user ? `user:${req.user.id}` : req.ip)
+  });
+
   const globalLimiter = createRateLimiter({
     windowMs: 15 *60 * 1000,
     max: 300,
     message: 'Too many requests, please slow down and try again later.'
   });
 
-module.exports = { loginLimiter, registerLimiter, bookingLimiter, globalLimiter };
+module.exports = { loginLimiter, registerLimiter, bookingLimiter, passwordLimiter, globalLimiter };

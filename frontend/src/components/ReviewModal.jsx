@@ -9,6 +9,7 @@ function ReviewModal({ booking, onSubmit, onClose }) {
   const [hover, setHover] = useState(0)
   const [text, setText] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
@@ -16,16 +17,22 @@ function ReviewModal({ booking, onSubmit, onClose }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
       return setError('Please choose a star rating.')
     }
     if (text.length > 300) return setError('Comments must be 300 characters or fewer.')
-    if (!onSubmit(booking.id, { rating, text: text.trim() })) {
-      return setError('This booking can no longer be reviewed.')
+    setError('')
+    setSubmitting(true)
+    try {
+      await onSubmit(booking.id, { rating, text: text.trim() })
+      onClose()
+    } catch (err) {
+      // e.g. "This booking has already been reviewed." from the API.
+      setError(err.message)
+      setSubmitting(false)
     }
-    onClose()
   }
 
   const shown = hover || rating
@@ -95,8 +102,8 @@ function ReviewModal({ booking, onSubmit, onClose }) {
             <button type="button" className="btn-outline" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary">
-              Submit review
+            <button type="submit" className="btn-primary" disabled={submitting}>
+              {submitting ? 'Submitting...' : 'Submit review'}
             </button>
           </div>
         </form>

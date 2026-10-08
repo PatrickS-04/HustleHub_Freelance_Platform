@@ -107,6 +107,60 @@ async function login(req, res, next) {
   }
 }
 
+// Updates the logged-in user's display name. The user comes from the verified
+// JWT, so nobody can rename another account. Gigs and bookings look the name
+// up when they are read, so the new name shows everywhere straight away.
+async function updateMe(req, res, next) {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { name: req.body.name },
+      { returnDocument: "after", runValidators: true }
+    );
+    if (!user) return res.status(401).json({ error: "Authentication required." });
+
+    return res.status(200).json({
+      message: "Profile updated.",
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
+  } catch (err) {
+    if (err.name === "ValidationError") {
+      return res.status(400).json({ error: "Invalid profile data." });
+    }
+    next(err);
+  }
+}
+
+// Changes the logged-in user's password after checking the current one.
+// Every other session is signed out (requireAuth rejects tokens issued before
+// passwordChangedAt) and this one gets a fresh token so it stays logged in.
+async function changePassword(req, res, next) {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id).select("+passwordHash");
+    if (!user) return res.status(401).json({ error: "Authentication required." });
+
+    // 400 rather than 401: a 401 would make the frontend sign the user out.
+    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!matches) return res.status(400).json({ error: "Current password is incorrect." });
+
+    user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    // Whole seconds, to line up with the JWT `iat` claim.
+    user.passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+    await user.save();
+
+    const token = generateToken(user);
+    setAuthCookie(res, token);
+
+    return res.status(200).json({
+      message: "Password changed. Other sessions have been signed out.",
+      ...tokenInBody(token),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // The cookie is httpOnly, so only the server can remove it. Attributes must
 // match those used in setAuthCookie or the browser will not clear it.
 function logout(req, res) {
@@ -114,4 +168,4 @@ function logout(req, res) {
   return res.status(200).json({ message: "Logged out." });
 }
 
-module.exports = { register, login, logout };
+module.exports = { register, login, logout, updateMe, changePassword };

@@ -63,3 +63,36 @@ export const register = (name, email, password, role) =>
 export const logout = () => request('/api/auth/logout', { method: 'POST' })
 
 export const getMe = () => request('/api/auth/me')
+
+const send = (method, body) => ({ method, body: JSON.stringify(body) })
+
+// Only the display name can be changed; the API ignores anything else.
+export const updateMe = (name) => request('/api/auth/me', send('PATCH', { name })).then((d) => d.user)
+
+// The API replaces the auth cookie, so this session stays signed in while every
+// other session is signed out.
+export const changePassword = (currentPassword, newPassword) =>
+  request('/api/auth/password', send('PATCH', { currentPassword, newPassword }))
+
+// ---- Gigs ----
+// The owner is never sent: the API takes it from the JWT.
+export const listGigs = () => request('/api/gigs').then((d) => d.gigs)
+export const listMyGigs = () => request('/api/gigs/mine').then((d) => d.gigs)
+export const createGig = (fields) => request('/api/gigs', send('POST', fields)).then((d) => d.gig)
+export const updateGig = (id, patch) =>
+  request(`/api/gigs/${encodeURIComponent(id)}`, send('PATCH', patch)).then((d) => d.gig)
+export const deleteGig = (id) =>
+  request(`/api/gigs/${encodeURIComponent(id)}`, { method: 'DELETE' })
+
+// ---- Bookings ----
+// Only the gig, date and note are sent; price and parties come from the database.
+export const listMyBookings = () => request('/api/bookings/mine').then((d) => d.bookings)
+export const createBooking = (gigId, date, note) =>
+  request('/api/bookings', send('POST', { gigId, date, note })).then((d) => d.booking)
+export const updateBookingStatus = (id, status) =>
+  request(`/api/bookings/${encodeURIComponent(id)}/status`, send('PATCH', { status })).then((d) => d.booking)
+export const reviewBooking = (id, rating, text) =>
+  request(`/api/bookings/${encodeURIComponent(id)}/review`, send('POST', { rating, text })).then((d) => d.booking)
+
+// ---- Income (freelancers) ----
+export const getIncome = () => request('/api/income')

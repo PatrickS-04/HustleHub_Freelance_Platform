@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { currentTheme, setTheme } from '../theme'
 import PasswordStrength from '../components/PasswordStrength'
 import { passwordProblem } from '../utils/password'
+import { changePassword } from '../services/api'
 import '../components/Bookings.css'
 import './GigDetail.css'
 import './Settings.css'
@@ -26,10 +27,12 @@ function Settings({ user, onNameChange }) {
 
   const [name, setName] = useState(user.name)
   const [nameError, setNameError] = useState('')
+  const [savingName, setSavingName] = useState(false)
 
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' })
   const [showPw, setShowPw] = useState(false)
   const [pwError, setPwError] = useState('')
+  const [savingPw, setSavingPw] = useState(false)
 
   const list = NOTIFICATIONS[user.role === 'freelancer' ? 'freelancer' : 'client']
   const [prefs, setPrefs] = useState(() =>
@@ -48,19 +51,29 @@ function Settings({ user, onNameChange }) {
     setThemeState(next)
   }
 
-  function saveName(e) {
+  // Checked here for quick feedback; the API applies the same rule again.
+  async function saveName(e) {
     e.preventDefault()
     const trimmed = name.trim()
     if (!NAME_RULE.test(trimmed)) {
       return setNameError('Name must be 2-50 letters (spaces, hyphens and apostrophes are fine).')
     }
     setNameError('')
-    onNameChange(trimmed)
-    setName(trimmed)
-    setNotice('Display name updated.')
+    setSavingName(true)
+    try {
+      await onNameChange(trimmed)
+      setName(trimmed)
+      setNotice('Display name updated.')
+    } catch (err) {
+      setNameError(err.message)
+    } finally {
+      setSavingName(false)
+    }
   }
 
-  function savePassword(e) {
+  // Checked here for quick feedback; the API checks the current password and
+  // the same strength rule again.
+  async function savePassword(e) {
     e.preventDefault()
     if (!pw.current) return setPwError('Enter your current password.')
     const problem = passwordProblem(pw.next)
@@ -68,11 +81,20 @@ function Settings({ user, onNameChange }) {
     if (pw.next === pw.current) return setPwError('Choose a new password that differs from the current one.')
     if (pw.next !== pw.confirm) return setPwError('The new passwords do not match.')
 
-    // No API for this yet, so nothing is sent anywhere. The fields are cleared
-    // straight away so the password isn't kept in memory.
     setPwError('')
-    setPw({ current: '', next: '', confirm: '' })
-    setNotice('Password updated (demo only, not saved to the server).')
+    setSavingPw(true)
+    try {
+      const { message } = await changePassword(pw.current, pw.next)
+      // Cleared once sent so the passwords aren't kept in memory.
+      setPw({ current: '', next: '', confirm: '' })
+      setNotice(message)
+    } catch (err) {
+      // Only the current password is cleared, so the new one needn't be retyped.
+      setPw((p) => ({ ...p, current: '' }))
+      setPwError(err.message)
+    } finally {
+      setSavingPw(false)
+    }
   }
 
   const setField = (field) => (e) => setPw((p) => ({ ...p, [field]: e.target.value }))
@@ -139,8 +161,8 @@ function Settings({ user, onNameChange }) {
               </dl>
               <p className="muted settings-hint">Email and role can't be changed here.</p>
 
-              <button type="submit" className="btn-primary">
-                Save name
+              <button type="submit" className="btn-primary" disabled={savingName}>
+                {savingName ? 'Saving...' : 'Save name'}
               </button>
             </form>
           </section>
@@ -222,11 +244,11 @@ function Settings({ user, onNameChange }) {
               </p>
             )}
 
-            <button type="submit" className="btn-primary">
-              Update password
+            <button type="submit" className="btn-primary" disabled={savingPw}>
+              {savingPw ? 'Updating...' : 'Update password'}
             </button>
             <p className="muted settings-hint">
-              Demo only: the API has no change-password endpoint yet, so nothing is saved.
+              Changing your password signs you out on every other device.
             </p>
           </form>
         </section>

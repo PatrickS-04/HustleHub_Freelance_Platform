@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { SPEND_HISTORY, countsAsIncome, money } from '../data/placeholder'
+import { countsAsIncome, money } from '../constants'
 import { BarChart, DonutChart } from '../components/Charts'
-import { monthlySeries } from '../utils/months'
+import { monthlySeries, totalsByMonth } from '../utils/months'
 
 function Spending({ bookings: allBookings, gigs }) {
   // Pending, declined and cancelled bookings cost nothing.
@@ -13,7 +13,7 @@ function Spending({ bookings: allBookings, gigs }) {
   const committed = total - paid
 
   const [now] = useState(() => new Date())
-  const months = monthlySeries(bookings, SPEND_HISTORY, now)
+  const months = monthlySeries(totalsByMonth(bookings), now)
 
   // Spend grouped by the gig's category.
   const categoryOf = (b) => gigs.find((g) => g.id === b.gigId)?.category || 'Other'

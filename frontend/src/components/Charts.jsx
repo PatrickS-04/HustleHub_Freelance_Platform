@@ -1,4 +1,4 @@
-import { money } from '../data/placeholder'
+import { money } from '../constants'
 import './Charts.css'
 
 const short = (n) => (n >= 1000 ? `R ${+(n / 1000).toFixed(1)}k` : `R ${n}`)
