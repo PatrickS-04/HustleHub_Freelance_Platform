@@ -5,11 +5,12 @@ import { defineConfig, loadEnv } from 'vite'
 // The API only accepts the origin https://localhost:5173 (CORS + SameSite=Strict
 // cookie), so the dev server must run over HTTPS. Reuse the API's local cert.
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const api = env.VITE_API_URL || 'https://localhost:3443'
 
-  const https = {
+  // `vite build` serves nothing, so don't require the certs (they're absent in CI).
+  const https = command === 'build' ? undefined : {
     key: fs.readFileSync('../API/certs/key.pem'),
     cert: fs.readFileSync('../API/certs/cert.pem'),
   }
