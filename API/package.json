@@ -12,7 +12,8 @@
     "test:bookings": "node controllers/booking.check.js",
     "test:income": "node controllers/income.check.js",
     "test:sanitize": "node middleware/sanitize.check.js",
-    "test:api": "npx --yes newman run \"postman/HustleHub+ Part1.postman_collection.json\" --insecure"
+    "test:api": "npx --yes newman run \"postman/HustleHub+ Part2.postman_collection.json\" --insecure",
+    "test:api:part1": "npx --yes newman run \"postman/HustleHub+ Part1.postman_collection.json\" --insecure"
   },
   "overrides": {
     "qs": "6.16.0"
