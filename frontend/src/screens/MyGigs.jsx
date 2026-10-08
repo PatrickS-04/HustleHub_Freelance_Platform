@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CATEGORIES, CATEGORY_OPTIONS, money } from '../data/placeholder'
+import { CATEGORIES, CATEGORY_OPTIONS, money } from '../constants'
 import Select from '../components/Select'
 import ConfirmDialog from '../components/ConfirmDialog'
 import '../components/Bookings.css'

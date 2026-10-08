@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { logout } from '../services/api'
-import { STATUS_ACTIONS, countsAsIncome, money, seedData } from '../data/placeholder'
+import { STATUS_ACTIONS, countsAsIncome, money } from '../constants'
+import { seedData } from '../data/placeholder'
 import ThemeToggle from './ThemeToggle'
 import Overview from '../screens/Overview'
 import BrowseGigs from '../screens/BrowseGigs'

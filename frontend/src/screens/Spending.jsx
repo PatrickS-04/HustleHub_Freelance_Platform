@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { SPEND_HISTORY, countsAsIncome, money } from '../data/placeholder'
+import { countsAsIncome, money } from '../constants'
+import { SPEND_HISTORY } from '../data/placeholder'
 import { BarChart, DonutChart } from '../components/Charts'
 import { monthlySeries } from '../utils/months'
 

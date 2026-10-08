@@ -1,4 +1,5 @@
-import { activityFor, countsAsIncome, money } from '../data/placeholder'
+import { countsAsIncome, money } from '../constants'
+import { activityFor } from '../data/placeholder'
 
 function Overview({ user, isFreelancer, gigs, bookings, goTo }) {
   // Paused gigs don't count as live.

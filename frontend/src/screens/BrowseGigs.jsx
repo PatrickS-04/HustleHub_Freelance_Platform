@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FILTER_OPTIONS, money } from '../data/placeholder'
+import { FILTER_OPTIONS, money } from '../constants'
 import Select from '../components/Select'
 import BookingModal from './BookingModal'
 import GigDetail from './GigDetail'

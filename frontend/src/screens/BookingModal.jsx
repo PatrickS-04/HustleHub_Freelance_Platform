@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { money } from '../data/placeholder'
+import { money } from '../constants'
 import DatePicker from '../components/DatePicker'
 
 // Local date as YYYY-MM-DD (toISOString would give the UTC date, which can be

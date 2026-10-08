@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { STATUS_ACTIONS, STATUS_STEPS, money } from '../data/placeholder'
+import { STATUS_ACTIONS, STATUS_STEPS, money } from '../constants'
 import ConfirmDialog from './ConfirmDialog'
 import ReceiptModal from './ReceiptModal'
 import ReviewModal from './ReviewModal'

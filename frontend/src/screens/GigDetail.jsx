@@ -1,4 +1,5 @@
-import { gigDetails, money } from '../data/placeholder'
+import { money } from '../constants'
+import { gigDetails } from '../data/placeholder'
 import './GigDetail.css'
 
 const stars = (n) => '★'.repeat(n) + '☆'.repeat(5 - n)
