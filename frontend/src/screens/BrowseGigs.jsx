@@ -4,20 +4,18 @@ import Select from '../components/Select'
 import BookingModal from './BookingModal'
 import GigDetail from './GigDetail'
 
-// "recommended" keeps the original order (sort is stable, so 0 = unchanged).
+// "newest" keeps the API's order, newest first (sort is stable, so 0 = unchanged).
 const SORTS = {
-  recommended: () => 0,
+  newest: () => 0,
   'price-asc': (a, b) => a.price - b.price,
   'price-desc': (a, b) => b.price - a.price,
-  rating: (a, b) => b.rating - a.rating,
   fastest: (a, b) => a.deliveryDays - b.deliveryDays,
 }
 
 const SORT_OPTIONS = [
-  { value: 'recommended', label: 'Recommended' },
+  { value: 'newest', label: 'Newest first' },
   { value: 'price-asc', label: 'Price: low to high' },
   { value: 'price-desc', label: 'Price: high to low' },
-  { value: 'rating', label: 'Top rated' },
   { value: 'fastest', label: 'Fastest delivery' },
 ]
 
@@ -26,7 +24,7 @@ function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
   const [category, setCategory] = useState('All')
   const [selected, setSelected] = useState(null)
   const [detailId, setDetailId] = useState(null)
-  const [sort, setSort] = useState('recommended')
+  const [sort, setSort] = useState('newest')
 
   // Paused gigs are hidden from clients; your own gigs never show in browse.
   const available = gigs.filter((g) => g.active !== false && g.freelancerId !== user.id)
@@ -40,7 +38,7 @@ function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
           g.title.toLowerCase().includes(q) ||
           g.freelancerName.toLowerCase().includes(q)),
     )
-    .sort(SORTS[sort] || SORTS.recommended)
+    .sort(SORTS[sort] || SORTS.newest)
 
   const detailGig = gigs.find((g) => g.id === detailId)
 
@@ -111,7 +109,6 @@ function BrowseGigs({ user, gigs, reviews = [], nextTransactionId, onBooked }) {
                   <p className="gig-desc">{g.description}</p>
                   <div className="gig-meta">
                     <span>{g.freelancerName}</span>
-                    <span>&#9733; {g.rating.toFixed(1)}</span>
                   </div>
                   <div className="gig-foot">
                     <div>

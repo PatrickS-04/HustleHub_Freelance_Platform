@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { logout } from '../services/api'
+import { useEffect, useState } from 'react'
+import * as api from '../services/api'
 import { STATUS_ACTIONS, countsAsIncome, money } from '../constants'
 import { seedData } from '../data/placeholder'
 import ThemeToggle from './ThemeToggle'
@@ -38,35 +38,44 @@ function Dashboard({ user: authUser, onLogout }) {
   // The display name can be edited in Settings (placeholder only, no API yet).
   const [displayName, setDisplayName] = useState(authUser.name)
   const user = { ...authUser, name: displayName }
-  // Placeholder state; becomes API calls once the endpoints exist.
-  const [data, setData] = useState(() => seedData(authUser))
+  // Bookings are still sample data until they are wired to the API.
+  const [data, setData] = useState(() => ({ bookings: seedData(authUser).bookings }))
+  // Gigs come from the API: a freelancer gets their own (paused ones too),
+  // everyone else gets the live gigs they can browse.
+  const [gigs, setGigs] = useState([])
+  const [loadingGigs, setLoadingGigs] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   // Unknown roles (e.g. admin) get the client view for now.
   const isFreelancer = user.role === 'freelancer'
   const tabs = isFreelancer ? FREELANCER_TABS : CLIENT_TABS
+
+  useEffect(() => {
+    ;(isFreelancer ? api.listMyGigs() : api.listGigs())
+      .then(setGigs)
+      .catch((err) => setLoadError(err.message))
+      .finally(() => setLoadingGigs(false))
+  }, [isFreelancer])
 
   // Only the logged-in user's own records are shown in their booking views.
   const myBookings = data.bookings.filter((b) =>
     isFreelancer ? b.freelancerId === user.id : b.clientId === user.id,
   )
 
-  const addGig = (gig) => setData((d) => ({ ...d, gigs: [gig, ...d.gigs] }))
-
-  // Freelancers may only change or remove their own gigs. Both return whether
-  // the change was applied.
-  const ownsGig = (id) => data.gigs.some((g) => g.id === id && g.freelancerId === user.id)
-  function updateGig(id, patch) {
-    if (!ownsGig(id)) return false
-    setData((d) => ({
-      ...d,
-      gigs: d.gigs.map((g) => (g.id === id ? { ...g, ...patch } : g)),
-    }))
-    return true
+  // Gig changes go to the API first; local state only updates once it succeeds.
+  // Ownership is checked by the API (403 for someone else's gig). Errors are
+  // thrown so the screen can show the API's message.
+  async function addGig(fields) {
+    const gig = await api.createGig(fields)
+    setGigs((gs) => [gig, ...gs])
   }
-  function deleteGig(id) {
-    if (!ownsGig(id)) return false
-    setData((d) => ({ ...d, gigs: d.gigs.filter((g) => g.id !== id) }))
-    return true
+  async function updateGig(id, patch) {
+    const gig = await api.updateGig(id, patch)
+    setGigs((gs) => gs.map((g) => (g.id === id ? gig : g)))
+  }
+  async function deleteGig(id) {
+    await api.deleteGig(id)
+    setGigs((gs) => gs.filter((g) => g.id !== id))
   }
   const addBooking = (booking) =>
     setData((d) => ({ ...d, bookings: [booking, ...d.bookings] }))
@@ -74,8 +83,8 @@ function Dashboard({ user: authUser, onLogout }) {
   // Renaming also updates the name stored on this user's gigs and bookings.
   function changeName(name) {
     setDisplayName(name)
+    setGigs((gs) => gs.map((g) => (g.freelancerId === user.id ? { ...g, freelancerName: name } : g)))
     setData((d) => ({
-      gigs: d.gigs.map((g) => (g.freelancerId === user.id ? { ...g, freelancerName: name } : g)),
       bookings: d.bookings.map((b) => ({
         ...b,
         clientName: b.clientId === user.id ? name : b.clientName,
@@ -85,7 +94,7 @@ function Dashboard({ user: authUser, onLogout }) {
   }
 
   // A client can review their own completed booking once, with a 1-5 rating and
-  // an optional short comment. Nudges the gig's rating toward the new score.
+  // an optional short comment.
   function addReview(id, review) {
     const booking = data.bookings.find((b) => b.id === id)
     const valid =
@@ -100,11 +109,6 @@ function Dashboard({ user: authUser, onLogout }) {
       review.text.length <= 300
     if (!valid) return false
     setData((d) => ({
-      gigs: d.gigs.map((g) =>
-        g.id === booking.gigId
-          ? { ...g, rating: Math.round(((g.rating * 9 + review.rating) / 10) * 10) / 10 }
-          : g,
-      ),
       bookings: d.bookings.map((b) =>
         b.id === id ? { ...b, review: { ...review, when: 'Just now' } } : b,
       ),
@@ -144,7 +148,7 @@ function Dashboard({ user: authUser, onLogout }) {
   async function handleLogout(reason) {
     setLoading(true)
     try {
-      await logout()
+      await api.logout()
     } finally {
       // Clear local state even if the request failed; the server cookie
       // expires on its own after an hour.
@@ -160,11 +164,13 @@ function Dashboard({ user: authUser, onLogout }) {
   })
 
   let screen
-  if (view === 'browse' && !isFreelancer) {
+  if (loadingGigs && view !== 'settings') {
+    screen = <p className="empty">Loading...</p>
+  } else if (view === 'browse' && !isFreelancer) {
     screen = (
       <BrowseGigs
         user={user}
-        gigs={data.gigs}
+        gigs={gigs}
         reviews={gigReviews}
         nextTransactionId={`TX-${1001 + data.bookings.length}`}
         onBooked={addBooking}
@@ -187,14 +193,14 @@ function Dashboard({ user: authUser, onLogout }) {
     screen = (
       <MyGigs
         user={user}
-        gigs={data.gigs}
+        gigs={gigs}
         onCreate={addGig}
         onUpdate={updateGig}
         onDelete={deleteGig}
       />
     )
   } else if (view === 'spending' && !isFreelancer) {
-    screen = <Spending bookings={myBookings} gigs={data.gigs} />
+    screen = <Spending bookings={myBookings} gigs={gigs} />
   } else if (view === 'earnings' && isFreelancer) {
     screen = <Earnings bookings={myBookings} />
   } else if (view === 'overview') {
@@ -202,7 +208,7 @@ function Dashboard({ user: authUser, onLogout }) {
       <Overview
         user={user}
         isFreelancer={isFreelancer}
-        gigs={data.gigs}
+        gigs={gigs}
         bookings={myBookings}
         goTo={setView}
       />
@@ -271,6 +277,11 @@ function Dashboard({ user: authUser, onLogout }) {
           </div>
         </section>
 
+        {loadError && (
+          <p className="auth-error" role="alert">
+            {loadError}
+          </p>
+        )}
         {screen}
         <p className="sample-note">Showing sample data.</p>
       </main>
