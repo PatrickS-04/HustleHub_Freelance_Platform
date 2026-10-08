@@ -26,6 +26,7 @@ function Settings({ user, onNameChange }) {
 
   const [name, setName] = useState(user.name)
   const [nameError, setNameError] = useState('')
+  const [savingName, setSavingName] = useState(false)
 
   const [pw, setPw] = useState({ current: '', next: '', confirm: '' })
   const [showPw, setShowPw] = useState(false)
@@ -48,16 +49,24 @@ function Settings({ user, onNameChange }) {
     setThemeState(next)
   }
 
-  function saveName(e) {
+  // Checked here for quick feedback; the API applies the same rule again.
+  async function saveName(e) {
     e.preventDefault()
     const trimmed = name.trim()
     if (!NAME_RULE.test(trimmed)) {
       return setNameError('Name must be 2-50 letters (spaces, hyphens and apostrophes are fine).')
     }
     setNameError('')
-    onNameChange(trimmed)
-    setName(trimmed)
-    setNotice('Display name updated.')
+    setSavingName(true)
+    try {
+      await onNameChange(trimmed)
+      setName(trimmed)
+      setNotice('Display name updated.')
+    } catch (err) {
+      setNameError(err.message)
+    } finally {
+      setSavingName(false)
+    }
   }
 
   function savePassword(e) {
@@ -139,8 +148,8 @@ function Settings({ user, onNameChange }) {
               </dl>
               <p className="muted settings-hint">Email and role can't be changed here.</p>
 
-              <button type="submit" className="btn-primary">
-                Save name
+              <button type="submit" className="btn-primary" disabled={savingName}>
+                {savingName ? 'Saving...' : 'Save name'}
               </button>
             </form>
           </section>

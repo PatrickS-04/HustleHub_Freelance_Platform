@@ -5,6 +5,12 @@ const { STATUSES } = require("../models/Booking");
 
 const fail = (res, message) => res.status(400).json({ error: message });
 
+// Letters plus spaces, apostrophes and hyphens, so no markup can get through.
+const NAME_ERROR = "Name is required and must be 2-50 letters.";
+const isValidName = (name) =>
+  validator.isLength(name, { min: 2, max: 50 }) &&
+  validator.isAlpha(name, "en-US", { ignore: " '-" });
+
 function validateRegister(req, res, next) {
   // try/catch so any unexpected error during validation returns a 400, never a 500.
   try {
@@ -18,12 +24,7 @@ function validateRegister(req, res, next) {
     // and surfaces as a generic 500 instead of a 400.
     const role = typeof b.role === "string" ? b.role.trim() : null;
 
-    if (
-      !validator.isLength(name, { min: 2, max: 50 }) ||
-      !validator.isAlpha(name, "en-US", { ignore: " '-" })
-    ) {
-      return fail(res, "Name is required and must be 2-50 letters.");
-    }
+    if (!isValidName(name)) return fail(res, NAME_ERROR);
 
     if (!validator.isEmail(email) || !validator.isLength(email, { max: 254 })) {
       return fail(res, "A valid email address is required.");
@@ -73,6 +74,15 @@ function validateLogin(req, res, next) {
   } catch (err) {
     return fail(res, "Invalid request data.");
   }
+}
+
+// Profile update: only the display name can change. Email and role are
+// dropped when the body is rebuilt, so they can't be changed through here.
+function validateProfile(req, res, next) {
+  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  if (!isValidName(name)) return fail(res, NAME_ERROR);
+  req.body = { name };
+  next();
 }
 
 // Gig create (all fields required) and update (partial: only the fields sent).
@@ -198,6 +208,7 @@ function validateReview(req, res, next) {
 module.exports = {
   validateRegister,
   validateLogin,
+  validateProfile,
   validateGig,
   validateId,
   validateBooking,

@@ -66,6 +66,9 @@ export const getMe = () => request('/api/auth/me')
 
 const send = (method, body) => ({ method, body: JSON.stringify(body) })
 
+// Only the display name can be changed; the API ignores anything else.
+export const updateMe = (name) => request('/api/auth/me', send('PATCH', { name })).then((d) => d.user)
+
 // ---- Gigs ----
 // The owner is never sent: the API takes it from the JWT.
 export const listGigs = () => request('/api/gigs').then((d) => d.gigs)

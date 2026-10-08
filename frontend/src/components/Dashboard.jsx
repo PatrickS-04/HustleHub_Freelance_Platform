@@ -34,7 +34,7 @@ const FREELANCER_TABS = [
 function Dashboard({ user: authUser, onLogout }) {
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState('overview')
-  // The display name can be edited in Settings (placeholder only, no API yet).
+  // The display name can be edited in Settings (saved through PATCH /api/auth/me).
   const [displayName, setDisplayName] = useState(authUser.name)
   const user = { ...authUser, name: displayName }
   // Gigs: a freelancer gets their own (paused ones too), everyone else gets the
@@ -84,8 +84,10 @@ function Dashboard({ user: authUser, onLogout }) {
   const replaceBooking = (booking) =>
     setBookings((bs) => bs.map((b) => (b.id === booking.id ? booking : b)))
 
-  // Renaming also updates the name stored on this user's gigs and bookings.
-  function changeName(name) {
+  // Saved on the server first. The API reads names live when it returns gigs
+  // and bookings, so the local copies are updated here to match without a reload.
+  async function changeName(newName) {
+    const { name } = await api.updateMe(newName)
     setDisplayName(name)
     setGigs((gs) => gs.map((g) => (g.freelancerId === user.id ? { ...g, freelancerName: name } : g)))
     setBookings((bs) =>
