@@ -1,6 +1,6 @@
 // Run: node middleware/auth.check.js
 const assert = require("node:assert");
-const { tokenFromRequest } = require("./auth");
+const { tokenFromRequest, issuedBeforePasswordChange } = require("./auth");
 
 // cookie wins over header
 assert.strictEqual(
@@ -19,5 +19,11 @@ assert.strictEqual(
 );
 // nothing -> null
 assert.strictEqual(tokenFromRequest({ headers: {} }), null);
+
+// tokens issued before a password change are rejected, the new one is not
+const changedAt = new Date(1_700_000_000_000);
+assert.ok(issuedBeforePasswordChange({ iat: 1_699_999_999 }, { passwordChangedAt: changedAt }));
+assert.ok(!issuedBeforePasswordChange({ iat: 1_700_000_000 }, { passwordChangedAt: changedAt }));
+assert.ok(!issuedBeforePasswordChange({ iat: 1 }, {})); // never changed
 
 console.log("auth.check.js passed");

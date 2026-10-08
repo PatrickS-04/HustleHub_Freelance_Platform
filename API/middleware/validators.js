@@ -11,6 +11,18 @@ const isValidName = (name) =>
   validator.isLength(name, { min: 2, max: 50 }) &&
   validator.isAlpha(name, "en-US", { ignore: " '-" });
 
+const PASSWORD_ERROR =
+  "Password is required and must be 8-128 chars with an uppercase, lowercase and a number.";
+const isStrongPassword = (password) =>
+  validator.isLength(password, { min: 8, max: 128 }) &&
+  validator.isStrongPassword(password, {
+    minLength: 8,
+    minLowercase: 1,
+    minUppercase: 1,
+    minNumbers: 1,
+    minSymbols: 0,
+  });
+
 function validateRegister(req, res, next) {
   // try/catch so any unexpected error during validation returns a 400, never a 500.
   try {
@@ -30,21 +42,7 @@ function validateRegister(req, res, next) {
       return fail(res, "A valid email address is required.");
     }
 
-    if (
-      !validator.isLength(password, { min: 8, max: 128 }) ||
-      !validator.isStrongPassword(password, {
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 0,
-      })
-    ) {
-      return fail(
-        res,
-        "Password is required and must be 8-128 chars with an uppercase, lowercase and a number."
-      );
-    }
+    if (!isStrongPassword(password)) return fail(res, PASSWORD_ERROR);
 
     if (role === null || !validator.isIn(role, ["client", "freelancer"])) {
       return fail(res, "Role must be 'client' or 'freelancer'.");
@@ -82,6 +80,25 @@ function validateProfile(req, res, next) {
   const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
   if (!isValidName(name)) return fail(res, NAME_ERROR);
   req.body = { name };
+  next();
+}
+
+// Password change: the current password (checked against the hash in the
+// controller) and a new one that meets the registration rule and differs.
+function validatePasswordChange(req, res, next) {
+  const b = req.body || {};
+  const currentPassword = typeof b.currentPassword === "string" ? b.currentPassword : "";
+  const newPassword = typeof b.newPassword === "string" ? b.newPassword : "";
+
+  if (!currentPassword || currentPassword.length > 128) {
+    return fail(res, "Enter your current password.");
+  }
+  if (!isStrongPassword(newPassword)) return fail(res, PASSWORD_ERROR);
+  if (newPassword === currentPassword) {
+    return fail(res, "Choose a new password that differs from the current one.");
+  }
+
+  req.body = { currentPassword, newPassword };
   next();
 }
 
@@ -209,6 +226,7 @@ module.exports = {
   validateRegister,
   validateLogin,
   validateProfile,
+  validatePasswordChange,
   validateGig,
   validateId,
   validateBooking,

@@ -69,6 +69,11 @@ const send = (method, body) => ({ method, body: JSON.stringify(body) })
 // Only the display name can be changed; the API ignores anything else.
 export const updateMe = (name) => request('/api/auth/me', send('PATCH', { name })).then((d) => d.user)
 
+// The API replaces the auth cookie, so this session stays signed in while every
+// other session is signed out.
+export const changePassword = (currentPassword, newPassword) =>
+  request('/api/auth/password', send('PATCH', { currentPassword, newPassword }))
+
 // ---- Gigs ----
 // The owner is never sent: the API takes it from the JWT.
 export const listGigs = () => request('/api/gigs').then((d) => d.gigs)

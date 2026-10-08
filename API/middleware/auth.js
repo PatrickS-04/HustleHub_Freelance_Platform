@@ -13,6 +13,13 @@ function tokenFromRequest(req) {
   return header.startsWith("Bearer ") ? header.slice(7) : null;
 }
 
+// JWT `iat` is in whole seconds and passwordChangedAt is stored rounded down to
+// the second, so the token issued in the same request as the change stays valid.
+// ponytail: second granularity - a token minted in that same second elsewhere survives; store a token version if that matters
+const issuedBeforePasswordChange = (payload, user) =>
+  Boolean(user.passwordChangedAt) &&
+  payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000);
+
 async function requireAuth(req, res, next) {
   const token = tokenFromRequest(req);
   if (!token) return res.status(401).json({ error: "Authentication required." });
@@ -27,6 +34,9 @@ async function requireAuth(req, res, next) {
     // which lands in the catch below as a 401.
     const user = await User.findById(payload.sub);
     if (!user) return res.status(401).json({ error: "Authentication required." });
+    if (issuedBeforePasswordChange(payload, user)) {
+      return res.status(401).json({ error: "Invalid or expired token." });
+    }
     req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
     next();
   } catch {
@@ -44,4 +54,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole, tokenFromRequest };
+module.exports = { requireAuth, requireRole, tokenFromRequest, issuedBeforePasswordChange };
