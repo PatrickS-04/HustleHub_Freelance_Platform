@@ -3,6 +3,9 @@
 
 export const money = (n) => `R ${Number(n).toLocaleString('en-US')}`
 
+export const longDate = (iso) =>
+  new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
+
 export const CATEGORIES = [
   'Design',
   'Web Development',

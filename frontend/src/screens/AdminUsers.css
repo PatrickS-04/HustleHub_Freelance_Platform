@@ -1,0 +1,156 @@
+/* User list: same row/rail language as the bookings list, with its own columns:
+   avatar | name + email | role | joined | actions */
+.user-row,
+.user-head {
+  --cols: 44px minmax(0, 1fr) 112px 120px 140px;
+}
+
+.user-row .avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.user-row .b-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.you-tag {
+  font-weight: 600;
+}
+
+.user-joined {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rail-role-client {
+  --rail: var(--accent-ink);
+}
+.rail-role-freelancer {
+  --rail: var(--ok);
+}
+.rail-role-admin {
+  --rail: var(--warn);
+}
+
+.status-role-client {
+  color: var(--accent-ink);
+  background: var(--accent-bg);
+  text-transform: capitalize;
+}
+.status-role-freelancer {
+  color: var(--ok);
+  background: var(--ok-bg, var(--accent-bg));
+  text-transform: capitalize;
+}
+.status-role-admin {
+  color: var(--warn);
+  background: var(--warn-bg);
+  text-transform: capitalize;
+}
+
+.user-search {
+  margin-bottom: 8px;
+}
+
+.user-search input {
+  width: 100%;
+  max-width: 360px;
+  box-sizing: border-box;
+}
+
+/* Detail page */
+.user-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  font-size: 26px;
+}
+
+.user-card-main h2 {
+  margin: 0 0 6px;
+}
+
+.user-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0 0 0 auto;
+}
+
+.user-facts dt {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.user-facts dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+
+.user-facts dd.b-tx {
+  display: inline-block;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.user-danger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.user-danger h2 {
+  margin: 0 0 4px;
+}
+
+.user-danger p {
+  margin: 0;
+  max-width: 560px;
+}
+
+@media (max-width: 1100px) {
+  .user-row {
+    --cols: 44px minmax(0, 1fr) 112px 120px;
+  }
+
+  .user-row .b-status {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .user-row .user-joined {
+    grid-column: 4;
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .user-row {
+    --cols: 44px minmax(0, 1fr);
+  }
+
+  .user-row .b-status,
+  .user-row .user-joined {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .user-facts {
+    margin-left: 0;
+  }
+}

@@ -10,6 +10,7 @@ import FreelancerBookings from '../screens/FreelancerBookings'
 import Earnings from '../screens/Earnings'
 import Spending from '../screens/Spending'
 import Settings from '../screens/Settings'
+import AdminUsers from '../screens/AdminUsers'
 import AccessDenied from '../screens/AccessDenied'
 import IdleWarning from './IdleWarning'
 import { useIdleLogout } from '../hooks/useIdleLogout'
@@ -31,9 +32,15 @@ const FREELANCER_TABS = [
   { id: 'settings', label: 'Settings' },
 ]
 
+const ADMIN_TABS = [
+  { id: 'users', label: 'Users' },
+  { id: 'settings', label: 'Settings' },
+]
+
 function Dashboard({ user: authUser, onLogout }) {
   const [loading, setLoading] = useState(false)
-  const [view, setView] = useState('overview')
+  const isAdmin = authUser.role === 'admin'
+  const [view, setView] = useState(isAdmin ? 'users' : 'overview')
   // The display name can be edited in Settings (saved through PATCH /api/auth/me).
   const [displayName, setDisplayName] = useState(authUser.name)
   const user = { ...authUser, name: displayName }
@@ -42,16 +49,18 @@ function Dashboard({ user: authUser, onLogout }) {
   // own (clients: ones they made, freelancers: ones on their gigs).
   const [gigs, setGigs] = useState([])
   const [bookings, setBookings] = useState([])
-  const [loadingData, setLoadingData] = useState(true)
+  const [loadingData, setLoadingData] = useState(!isAdmin)
   const [loadError, setLoadError] = useState('')
 
-  // Unknown roles (e.g. admin) get the client view for now.
+  // Admins only manage users, so they load no gigs or bookings. Any other
+  // unknown role gets the client view.
   const isFreelancer = user.role === 'freelancer'
-  const tabs = isFreelancer ? FREELANCER_TABS : CLIENT_TABS
+  const tabs = isAdmin ? ADMIN_TABS : isFreelancer ? FREELANCER_TABS : CLIENT_TABS
   // GET /api/bookings/mine is for clients and freelancers only (403 otherwise).
   const hasBookings = user.role === 'client' || isFreelancer
 
   useEffect(() => {
+    if (isAdmin) return
     Promise.all([
       isFreelancer ? api.listMyGigs() : api.listGigs(),
       hasBookings ? api.listMyBookings() : [],
@@ -62,7 +71,7 @@ function Dashboard({ user: authUser, onLogout }) {
       })
       .catch((err) => setLoadError(err.message))
       .finally(() => setLoadingData(false))
-  }, [isFreelancer, hasBookings])
+  }, [isAdmin, isFreelancer, hasBookings])
 
   // Gig changes go to the API first; local state only updates once it succeeds.
   // Ownership is checked by the API (403 for someone else's gig). Errors are
@@ -148,7 +157,9 @@ function Dashboard({ user: authUser, onLogout }) {
   let screen
   if (loadingData && view !== 'settings') {
     screen = <p className="empty">Loading...</p>
-  } else if (view === 'browse' && !isFreelancer) {
+  } else if (view === 'users' && isAdmin) {
+    screen = <AdminUsers me={user} />
+  } else if (view === 'browse' && !isFreelancer && !isAdmin) {
     screen = (
       <BrowseGigs user={user} gigs={gigs} reviews={gigReviews} onBooked={addBooking} />
     )
@@ -179,7 +190,7 @@ function Dashboard({ user: authUser, onLogout }) {
     screen = <Spending bookings={bookings} gigs={gigs} />
   } else if (view === 'earnings' && isFreelancer) {
     screen = <Earnings />
-  } else if (view === 'overview') {
+  } else if (view === 'overview' && !isAdmin) {
     screen = (
       <Overview
         user={user}
@@ -191,7 +202,7 @@ function Dashboard({ user: authUser, onLogout }) {
     )
   } else {
     // Any page the current role isn't allowed to see (or an unknown one).
-    screen = <AccessDenied onBack={() => setView('overview')} />
+    screen = <AccessDenied onBack={() => setView(tabs[0].id)} />
   }
 
   const income = bookings
@@ -243,14 +254,18 @@ function Dashboard({ user: authUser, onLogout }) {
             <span className="strip-name">{user.name}</span>
             <span className="badge">{user.role}</span>
           </div>
-          <div className="strip-stat">
-            <span>{isFreelancer ? 'Bookings' : 'Booked'}</span>
-            <strong>{bookings.length}</strong>
-          </div>
-          <div className="strip-stat">
-            <span>{isFreelancer ? 'Income' : 'Spent'}</span>
-            <strong>{money(income)}</strong>
-          </div>
+          {!isAdmin && (
+            <>
+              <div className="strip-stat">
+                <span>{isFreelancer ? 'Bookings' : 'Booked'}</span>
+                <strong>{bookings.length}</strong>
+              </div>
+              <div className="strip-stat">
+                <span>{isFreelancer ? 'Income' : 'Spent'}</span>
+                <strong>{money(income)}</strong>
+              </div>
+            </>
+          )}
         </section>
 
         {loadError && (
