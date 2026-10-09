@@ -1,3 +1,7 @@
+# Command:  npx newman run "postman/HustleHub+ Part2.postman_collection.json" --insecure -r cli,json --reporter-json-export postman/newman/newman-run.json | tee postman/newman/newman-run.txt
+# Env:      EXPOSE_TOKEN_IN_BODY=true  (so /me can use the Bearer token)
+# Result:   96 requests, 148 assertions, 0 failures
+
 newman
 
 HustleHub+ Part2
