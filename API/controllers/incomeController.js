@@ -4,9 +4,23 @@ const Transaction = require("../models/Transaction");
 // agreed yet, and Declined/Cancelled ones were refunded.
 const EARNING = ["Accepted", "Completed"];
 
+// Flat-rate estimate (TAX_RATE is a fraction, e.g. 0.25). Not tax advice: it
+// ignores brackets, rebates and deductible expenses.
+// ponytail: flat rate - swap for SARS brackets + primary rebate if a real estimate is needed
+const DEFAULT_TAX_RATE = 0.25;
+function taxRateFromEnv(value = process.env.TAX_RATE) {
+  if (value === undefined || value === "") return DEFAULT_TAX_RATE;
+  const rate = Number(value);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
+    throw new Error("TAX_RATE must be a number between 0 and 1.");
+  }
+  return rate;
+}
+const TAX_RATE = taxRateFromEnv();
+
 // Pure summary of a freelancer's income rows, kept separate so it can be checked
 // without a database. Each row: { reference, amount, status, gigId, gigTitle, clientName, date }.
-function summarise(rows) {
+function summarise(rows, taxRate = TAX_RATE) {
   const earning = rows.filter((r) => EARNING.includes(r.status));
   const total = earning.reduce((s, r) => s + r.amount, 0);
   const paidOut = earning.filter((r) => r.status === "Completed").reduce((s, r) => s + r.amount, 0);
@@ -26,6 +40,9 @@ function summarise(rows) {
     total,
     paidOut,
     inProgress: total - paidOut,
+    taxRate,
+    // On all earning income (Accepted + Completed), rounded to cents.
+    estimatedTax: Math.round(total * taxRate * 100) / 100,
     // Grouped by the booking's start-date month, like the frontend chart.
     byMonth: group((r) => r.date.slice(0, 7), (r) => ({ month: r.date.slice(0, 7) })).sort((a, b) =>
       a.month.localeCompare(b.month)
@@ -61,4 +78,4 @@ async function myIncome(req, res, next) {
   }
 }
 
-module.exports = { myIncome, summarise };
+module.exports = { myIncome, summarise, taxRateFromEnv };

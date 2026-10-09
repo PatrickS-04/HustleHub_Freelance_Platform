@@ -34,7 +34,7 @@ function Earnings() {
   }
   if (!income) return <p className="empty">Loading...</p>
 
-  const { total, paidOut, inProgress, byMonth, byGig, transactions } = income
+  const { total, paidOut, inProgress, taxRate, estimatedTax, byMonth, byGig, transactions } = income
   const months = monthlySeries(
     Object.fromEntries(byMonth.map((m) => [m.month, m.total])),
     now,
@@ -49,6 +49,8 @@ function Earnings() {
     { label: 'Total income', value: money(total) },
     { label: 'Paid out', value: money(paidOut) },
     { label: 'In progress', value: money(inProgress) },
+    // Flat-rate estimate from the API, not a tax calculation.
+    { label: `Estimated tax (${Math.round(taxRate * 100)}%)`, value: money(estimatedTax) },
   ]
 
   return (
@@ -60,7 +62,7 @@ function Earnings() {
         </div>
       </div>
 
-      <section className="stats stats-3" aria-label="Earnings summary">
+      <section className="stats" aria-label="Earnings summary">
         {stats.map((s, i) => (
           <div className={`stat-card tone-${i % 4}`} key={s.label}>
             <span className="stat-label">{s.label}</span>
