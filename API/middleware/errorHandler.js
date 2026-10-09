@@ -12,11 +12,11 @@ function errorHandler(err, req, res, next) {
     return res.status(413).json({ error: "Request body is too large." });
   }
 
-  if (err.type === "CastError") {
+  if (err.name === "CastError") {
     return res.status(400).json({ error: "Invalid identifier" });
   }
 
-  if (err.type === "ValidationError") {
+  if (err.name === "ValidationError") {
     return res.status(400).json({ error: "Invalid request data" });
   }
 
