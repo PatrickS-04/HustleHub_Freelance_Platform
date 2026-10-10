@@ -7,6 +7,9 @@ server {
     ssl_certificate_key /etc/nginx/certs/key.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
 
+    # Plain HTTP sent to this port (typing localhost:5173) is redirected to HTTPS.
+    error_page 497 =301 https://$http_host$request_uri;
+
     server_tokens off;
     root /usr/share/nginx/html;
 
