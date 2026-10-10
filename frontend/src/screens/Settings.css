@@ -1,0 +1,151 @@
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.settings-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.dash-main .settings-col .panel + .panel {
+  margin-top: 0;
+}
+
+/* Theme picker */
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--pill);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+}
+
+.seg {
+  padding: 8px 22px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.seg.active {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.seg:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+/* Profile facts */
+.settings-facts {
+  margin: 0 0 6px;
+}
+
+.settings-hint {
+  margin: 6px 0 14px;
+}
+
+.role-cap {
+  text-transform: capitalize;
+}
+
+/* Notification switches */
+.toggle-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.toggle-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.toggle-list li:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.toggle-list li:last-child {
+  padding-bottom: 0;
+}
+
+.toggle-list strong {
+  display: block;
+  color: var(--text-h);
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 26px;
+  padding: 0;
+  background: var(--border);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.switch span {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--text-h);
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+
+.switch.on {
+  background: var(--accent);
+}
+
+.switch.on span {
+  background: var(--on-accent);
+  transform: translateX(20px);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.check-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}

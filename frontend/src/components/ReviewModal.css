@@ -1,0 +1,45 @@
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.star-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.star {
+  padding: 2px;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--border);
+  -webkit-text-stroke: 1px var(--text);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.star.on {
+  color: var(--accent-ink);
+  -webkit-text-stroke: 0;
+}
+
+.star:hover {
+  transform: scale(1.12);
+}
+
+.star:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+
+.star-word {
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+}

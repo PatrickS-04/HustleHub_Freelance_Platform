@@ -11,6 +11,18 @@ function errorHandler(err, req, res, next) {
   if (err.type === "entity.too.large") {
     return res.status(413).json({ error: "Request body is too large." });
   }
+
+  if (err.name === "CastError") {
+    return res.status(400).json({ error: "Invalid identifier" });
+  }
+
+  if (err.name === "ValidationError") {
+    return res.status(400).json({ error: "Invalid request data" });
+  }
+
+  if (err.code === 11000) {
+    return res.status(409).json({ error: "That value is already in use" });
+  }
   
   res.status(err.status || 500).json({ error: "An unexpected error occurred." });
 }

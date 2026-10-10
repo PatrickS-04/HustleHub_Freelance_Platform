@@ -1,0 +1,507 @@
+/* Flat, squared visual style.
+   Loaded last (see main.jsx) so it overrides the earlier pill/tile styling:
+   - controls use small-radius rectangles instead of circles and pills
+   - the glass "tile" cards are gone: sections are separated by hairlines
+   Delete the import in main.jsx to go back to the tiled look. */
+
+:root {
+  --r: 6px; /* controls */
+  --r-sm: 3px; /* chips, tags, small marks */
+  --r-surface: 12px; /* floating surfaces: window, modals, menus */
+}
+
+/* ---------- Controls: squared instead of round ---------- */
+.icon-btn,
+.btn-outline,
+.btn-primary,
+.btn-danger,
+.auth-submit,
+.chip-tab,
+.select-trigger,
+.field input,
+.field select,
+.filters input,
+.filters select,
+.field textarea,
+.back-btn,
+.dp-nav,
+.dp-day,
+.dp-today,
+.segmented,
+.seg,
+.toggle-pw,
+.auth-error,
+.auth-info {
+  border-radius: var(--r);
+}
+
+.tag,
+.badge,
+.status,
+.review-chip,
+.chip-count,
+.strength-bars span {
+  border-radius: var(--r-sm);
+}
+
+.avatar {
+  border-radius: 10px;
+}
+
+.confirm-icon {
+  border-radius: 12px;
+}
+
+.switch {
+  border-radius: 5px;
+}
+
+.switch span {
+  border-radius: 3px;
+}
+
+.swatch {
+  border-radius: 3px;
+}
+
+.track li {
+  border-radius: 2px;
+}
+
+.bar {
+  rx: 3px;
+}
+
+.donut-slice {
+  stroke-linecap: butt;
+}
+
+/* Floating surfaces */
+.dash {
+  border-radius: var(--r-surface);
+}
+
+.auth-card,
+.modal {
+  border-radius: var(--r-surface);
+}
+
+.select-menu,
+.dp-pop {
+  border-radius: 10px;
+}
+
+.select-option {
+  border-radius: var(--r);
+}
+
+/* ---------- Top bar: flat header with underlined tabs ---------- */
+.dash-top {
+  align-items: flex-end;
+  gap: 8px;
+  padding-right: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dash-top .title-tab {
+  padding: 18px 24px 14px;
+  background: none;
+  border-radius: 0;
+}
+
+.dash-top .title-tab::after {
+  display: none;
+}
+
+.dash-top .pill-nav {
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0 0 0 16px;
+}
+
+.pill-nav .nav-pill {
+  margin-bottom: -1px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.pill-nav .nav-pill:hover {
+  background: var(--code-bg);
+}
+
+.pill-nav .nav-pill.active {
+  background: none;
+  border-bottom-color: var(--accent-ink);
+}
+
+.pill-nav .nav-pill.active::before {
+  display: none;
+}
+
+.dash-top .top-actions {
+  padding: 0 0 10px;
+}
+
+/* ---------- No tiles: panels become flat sections ---------- */
+.panel,
+.profile-strip {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.panel {
+  padding: 22px 0 8px;
+  border-top: 1px solid var(--border);
+}
+
+.dash-grid {
+  column-gap: 40px;
+}
+
+.profile-strip {
+  gap: 14px 32px;
+  padding: 0 0 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Stat tiles become a readout strip with a coloured rule on each figure */
+.stats {
+  gap: 0;
+  margin-bottom: 8px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.stats .stat-card {
+  gap: 4px;
+  padding: 18px 20px;
+  color: var(--text-h);
+  background: none;
+  border: none;
+  border-left: 3px solid var(--accent-ink);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.stats .tone-0 {
+  border-left-color: var(--chart-1);
+}
+.stats .tone-1 {
+  border-left-color: var(--chart-2);
+}
+.stats .tone-2 {
+  border-left-color: var(--chart-3);
+}
+.stats .tone-3 {
+  border-left-color: var(--chart-5);
+}
+
+.stats .stat-label {
+  opacity: 1;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* Timeline nodes become diamonds */
+.tl-node {
+  border-radius: 4px;
+  transform: rotate(45deg) scale(0.72);
+}
+
+.tl-node::after {
+  border-radius: 2px;
+}
+
+.tl-item:not(:last-child)::before {
+  left: 14px;
+}
+
+/* ---------- Gig cards become list rows ---------- */
+.gig-grid {
+  --row-pad: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Each row is padded and pulled out by the same amount, so the text stays
+   aligned with the page while the hover highlight has room around it instead
+   of looking sliced off at the text edges. The divider is drawn inset on a
+   pseudo-element so it still lines up with the page rules. */
+.gig-grid .gig-card,
+.gig-grid .gig-card:nth-child(n) {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 32px;
+  row-gap: 6px;
+  margin-inline: calc(var(--row-pad) * -1);
+  padding: 18px var(--row-pad);
+  background: none;
+  border: none;
+  border-radius: var(--r);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.gig-grid .gig-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--row-pad);
+  right: var(--row-pad);
+  border-top: 1px solid var(--border);
+}
+
+.gig-grid .gig-card:hover {
+  transform: none;
+  background: var(--code-bg);
+}
+
+.gig-grid .gig-card > .tag {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.gig-grid .gig-card > h3,
+.gig-grid .gig-card > .gig-desc,
+.gig-grid .gig-card > .gig-meta {
+  grid-column: 1;
+}
+
+.gig-grid .gig-card > .gig-meta {
+  justify-content: flex-start;
+  gap: 16px;
+  width: auto;
+}
+
+.gig-grid .gig-card > .gig-foot {
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+  width: auto;
+  padding: 0;
+  border-top: none;
+}
+
+.gig-grid .gig-card > .gig-manage {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+}
+
+.gig-grid .gig-card.paused::before {
+  border-top-style: dashed;
+}
+
+/* ---------- Activity: flat divided list ---------- */
+.activity {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity li {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.activity li:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Icon, then the name beside it, with the time pushed to the far right */
+.activity-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.activity-head .muted {
+  margin-left: auto;
+}
+
+.activity strong {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+/* The message sits under the name, lined up with it (icon 34px + gap 10px) */
+.activity p {
+  margin-top: 4px;
+  padding-left: 44px;
+  font-size: 14px;
+}
+
+/* ---------- Gig detail: price block is a ruled section ---------- */
+.price-card {
+  padding: 22px 0 8px;
+  color: var(--text-h);
+  background: none;
+  border: none;
+  border-top: 3px solid var(--accent-ink);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.price-card .price-facts li {
+  border-top-color: var(--border);
+}
+
+.price-card .book-btn {
+  color: var(--on-accent);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r);
+}
+
+.receipt {
+  background: none;
+  border: none;
+  border-left: 3px solid var(--accent-ink);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .dash-top {
+    flex-wrap: wrap;
+    align-items: center;
+    padding-right: 16px;
+  }
+
+  .dash-top .title-tab {
+    padding: 14px 16px;
+  }
+
+  .dash-top .top-actions {
+    margin-left: auto;
+    padding: 0;
+  }
+
+  .dash-top .pill-nav {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0 8px;
+  }
+
+  .dash-grid {
+    column-gap: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .stats .stat-card {
+    padding: 14px 14px;
+  }
+
+  .gig-grid .gig-card,
+  .gig-grid .gig-card:nth-child(n) {
+    grid-template-columns: 1fr;
+  }
+
+  .gig-grid .gig-card > .gig-foot {
+    grid-column: 1;
+    grid-row: auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* ---------- No window: the app sits directly on the page ---------- */
+.dash {
+  width: 100%;
+  min-height: 100svh;
+  margin: 0;
+  overflow: visible;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Content runs the full page width with even side padding. (A centred max
+   width made the list rules stop short of the header rule, which showed as a
+   visible cut-off on the right, e.g. on Browse gigs.) */
+.dash-top,
+.dash-main {
+  padding-inline: 32px;
+}
+
+.dash-top .title-tab {
+  padding-left: 0;
+}
+
+@media (max-width: 700px) {
+  .dash-top,
+  .dash-main {
+    padding-inline: 16px;
+  }
+
+  .dash-top .title-tab {
+    padding-left: 0;
+  }
+}
+
+/* ---------- Typography: Open Sans ----------
+   Only the Latin subset of the variable font is bundled (one ~48 KB file,
+   covering English and Afrikaans). Anything outside it falls back to the
+   system sans-serif. */
+@font-face {
+  font-family: 'Open Sans Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 800;
+  src: url('../node_modules/@fontsource-variable/open-sans/files/open-sans-latin-wght-normal.woff2')
+    format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+:root {
+  --sans: 'Open Sans Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --heading: 'Open Sans Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+}

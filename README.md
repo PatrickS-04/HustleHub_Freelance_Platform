@@ -1,4 +1,4 @@
-# INSY7314 POE Part 1
+# INSY7314 POE Part 
 ## **HustleHub+ Secure API Service**
 ### By 
 1. Dillon Rinkwest - ST10439147
@@ -209,9 +209,10 @@ CORS_ORIGIN=https://localhost:5173
 SSL_KEY_PATH=./certs/key.pem
 SSL_CERT_PATH=./certs/cert.pem
 EXPOSE_TOKEN_IN_BODY=true
+TAX_RATE=0.25
 ```
 
-`JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY=true` makes register/login echo the JWT in the response body so Postman/Newman (no cookie jar) can capture it - leave it unset in a real deployment, where the `httpOnly` cookie is the only token transport.
+`TAX_RATE` is the flat rate (a fraction between 0 and 1, default `0.25`) used for the freelancer's estimated tax on `GET /api/income`; any other value stops the API from starting. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY=true` makes register/login echo the JWT in the response body so Postman/Newman (no cookie jar) can capture it - leave it unset in a real deployment, where the `httpOnly` cookie is the only token transport.
  
 And Then Lastly Run the server:
  
@@ -220,15 +221,40 @@ npm start
 ```
 The API will be available with the link: `https://localhost:3443`.
 
+### Docker
+**Requirements:** Docker Desktop (running), plus the certificate and `API/.env` from the steps above.
+
+[docker-compose.yml](docker-compose.yml) starts three containers: `mongo` (MongoDB 7, on an internal-only network with no published port), `api` (`https://localhost:3443`) and `client` (the frontend, `https://localhost:5173`).
+
+Create a second `.env` file next to `docker-compose.yml` with the MongoDB root credentials. Use letters and digits only for the password - it is placed inside the connection string, so characters such as `@` or `/` break it:
+
+```env
+MONGO_USER=hustlehub
+MONGO_PASSWORD=replace-with-a-long-random-string
+```
+
+Then build and start everything:
+
+```bash
+docker compose up -d --build
+```
+
+![The mongo, api and client containers in Docker Desktop](docker-containers.png)
+
+Stop the containers with `docker compose down` (add `-v` to also delete the MongoDB data volume).
+
 ## Testing
 
 ### Postman / Newman
-The collection ([API/postman/HustleHub+ Part1.postman_collection.json](API/postman/HustleHub+%20Part1.postman_collection.json)) has **13 requests / 17 assertions**:
+The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) runs **96 requests / 148 assertions** across ten folders:
 
-- **Success** - register (`201`), login (`200`), `/me` with a `Bearer` token (`200`), `/health` (`200`).
-- **Auth failures** - `/me` with no token, wrong password, non-existent email (all `401`), duplicate email (`409`).
-- **Validation failures** - missing field, weak password (both `400`).
-- **Protocol / error-handler** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the exact controlled error message so nothing internal leaks.
+- **00 Health, 01 Auth, 05 Account** - register, login, `/me`, profile and password changes, with their `400`/`401`/`409` failure paths.
+- **02 Gigs, 03 Bookings, 04 Income** - the domain flows, including validation failures, ownership checks, review rules and the freelancer-only income summary.
+- **06 Error handling** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the controlled error message so nothing internal leaks.
+- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword` are set.
+- **09 Rate limiting** - runs last and asserts the `429` response and rate-limit headers.
+
+The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.
 
 Run it headless with Newman:
 
@@ -237,7 +263,15 @@ cd API
 npm run test:api
 ```
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **13/13 requests, 17/17 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **96/96 requests, 148/148 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
+
+### npm audit
+![alt text](npm-audit.png)
+
+### OWASP
+![alt text](OWASP-1.png)
+![alt text](OWASP-2.png)
+![alt text](OWASP-3.png)
 
 ### Unit self-check
 The cookie/header token-parsing helper has an assert-based self-check:
@@ -247,11 +281,30 @@ cd API
 npm run test:auth
 ```
 
+### Frontend tests
+The React app is tested with [Vitest](https://vitest.dev/) (the Vite-native test runner, using the same `describe` / `it` / `expect` / mock style as Jest) and React Testing Library, which renders components in a simulated browser (jsdom) and interacts with them the way a user does. The API client is mocked, so no backend or database is needed.
+
+```bash
+cd frontend
+npm install
+npm run test:run
+```
+
+`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **7 test files, 46 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
+
+| Test file | What it checks |
+|-----------|----------------|
+| `LoginForm.test.jsx` | renders; trimmed credentials sent; API error shown and password cleared; cooldown after a `429`; switch to register |
+| `RegisterForm.test.jsx` | renders; weak password, bad email and a script-like name are rejected before any API call; valid sign-up defaults to `client`; duplicate-email error shown |
+| `PasswordStrength.test.jsx` | strength meter label for each level |
+| `Dashboard.test.jsx` | role-based navigation: client, freelancer and admin each see only their own tabs, and an admin triggers no gig or booking requests |
+| `AdminUsers.test.jsx` | user list, role filter and search; detail page; delete only after confirmation; refused deletes shown; no delete option for your own account |
+| `password.test.js` | password rule: accepted case plus too short, missing upper/lower/number, too long |
+| `api.test.js` | `4xx` messages shown; `429` friendly message; `5xx` never leaks server internals; `401` on a protected route signs the user out |
+
 ## Demonstration Video
 
 Youtube Video Link: https://youtu.be/LDcBwhAfzEg
-
-## References
 
 ## References
 

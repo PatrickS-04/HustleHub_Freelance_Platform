@@ -1,24 +1,24 @@
 const express = require("express");
-const rateLimit = require("express-rate-limit");
-const { register, login } = require("../controllers/authController");
-const { validateRegister, validateLogin } = require("../middleware/validators");
+const { register, login, logout, updateMe, changePassword } = require("../controllers/authController");
+const {
+  validateRegister,
+  validateLogin,
+  validateProfile,
+  validatePasswordChange,
+} = require("../middleware/validators");
 const { requireAuth } = require("../middleware/auth");
+const { loginLimiter, registerLimiter, passwordLimiter } = require("../middleware/rateLimiters");
 
 const router = express.Router();
 
-// Blunt brute-force / enumeration slowdown on auth endpoints.
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many attempts. Try again later." },
-});
-
-router.post("/register", authLimiter, validateRegister, register);
-router.post("/login", authLimiter, validateLogin, login);
+router.post("/register", registerLimiter, validateRegister, register);
+router.post("/login", loginLimiter, validateLogin, login);
+router.post("/logout", logout);
 
 // Protected route - proves the token is verified on each request.
 router.get("/me", requireAuth, (req, res) => res.status(200).json({ user: req.user }));
+router.patch("/me", requireAuth, validateProfile, updateMe);
+// Limiter runs after requireAuth so it can count attempts per user.
+router.patch("/password", requireAuth, passwordLimiter, validatePasswordChange, changePassword);
 
 module.exports = router;

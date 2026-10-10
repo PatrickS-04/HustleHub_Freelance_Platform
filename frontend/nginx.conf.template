@@ -1,0 +1,26 @@
+# HTTPS only - same headers as `npm run preview` in vite.config.js.
+server {
+    listen 443 ssl;
+    server_name localhost;
+
+    ssl_certificate     /etc/nginx/certs/cert.pem;
+    ssl_certificate_key /etc/nginx/certs/key.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    # Plain HTTP sent to this port (typing localhost:5173) is redirected to HTTPS.
+    error_page 497 =301 https://$http_host$request_uri;
+
+    server_tokens off;
+    root /usr/share/nginx/html;
+
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${API_URL}; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    location / {
+        try_files $uri /index.html;
+    }
+}

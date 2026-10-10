@@ -1,0 +1,142 @@
+.modal.receipt-modal {
+  max-width: 520px;
+  overflow-wrap: anywhere;
+}
+
+.receipt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.receipt-brand {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+.receipt-head h2 {
+  margin: 2px 0 0;
+  font-size: 28px;
+  letter-spacing: -0.6px;
+}
+
+.receipt-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.receipt-id strong {
+  font-size: 18px;
+  color: var(--text-h);
+}
+
+.receipt-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 20px;
+  margin: 0 0 18px;
+}
+
+.receipt-parties dt {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.receipt-parties dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.receipt-lines {
+  width: 100%;
+  margin-bottom: 14px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.receipt-lines th,
+.receipt-lines td {
+  padding: 10px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-h);
+}
+
+.receipt-lines th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.receipt-lines th:last-child,
+.receipt-lines td:last-child {
+  text-align: right;
+}
+
+.receipt-lines th:nth-child(2),
+.receipt-lines td:nth-child(2) {
+  width: 48px;
+}
+
+.receipt-lines tfoot td {
+  font-size: 17px;
+  font-weight: 800;
+  border-bottom: none;
+}
+
+.receipt-note {
+  margin-bottom: 18px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* Print only the receipt: the app is hidden and the sheet is plain black on white. */
+@media print {
+  #root {
+    display: none !important;
+  }
+
+  .receipt-backdrop {
+    position: static;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .modal.receipt-modal {
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    background: #fff;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .receipt-sheet,
+  .receipt-sheet * {
+    color: #000 !important;
+    border-color: #999 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
