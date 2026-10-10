@@ -266,12 +266,12 @@ npm run test:api
 A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **96/96 requests, 148/148 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
 
 ### npm audit
-![alt text](image.png)
+![alt text](npm-audit.png)
 
 ### OWASP
-![alt text](image-1.png)
-![alt text](image-2.png)
-![alt text](image-3.png)
+![alt text](OWASP-1.png)
+![alt text](OWASP-2.png)
+![alt text](OWASP-3.png)
 
 ### Unit self-check
 The cookie/header token-parsing helper has an assert-based self-check:
