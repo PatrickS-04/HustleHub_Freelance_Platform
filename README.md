@@ -241,6 +241,14 @@ cd API
 npm run test:api
 ```
 
+### npm audit
+![alt text](image.png)
+
+### OWASP
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+
 A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **96/96 requests, 148/148 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
 
 ### Unit self-check
@@ -275,8 +283,6 @@ npm run test:run
 ## Demonstration Video
 
 Youtube Video Link: https://youtu.be/LDcBwhAfzEg
-
-## References
 
 ## References
 
