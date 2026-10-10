@@ -221,6 +221,28 @@ npm start
 ```
 The API will be available with the link: `https://localhost:3443`.
 
+### Docker
+**Requirements:** Docker Desktop (running), plus the certificate and `API/.env` from the steps above.
+
+[docker-compose.yml](docker-compose.yml) starts three containers: `mongo` (MongoDB 7, on an internal-only network with no published port), `api` (`https://localhost:3443`) and `client` (the frontend, `https://localhost:5173`).
+
+Create a second `.env` file next to `docker-compose.yml` with the MongoDB root credentials. Use letters and digits only for the password - it is placed inside the connection string, so characters such as `@` or `/` break it:
+
+```env
+MONGO_USER=hustlehub
+MONGO_PASSWORD=replace-with-a-long-random-string
+```
+
+Then build and start everything:
+
+```bash
+docker compose up -d --build
+```
+
+![The mongo, api and client containers in Docker Desktop](docker-containers.png)
+
+Stop the containers with `docker compose down` (add `-v` to also delete the MongoDB data volume).
+
 ## Testing
 
 ### Postman / Newman
@@ -241,6 +263,8 @@ cd API
 npm run test:api
 ```
 
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **96/96 requests, 148/148 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
+
 ### npm audit
 ![alt text](image.png)
 
@@ -248,8 +272,6 @@ npm run test:api
 ![alt text](image-1.png)
 ![alt text](image-2.png)
 ![alt text](image-3.png)
-
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **96/96 requests, 148/148 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
 
 ### Unit self-check
 The cookie/header token-parsing helper has an assert-based self-check:
