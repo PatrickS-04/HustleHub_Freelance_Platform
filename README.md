@@ -43,7 +43,7 @@ The separation of db, authController, auth, validator, errorHandler, User, authR
 
 ## Architecture Diagram
 
-<img width="1342" height="1242" alt="HustleHubArchitecture" src="https://github.com/user-attachments/assets/75410363-ce2f-4af4-a146-95821de0beeb" />
+![alt text](HustleHubArchitecture.png)
 
 
 The diagram covers the full MERN target design. **Solid boxes are what this Part 1 submission actually implements:** HTTPS/TLS + HSTS (no plain-HTTP listener), Helmet + CSP, the CORS allow-list, auth rate limiting, two-layer input validation, the JWT auth middleware, RBAC/ownership plumbing (`requireRole`), bcrypt hashing, and the central error handler - plus the `400/401/403` controlled-failure paths. **Faded boxes are deferred:** to **Part 2** - the React SPA, MongoDB/Mongoose (users are in an in-memory store for now), `express-mongo-sanitize` + `hpp`, and the domain services (Gigs, Bookings, Transactions, Income/Tax); to **Part 3** - structured logging, the cloud log sink, the full CI/CD pipeline, and Docker Compose. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is identical in every part.
