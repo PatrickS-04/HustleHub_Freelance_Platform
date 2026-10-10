@@ -224,12 +224,15 @@ The API will be available with the link: `https://localhost:3443`.
 ## Testing
 
 ### Postman / Newman
-The collection ([API/postman/HustleHub+ Part1.postman_collection.json](API/postman/HustleHub+%20Part1.postman_collection.json)) has **13 requests / 17 assertions**:
+The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) runs **96 requests / 148 assertions** across ten folders:
 
-- **Success** - register (`201`), login (`200`), `/me` with a `Bearer` token (`200`), `/health` (`200`).
-- **Auth failures** - `/me` with no token, wrong password, non-existent email (all `401`), duplicate email (`409`).
-- **Validation failures** - missing field, weak password (both `400`).
-- **Protocol / error-handler** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the exact controlled error message so nothing internal leaks.
+- **00 Health, 01 Auth, 05 Account** - register, login, `/me`, profile and password changes, with their `400`/`401`/`409` failure paths.
+- **02 Gigs, 03 Bookings, 04 Income** - the domain flows, including validation failures, ownership checks, review rules and the freelancer-only income summary.
+- **06 Error handling** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the controlled error message so nothing internal leaks.
+- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword` are set.
+- **09 Rate limiting** - runs last and asserts the `429` response and rate-limit headers.
+
+The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.
 
 Run it headless with Newman:
 
@@ -238,7 +241,7 @@ cd API
 npm run test:api
 ```
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **13/13 requests, 17/17 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **96/96 requests, 148/148 assertions, 0 failures**. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the `/me` test can read the token from the response body. Screenshots of the saved response examples are in the accompanying PDF.
 
 ### Unit self-check
 The cookie/header token-parsing helper has an assert-based self-check:
