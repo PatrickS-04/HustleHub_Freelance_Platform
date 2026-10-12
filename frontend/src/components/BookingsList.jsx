@@ -10,7 +10,7 @@ import './Bookings.css'
 const GROUPS = [
   {
     id: 'Pending',
-    title: { client: 'Awaiting reply', freelancer: 'New requests' },
+    title: { client: 'Awaiting reply', freelancer: 'New requests', admin: 'Pending' },
     test: (b) => b.status === 'Pending',
   },
   { id: 'Accepted', title: 'In progress', test: (b) => b.status === 'Accepted' },
@@ -64,8 +64,8 @@ function DateBlock({ date }) {
   )
 }
 
-// Bookings list for both roles. `role` decides who the counterparty is and
-// which status actions are offered.
+// Bookings list for every role. `role` decides who the counterparty is and
+// which status actions are offered (an admin sees both parties and no actions).
 function BookingsList({ bookings, role, onStatus, onReview }) {
   const [filter, setFilter] = useState('All')
   const [confirming, setConfirming] = useState(null)
@@ -76,7 +76,10 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
   const [busy, setBusy] = useState(null)
 
   const isFreelancer = role === 'freelancer'
-  const actionsFor = (b) => STATUS_ACTIONS[role][b.status] || []
+  const isClient = role === 'client'
+  const actionsFor = (b) => STATUS_ACTIONS[role]?.[b.status] || []
+  const otherParty = (b) =>
+    isFreelancer ? b.clientName : isClient ? b.freelancerName : `${b.clientName} → ${b.freelancerName}`
   // Money only moves once a booking is accepted, so only those get a receipt.
   const hasReceipt = (b) => b.status === 'Accepted' || b.status === 'Completed'
 
@@ -140,7 +143,9 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
           {bookings.length === 0
             ? isFreelancer
               ? 'No one has booked your gigs yet.'
-              : "You haven't booked any gigs yet."
+              : isClient
+                ? "You haven't booked any gigs yet."
+                : 'No bookings yet.'
             : 'No bookings with this status.'}
         </p>
       ) : (
@@ -165,9 +170,9 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
                     <h3 className="b-title">{b.gigTitle}</h3>
                     <p className="b-meta">
                       <span className="avatar xs" aria-hidden="true">
-                        {(isFreelancer ? b.clientName : b.freelancerName).charAt(0)}
+                        {otherParty(b).charAt(0)}
                       </span>
-                      <span>{isFreelancer ? b.clientName : b.freelancerName}</span>
+                      <span>{otherParty(b)}</span>
                       <span className="b-tx">{b.transactionId}</span>
                     </p>
                     {isFreelancer && b.note && (
@@ -202,7 +207,7 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
                         {a.label}
                       </button>
                     ))}
-                    {!isFreelancer && b.status === 'Completed' && !b.review && (
+                    {isClient && b.status === 'Completed' && !b.review && (
                       <button
                         type="button"
                         className="btn-primary"
@@ -211,7 +216,7 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
                         Review
                       </button>
                     )}
-                    {!isFreelancer && b.review && (
+                    {isClient && b.review && (
                       <span className="review-chip" title="Your review">
                         <span className="review-stars">{'★'.repeat(b.review.rating)}</span>
                         <span className="sr-only"> rated {b.review.rating} out of 5</span>

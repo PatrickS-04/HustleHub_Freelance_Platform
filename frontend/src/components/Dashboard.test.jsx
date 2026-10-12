@@ -8,6 +8,7 @@ vi.mock('../services/api', () => ({
   listGigs: vi.fn(),
   listMyGigs: vi.fn(),
   listMyBookings: vi.fn(),
+  listAllBookings: vi.fn(),
   listUsers: vi.fn(),
   getUser: vi.fn(),
   deleteUser: vi.fn(),
@@ -50,14 +51,15 @@ describe('Dashboard by role', () => {
     expect(api.listUsers).not.toHaveBeenCalled()
   })
 
-  it('gives an admin only user management and settings, and loads no gigs or bookings', async () => {
+  it('gives an admin the users, gigs and bookings tabs, and loads gigs and bookings only when opened', async () => {
     render(<Dashboard user={makeUser('admin')} onLogout={vi.fn()} />)
     expect(await screen.findByText(/Every account on the platform/)).toBeInTheDocument()
-    expect(navLabels()).toEqual(['Users', 'Settings'])
+    expect(navLabels()).toEqual(['Users', 'Gigs', 'Bookings', 'Settings'])
     expect(api.listUsers).toHaveBeenCalled()
     expect(api.listGigs).not.toHaveBeenCalled()
     expect(api.listMyGigs).not.toHaveBeenCalled()
     expect(api.listMyBookings).not.toHaveBeenCalled()
+    expect(api.listAllBookings).not.toHaveBeenCalled()
   })
 
   it('moves between tabs when a tab is clicked', async () => {
