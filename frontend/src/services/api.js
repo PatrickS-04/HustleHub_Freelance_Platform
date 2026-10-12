@@ -87,6 +87,8 @@ export const deleteGig = (id) =>
 // ---- Bookings ----
 // Only the gig, date and note are sent; price and parties come from the database.
 export const listMyBookings = () => request('/api/bookings/mine').then((d) => d.bookings)
+// Admin only: every booking on the platform.
+export const listAllBookings = () => request('/api/bookings').then((d) => d.bookings)
 export const createBooking = (gigId, date, note) =>
   request('/api/bookings', send('POST', { gigId, date, note })).then((d) => d.booking)
 export const updateBookingStatus = (id, status) =>

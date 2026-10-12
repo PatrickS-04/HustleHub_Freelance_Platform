@@ -83,7 +83,7 @@ function AdminUsers({ me }) {
         ))}
       </div>
 
-      <div className="user-search">
+      <div className="filters user-search">
         <label htmlFor="user-q" className="sr-only">
           Search users
         </label>

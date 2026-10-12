@@ -11,6 +11,8 @@ import Earnings from '../screens/Earnings'
 import Spending from '../screens/Spending'
 import Settings from '../screens/Settings'
 import AdminUsers from '../screens/AdminUsers'
+import AdminGigs from '../screens/AdminGigs'
+import AdminBookings from '../screens/AdminBookings'
 import AccessDenied from '../screens/AccessDenied'
 import IdleWarning from './IdleWarning'
 import { useIdleLogout } from '../hooks/useIdleLogout'
@@ -34,6 +36,8 @@ const FREELANCER_TABS = [
 
 const ADMIN_TABS = [
   { id: 'users', label: 'Users' },
+  { id: 'gigs', label: 'Gigs' },
+  { id: 'bookings', label: 'Bookings' },
   { id: 'settings', label: 'Settings' },
 ]
 
@@ -52,8 +56,8 @@ function Dashboard({ user: authUser, onLogout }) {
   const [loadingData, setLoadingData] = useState(!isAdmin)
   const [loadError, setLoadError] = useState('')
 
-  // Admins only manage users, so they load no gigs or bookings. Any other
-  // unknown role gets the client view.
+  // The admin screens load their own data when opened, so nothing is loaded
+  // here for an admin. Any other unknown role gets the client view.
   const isFreelancer = user.role === 'freelancer'
   const tabs = isAdmin ? ADMIN_TABS : isFreelancer ? FREELANCER_TABS : CLIENT_TABS
   // GET /api/bookings/mine is for clients and freelancers only (403 otherwise).
@@ -159,6 +163,10 @@ function Dashboard({ user: authUser, onLogout }) {
     screen = <p className="empty">Loading...</p>
   } else if (view === 'users' && isAdmin) {
     screen = <AdminUsers me={user} />
+  } else if (view === 'gigs' && isAdmin) {
+    screen = <AdminGigs />
+  } else if (view === 'bookings' && isAdmin) {
+    screen = <AdminBookings />
   } else if (view === 'browse' && !isFreelancer && !isAdmin) {
     screen = (
       <BrowseGigs user={user} gigs={gigs} reviews={gigReviews} onBooked={addBooking} />

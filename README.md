@@ -23,7 +23,7 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
 - **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, session revocation on password change, and an idle-session timeout.
-- **Testing** - a 99-request Postman/Newman collection, backend self-checks, 46 frontend tests, `npm audit` and an OWASP ZAP scan.
+- **Testing** - a 99-request Postman/Newman collection, backend self-checks, 49 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
 ### What Each Role Can Do
@@ -32,7 +32,7 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 |------|----------|
 | Client | Browse and view gigs, book a gig, cancel a pending booking, view receipts, review completed bookings, see spending |
 | Freelancer | Create, edit, pause and delete own gigs, accept, decline and complete bookings, see earnings and estimated tax |
-| Admin | List, search and view users and delete users from the dashboard; view every booking and remove any gig through the API |
+| Admin | List, search and view users and delete users; view every live gig and remove any of them; view every booking with its transaction reference (read-only) |
 
 Every role can also change their display name and password in Settings.
 
@@ -255,7 +255,7 @@ The API only accepts cross-origin requests from the configured frontend origin (
 - Helmet also removes the `X-Powered-By` header, so the API does not advertise that it runs on Express.
 
 **Frontend** ([nginx.conf.template](frontend/nginx.conf.template), and the same headers for `npm run preview` in [vite.config.js](frontend/vite.config.js)):
-- **Content-Security-Policy** allowing scripts, styles, fonts and images from the app's own origin only, with `connect-src` limited to the app and the API. Inline scripts are not allowed, which blocks injected script even if markup were to reach the page.
+- **Content-Security-Policy** allowing scripts, styles, fonts and images from the app's own origin only, with `connect-src` limited to the app and the API. Inline scripts are not allowed, which blocks injected script even if markup were to reach the page. The dev server (`npm run dev`) sends the same policy with two relaxations that hot reload cannot work without: inline scripts and styles, and its websocket.
 - **HSTS**, **X-Frame-Options: DENY**, **X-Content-Type-Options: nosniff**, **Referrer-Policy: no-referrer** and a **Permissions-Policy** that turns off the camera, microphone and geolocation.
 - `server_tokens off`, so nginx does not reveal its version [18].
 
@@ -411,11 +411,10 @@ CORS_ORIGIN=https://localhost:5173
 SSL_KEY_PATH=./certs/key.pem
 SSL_CERT_PATH=./certs/cert.pem
 MONGO_URL=mongodb://localhost:27017/hustlehub
-EXPOSE_TOKEN_IN_BODY=true
 TAX_RATE=0.25
 ```
 
-`MONGO_URL` is the MongoDB connection string; the server refuses to start without it. `TAX_RATE` is the flat rate (a fraction between 0 and 1, default `0.25`) used for the freelancer's estimated tax on `GET /api/income`; any other value stops the API from starting. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY=true` makes register/login echo the JWT in the response body so Postman/Newman (no cookie jar) can capture it - leave it unset in a real deployment, where the `httpOnly` cookie is the only token transport.
+`MONGO_URL` is the MongoDB connection string; the server refuses to start without it. `TAX_RATE` is the flat rate (a fraction between 0 and 1, default `0.25`) used for the freelancer's estimated tax on `GET /api/income`; any other value stops the API from starting. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY` is deliberately left out: by default the `httpOnly` cookie is the only token transport and no response body contains the JWT. Add `EXPOSE_TOKEN_IN_BODY=true` only for a Postman/Newman run (see [Testing](#testing)), which has no cookie jar, and remove it afterwards.
  
 And Then Lastly Run the server:
  
@@ -507,7 +506,7 @@ npm run test:api
 
 The run above is without the admin credentials set, so the admin folder is skipped: **99/99 requests, 151/151 assertions, 0 failures**.
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the tests can read the token from the response body. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. Add `EXPOSE_TOKEN_IN_BODY=true` to `API/.env` and restart the API before the run so the tests can read the token from the response body, then remove it again. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
 
 ### npm audit
 `npm audit` checks every dependency against the public vulnerability database [38]. The API has **0 known vulnerabilities**:
@@ -558,14 +557,15 @@ npm install
 npm run test:run
 ```
 
-`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **7 test files, 46 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
+`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **8 test files, 49 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
 
 | Test file | What it checks |
 |-----------|----------------|
 | `LoginForm.test.jsx` | renders; trimmed credentials sent; API error shown and password cleared; cooldown after a `429`; switch to register |
 | `RegisterForm.test.jsx` | renders; weak password, bad email and a script-like name are rejected before any API call; valid sign-up defaults to `client`; duplicate-email error shown |
 | `PasswordStrength.test.jsx` | strength meter label for each level |
-| `Dashboard.test.jsx` | role-based navigation: client, freelancer and admin each see only their own tabs, and an admin triggers no gig or booking requests |
+| `Dashboard.test.jsx` | role-based navigation: client, freelancer and admin each see only their own tabs, and nothing outside the role is requested |
+| `AdminGigs.test.jsx` | admin removes a gig only after confirmation; a refused removal keeps the gig and shows the reason; the admin bookings list shows both parties and offers no status actions |
 | `AdminUsers.test.jsx` | user list, role filter and search; detail page; delete only after confirmation; refused deletes shown; no delete option for your own account |
 | `password.test.js` | password rule: accepted case plus too short, missing upper/lower/number, too long |
 | `api.test.js` | `4xx` messages shown; `429` friendly message; `5xx` never leaks server internals; `401` on a protected route signs the user out |

@@ -24,20 +24,22 @@ export default defineConfig(({ command, mode }) => {
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   }
 
-  // Strict CSP for the built app (`npm run preview`). Not applied to the dev
-  // server, which needs inline scripts for hot reload.
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self'",
-    "style-src 'self'",
-    "object-src 'none'",
-    "img-src 'self' data:",
-    "font-src 'self'",
-    `connect-src 'self' ${api}`,
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join('; ')
+  // Strict CSP for the built app (`npm run preview`). The dev server gets the
+  // same policy with two relaxations it cannot work without: inline scripts and
+  // styles (hot reload injects both) and the hot-reload websocket.
+  const cspFor = (dev) =>
+    [
+      "default-src 'self'",
+      dev ? "script-src 'self' 'unsafe-inline'" : "script-src 'self'",
+      dev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'",
+      "object-src 'none'",
+      "img-src 'self' data:",
+      "font-src 'self'",
+      `connect-src 'self' ${api}${dev ? ' wss://localhost:5173' : ''}`,
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
 
   return {
     plugins: [react()],
@@ -47,12 +49,17 @@ export default defineConfig(({ command, mode }) => {
       setupFiles: './src/test/setup.js',
       css: false,
     },
-    server: { port: 5173, strictPort: true, https, headers: baseHeaders },
+    server: {
+      port: 5173,
+      strictPort: true,
+      https,
+      headers: { ...baseHeaders, 'Content-Security-Policy': cspFor(true) },
+    },
     preview: {
       port: 5173,
       strictPort: true,
       https,
-      headers: { ...baseHeaders, 'Content-Security-Policy': csp },
+      headers: { ...baseHeaders, 'Content-Security-Policy': cspFor(false) },
     },
   }
 })
