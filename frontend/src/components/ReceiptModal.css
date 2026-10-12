@@ -87,9 +87,24 @@
   text-align: right;
 }
 
+/* Only the service name may wrap: the modal's overflow-wrap would otherwise
+   squeeze the amount column and break "R 10,000" across lines. */
+.receipt-lines th:not(:first-child),
+.receipt-lines td:not(:first-child),
+.receipt-id strong {
+  white-space: nowrap;
+}
+
+.receipt-lines th:first-child,
+.receipt-lines td:first-child {
+  width: 100%;
+  padding-right: 16px;
+}
+
 .receipt-lines th:nth-child(2),
-.receipt-lines td:nth-child(2) {
-  width: 48px;
+.receipt-lines tbody td:nth-child(2) {
+  padding-right: 24px;
+  text-align: center;
 }
 
 .receipt-lines tfoot td {

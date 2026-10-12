@@ -583,7 +583,11 @@ A client searches and filters the available gigs, then books one. The price show
 
 ![Booking a gig](Screenshots/client-booking.png)
 
-Every booking creates a transaction record with its own `TX-` reference, shown next to the booking.
+Every booking creates a transaction record with its own `TX-` reference. The confirmation shows it straight away and states that the payment is simulated.
+
+![Booking requested confirmation with the transaction reference](Screenshots/client-booking-confirmation.png)
+
+The same reference is shown next to the booking.
 
 ![Client My bookings screen with the pending booking and its transaction reference](Screenshots/client-bookings.png)
 
@@ -592,9 +596,31 @@ The freelancer accepts the booking and marks it complete. The same transaction r
 
 ![Freelancer Bookings screen with the completed booking](Screenshots/freelancer-bookings.png)
 
+Once the booking is complete the client can review it, and the rating and comment appear on the freelancer's booking.
+
+![Freelancer Bookings screen showing the client's star rating and review](Screenshots/freelancer-booking-reviewed.png)
+
 The income from that booking is added to the freelancer's earnings, with the estimated tax.
 
 ![Freelancer Earnings screen with income totals, estimated tax and charts](Screenshots/freelancer-earnings.png)
+
+### Client - overview, spending and receipts
+The client's overview summarises their bookings and total spent.
+
+![Client Overview screen with booking counts, total spent and recent bookings](Screenshots/client-overview.png)
+
+The Spending tab breaks the total down by month and by category and lists each transaction. Pending and cancelled bookings are not counted.
+
+![Client Spending screen with totals, charts and the transaction list](Screenshots/client-spending.png)
+
+Either party can open the receipt for a booking, which can be printed or saved as a PDF.
+
+![Receipt for a completed booking with its transaction reference](Screenshots/receipt.png)
+
+### Settings
+Every role can change their display name and password. Email and role cannot be changed, and changing the password signs out every other session.
+
+![Settings screen with appearance, profile, notifications and change password](Screenshots/settings.png)
 
 ## Demonstration Video
 
