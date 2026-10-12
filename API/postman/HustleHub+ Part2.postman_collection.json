@@ -5445,7 +5445,7 @@
     },
     {
       "name": "09 Rate limiting (run last)",
-      "description": "Uses up the client's booking allowance, so keep it last. The limiters are per IP/user and last 10-15 minutes, so restart the API (or wait) before re-running the whole collection.",
+      "description": "Uses up the client booking allowance and this IP login allowance, so keep it last. The limiters are per IP/user and last 10-15 minutes, so restart the API (or wait) before re-running the whole collection.",
       "item": [
         {
           "name": "Booking endpoint returns 429 after too many requests",
@@ -5516,6 +5516,78 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"gigId\": \"x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login endpoint returns 429 after too many attempts",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fire failed logins until the login limiter (5 per 15 minutes per IP) trips.",
+                  "// The earlier folders have already used most of the allowance.",
+                  "const url = pm.collectionVariables.get(\"base_url\") + \"/api/auth/login\";",
+                  "let n = 0, hit = false;",
+                  "function fire() {",
+                  "  if (hit || n >= 8) return;",
+                  "  n++;",
+                  "  pm.sendRequest({ url, method: \"POST\", header: { \"Content-Type\": \"application/json\" }, body: { mode: \"raw\", raw: JSON.stringify({\"email\":\"ratelimit@example.com\",\"password\":\"WrongPass123\"}) } }, (err, res) => { if (res && res.code === 429) hit = true; fire(); });",
+                  "}",
+                  "fire();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 429\", () => pm.response.to.have.status(429));",
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Meaningful message\", () => pm.expect(json.error).to.eql(\"Too many login attempts, please try again in 15 minutes.\"));",
+                  "pm.test(\"Rate limit headers sent\", () => pm.expect(pm.response.headers.has(\"RateLimit-Limit\") || pm.response.headers.has(\"RateLimit\")).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ratelimit@example.com\",\n  \"password\": \"WrongPass123\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

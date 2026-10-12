@@ -23,7 +23,7 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
 - **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, session revocation on password change, and an idle-session timeout.
-- **Testing** - a 107-request Postman/Newman collection, backend self-checks, 46 frontend tests, `npm audit` and an OWASP ZAP scan.
+- **Testing** - a 109-request Postman/Newman collection, backend self-checks, 46 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
 ### What Each Role Can Do
@@ -471,13 +471,13 @@ Stop the containers with `docker compose down` (add `-v` to also delete the Mong
 ## Testing
 
 ### Postman / Newman
-The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) runs **107 requests / 165 assertions** across ten folders:
+The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) runs **109 requests / 168 assertions** across ten folders:
 
 - **00 Health, 01 Auth, 05 Account** - register, login, `/me`, profile and password changes, with their `400`/`401`/`409` failure paths.
 - **02 Gigs, 03 Bookings, 04 Income** - the domain flows, including validation failures, ownership checks, review rules and the freelancer-only income summary.
 - **06 Error handling** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the controlled error message so nothing internal leaks.
-- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword` are set, which leaves 96 requests / 148 assertions (this is what CI runs).
-- **09 Rate limiting** - runs last and asserts the `429` response and rate-limit headers.
+- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword` are set, which leaves 99 requests / 151 assertions (this is what CI runs).
+- **09 Rate limiting** - runs last and asserts the `429` response, its message and the rate-limit headers on both the booking and the login endpoint.
 
 The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.
 
@@ -488,7 +488,7 @@ cd API
 npm run test:api
 ```
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **107/107 requests, 165/165 assertions, 0 failures**, with the admin folder included. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the tests can read the token from the response body. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Collection%20Screenshots%20for%20Part%202.pdf).
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the tests can read the token from the response body. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Collection%20Screenshots%20for%20Part%202.pdf).
 
 ### npm audit
 `npm audit` checks every dependency against the public vulnerability database [37]. The API has **0 known vulnerabilities**:
@@ -561,6 +561,40 @@ npm run test:run
 | **deploy** | runs only on `main`, and only after both jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
 
 A failing check, test or audit in either job fails the build.
+
+## Screenshots
+
+The screenshots below follow one booking through the application, from sign-in to the freelancer's earnings. The image files are in [Screenshots](Screenshots).
+
+### Sign in and registration
+![Login screen](Screenshots/login.png)
+
+![Registration screen with role selection](Screenshots/register.png)
+
+### Freelancer - managing gigs
+A freelancer creates, edits, pauses and deletes their own listings.
+
+![Freelancer My gigs screen](Screenshots/freelancer-my-gigs.png)
+
+### Client - browsing and booking
+A client searches and filters the available gigs, then books one. The price shown comes from the gig and cannot be changed by the client.
+
+![Client Browse gigs screen](Screenshots/client-browse-gigs.png)
+
+![Booking a gig](Screenshots/client-booking.png)
+
+Every booking creates a transaction record with its own `TX-` reference, shown next to the booking.
+
+![Client My bookings screen with the pending booking and its transaction reference](Screenshots/client-bookings.png)
+
+### Freelancer - bookings and income
+The freelancer accepts the booking and marks it complete. The same transaction reference appears on their side.
+
+![Freelancer Bookings screen with the completed booking](Screenshots/freelancer-bookings.png)
+
+The income from that booking is added to the freelancer's earnings, with the estimated tax.
+
+![Freelancer Earnings screen with income totals, estimated tax and charts](Screenshots/freelancer-earnings.png)
 
 ## Demonstration Video
 
