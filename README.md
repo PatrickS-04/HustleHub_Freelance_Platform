@@ -636,6 +636,11 @@ Either party can open the receipt for a booking, which can be printed or saved a
 
 ![Receipt for a completed booking with its transaction reference](Screenshots/receipt.png)
 
+### Admin - user management
+An admin lists every account, filters by role, searches by name or email, and opens a user to view or delete it.
+
+![Admin Users screen with role filters, search and the user list](Screenshots/user-admin.png)
+
 ### Settings
 Every role can change their display name and password. Email and role cannot be changed, and changing the password signs out every other session.
 

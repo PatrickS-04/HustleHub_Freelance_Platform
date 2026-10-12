@@ -184,7 +184,7 @@ function validateBooking(req, res, next) {
     }
     // One day of slack so a client ahead of UTC can still book "today".
     const start = Date.parse(`${date}T00:00:00Z`);
-    if (start < Date.now() - 2 * DAY_MS) return fail(res, "The start date cannot be in the past.");
+    if (start < Date.now() - DAY_MS) return fail(res, "The start date cannot be in the past.");
     if (start > Date.now() + 365 * DAY_MS) return fail(res, "The start date must be within a year.");
 
     const note = b.note === undefined ? "" : b.note;
