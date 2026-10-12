@@ -3,7 +3,7 @@ const User = require("../models/User");
 
 // Token is read from the httpOnly cookie first (browser clients), then from an
 // Authorization: Bearer header (Postman / Newman, which have no cookie jar).
-// ponytail: hand-rolled single-cookie read - not worth adding cookie-parser for one value
+// Read by hand because only one cookie is needed, so cookie-parser is not worth adding.
 function tokenFromRequest(req) {
   const cookie = req.headers.cookie || "";
   const match = cookie.match(/(?:^|;\s*)token=([^;]+)/);
@@ -15,7 +15,7 @@ function tokenFromRequest(req) {
 
 // JWT `iat` is in whole seconds and passwordChangedAt is stored rounded down to
 // the second, so the token issued in the same request as the change stays valid.
-// ponytail: second granularity - a token minted in that same second elsewhere survives; store a token version if that matters
+// Limitation: a token minted elsewhere in that same second also survives; a stored token version would close that gap.
 const issuedBeforePasswordChange = (payload, user) =>
   Boolean(user.passwordChangedAt) &&
   payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000);

@@ -6,7 +6,7 @@ const EARNING = ["Accepted", "Completed"];
 
 // Flat-rate estimate (TAX_RATE is a fraction, e.g. 0.25). Not tax advice: it
 // ignores brackets, rebates and deductible expenses.
-// ponytail: flat rate - swap for SARS brackets + primary rebate if a real estimate is needed
+// A real estimate would need the SARS brackets and the primary rebate.
 const DEFAULT_TAX_RATE = 0.25;
 function taxRateFromEnv(value = process.env.TAX_RATE) {
   if (value === undefined || value === "") return DEFAULT_TAX_RATE;
@@ -55,7 +55,7 @@ function summarise(rows, taxRate = TAX_RATE) {
 // The logged-in freelancer's income only - the filter comes from the JWT.
 async function myIncome(req, res, next) {
   try {
-    // ponytail: summarised in JS - fine for one freelancer's bookings; move to an aggregation pipeline if this grows large
+    // Summarised in JS, which is fine for one freelancer's bookings; an aggregation pipeline would suit larger volumes.
     const txs = await Transaction.find({ freelancer: req.user.id, status: "Simulated" })
       .populate({ path: "booking", select: "gig gigTitle date status client", populate: { path: "client", select: "name" } })
       .sort({ createdAt: -1 });

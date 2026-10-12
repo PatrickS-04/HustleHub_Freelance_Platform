@@ -18,7 +18,7 @@ On the HustleHub+ platform freelancers use the platform to advertise their servi
 ### What Part 2 Adds
 Part 1 delivered a secure authentication API with users held in memory. Part 2 turns it into the full MERN application:
 
-- **React frontend** - a single-page app built with Vite [42], with a separate dashboard for clients, freelancers and admins.
+- **React frontend** - a single-page app built with Vite [1], with a separate dashboard for clients, freelancers and admins.
 - **MongoDB database** - Mongoose models for users, gigs, bookings and transactions replace the in-memory store.
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
@@ -133,7 +133,7 @@ A booking moves **Pending → Accepted → Completed**. A freelancer may decline
 Every decision below is driven by the same fact: HustleHub+ handles user credentials, authentication tokens, and financial records (booking income, tax estimates), so the confidentiality and integrity of that data are the priority.
 
 ### Password Hashing
-Password hashing converts a user's password into a fixed-length, jumbled string that cannot feasibly be reversed [1]. A secure platform never stores passwords in plain text, so that a database breach does not immediately expose every user's password to attackers.
+Password hashing converts a user's password into a fixed-length, jumbled string that cannot feasibly be reversed [2]. A secure platform never stores passwords in plain text, so that a database breach does not immediately expose every user's password to attackers.
 
 HustleHub+ uses **bcrypt** with a cost factor of 12 ([controllers/authController.js](API/controllers/authController.js)):
 
@@ -144,13 +144,13 @@ HustleHub+ uses **bcrypt** with a cost factor of 12 ([controllers/authController
 **Why bcrypt, and why cost 12:**
 - bcrypt is a deliberately slow, *adaptive* hash. The cost factor sets how many key-expansion rounds are run; it can be raised as hardware gets faster without any other code change.
 - bcrypt generates and stores a unique random salt per hash, so two users with the same password get different hashes and precomputed "rainbow table" attacks do not work.
-- Cost 12 is above the OWASP minimum of 10 [15]. It adds roughly a quarter of a second per hash - unnoticeable to a user logging in, but expensive for an attacker trying millions of guesses.
+- Cost 12 is above the OWASP minimum of 10 [3]. It adds roughly a quarter of a second per hash - unnoticeable to a user logging in, but expensive for an attacker trying millions of guesses.
 - `argon2id` (memory-hard, harder to attack with GPUs) remains a possible future upgrade; Part 2 keeps bcrypt, the well-audited, dependency-light choice.
 
 Password hashes are never logged and never returned in any API response. The `passwordHash` field is excluded from every database query by default (`select: false`), and is only loaded for login and password change.
 
 ### JWT Authentication
-A JSON Web Token (JWT) is a signed, JSON-based token that lets two parties exchange verified claims [2][13]. After login, the API issues a JWT; the client returns it on later requests and the API verifies the signature, so no server-side session store is needed.
+A JSON Web Token (JWT) is a signed, JSON-based token that lets two parties exchange verified claims [4][5]. After login, the API issues a JWT; the client returns it on later requests and the API verifies the signature, so no server-side session store is needed.
 
 **Signing** ([utils/generateToken.js](API/utils/generateToken.js)):
 ```js
@@ -179,18 +179,18 @@ const payload = jwt.verify(token, process.env.JWT_SECRET, {
 - **Minimal payload:** the token carries only `sub` (user id) and `role`. If a token is ever intercepted, no name, email, or other personal data leaks with it.
 - **Short-lived:** a 1-hour expiry limits how long a stolen token stays usable.
 - **HS256 (symmetric) signing:** the same Express API both issues and verifies tokens - one trusted party, and the secret never leaves the server. Asymmetric signing (RS256) exists so a *separate* service can verify tokens without being able to mint them; there is no such service here, so RS256 would only add key management for no benefit.
-- **Algorithm pinned on verify:** `algorithms: ["HS256"]` is set explicitly so the API cannot be tricked into accepting a token signed with `alg: none` or a different algorithm [14].
+- **Algorithm pinned on verify:** `algorithms: ["HS256"]` is set explicitly so the API cannot be tricked into accepting a token signed with `alg: none` or a different algorithm [6].
 - **Issuer and audience checked:** every request verifies `iss` and `aud`, not just the signature, so a token minted for a different application is rejected.
 - **Mandatory secret:** the server refuses to start if `JWT_SECRET` is missing or shorter than 32 characters ([server.js](API/server.js)), so the signing key can never be weak or absent by accident.
 
 ### Session Management
-A valid signature alone is not enough. On every request `requireAuth` also loads the user from the database ([middleware/auth.js](API/middleware/auth.js)) [12]:
+A valid signature alone is not enough. On every request `requireAuth` also loads the user from the database ([middleware/auth.js](API/middleware/auth.js)) [7]:
 
 - **Deleted users are locked out immediately.** If the account no longer exists the token is rejected, even though it has not expired.
 - **The role is read from the database, not the token.** `req.user.role` comes from the user record, so a role change takes effect on the next request.
 - **Changing a password signs out every other session.** The user record stores `passwordChangedAt`, and any token issued before that moment is rejected. The session that made the change receives a fresh token and stays signed in.
 - **Logout clears the cookie on the server.** The cookie is `httpOnly`, so only the API can remove it (`POST /api/auth/logout`).
-- **Idle timeout in the browser.** The frontend signs the user out after 15 minutes without activity, with a one-minute warning and a "stay signed in" option [11] ([hooks/useIdleLogout.js](frontend/src/hooks/useIdleLogout.js)). The limit can be changed with `VITE_IDLE_MINUTES`.
+- **Idle timeout in the browser.** The frontend signs the user out after 15 minutes without activity, with a one-minute warning and a "stay signed in" option [8] ([hooks/useIdleLogout.js](frontend/src/hooks/useIdleLogout.js)). The limit can be changed with `VITE_IDLE_MINUTES`.
 
 ### JWT Storage and Transport
 On successful register or login the API sets the token in a cookie ([controllers/authController.js](API/controllers/authController.js)):
@@ -203,15 +203,15 @@ res.cookie("token", token, {
 });
 ```
 
-**Why an `httpOnly` cookie rather than `localStorage` or a JS variable** [10]**:**
+**Why an `httpOnly` cookie rather than `localStorage` or a JS variable** [9]**:**
 - `httpOnly` means JavaScript cannot read the cookie (`document.cookie` does not see it), so a cross-site scripting (XSS) payload on the page cannot steal the token. A token kept in `localStorage` is readable by any script that runs on the page.
 - `Secure` means the cookie is only ever sent over HTTPS, never plain HTTP.
-- `SameSite=Strict` means the browser does not attach the cookie to requests that originate from other sites. This closes the CSRF hole that cookies would otherwise open [9], and it is backed up by the CORS allow-list (below).
+- `SameSite=Strict` means the browser does not attach the cookie to requests that originate from other sites. This closes the CSRF hole that cookies would otherwise open [10], and it is backed up by the CORS allow-list (below).
 
 `requireAuth` reads the token from the cookie first and falls back to an `Authorization: Bearer <token>` header ([middleware/auth.js](API/middleware/auth.js)). The React SPA uses the cookie exclusively: it sends `credentials: 'include'` on every request and never stores or reads the token itself ([services/api.js](frontend/src/services/api.js)). The token is returned in the login/register response body **only when `EXPOSE_TOKEN_IN_BODY=true`** - set for Postman/Newman runs, which have no browser cookie jar. It is off by default, so a normal deployment never puts the token in a response body.
 
 ### Access Control
-Authentication proves who the user is; access control decides what they may do. HustleHub+ checks both the **role** and the **ownership** of the record, and denies by default [29]. Broken access control is the first item in the OWASP Top 10 [17].
+Authentication proves who the user is; access control decides what they may do. HustleHub+ checks both the **role** and the **ownership** of the record, and denies by default [11]. Broken access control is the first item in the OWASP Top 10 [12].
 
 **Role checks** are declared on the route with `requireRole` ([middleware/auth.js](API/middleware/auth.js)), and a wrong role receives `403`:
 
@@ -244,23 +244,23 @@ The frontend mirrors these rules by showing each role only its own tabs, with an
 ```js
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 ```
-The API only accepts cross-origin requests from the configured frontend origin (`CORS_ORIGIN`), and only that origin is permitted to send credentials (the auth cookie) ([app.js](API/app.js)) [8]. Any other website that tries to call the API from a logged-in user's browser is blocked by the browser. Combined with `SameSite=Strict`, a malicious site cannot make authenticated calls on a user's behalf.
+The API only accepts cross-origin requests from the configured frontend origin (`CORS_ORIGIN`), and only that origin is permitted to send credentials (the auth cookie) ([app.js](API/app.js)) [13]. Any other website that tries to call the API from a logged-in user's browser is blocked by the browser. Combined with `SameSite=Strict`, a malicious site cannot make authenticated calls on a user's behalf.
 
 ### Security Headers
-**API** ([middleware/securityHeaders.js](API/middleware/securityHeaders.js)) - Helmet [6] sets the headers on every response:
-- **Content-Security-Policy** `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`. The API only returns JSON, so it is allowed to load nothing at all [7].
-- **Strict-Transport-Security** for one year, including subdomains [4].
+**API** ([middleware/securityHeaders.js](API/middleware/securityHeaders.js)) - Helmet [14] sets the headers on every response:
+- **Content-Security-Policy** `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`. The API only returns JSON, so it is allowed to load nothing at all [15].
+- **Strict-Transport-Security** for one year, including subdomains [16].
 - **X-Frame-Options: DENY** and **Referrer-Policy: no-referrer**.
-- **Cache-Control: no-store** on every response, so responses containing personal or financial data are never kept by a browser or proxy cache [31].
+- **Cache-Control: no-store** on every response, so responses containing personal or financial data are never kept by a browser or proxy cache [17].
 - Helmet also removes the `X-Powered-By` header, so the API does not advertise that it runs on Express.
 
 **Frontend** ([nginx.conf.template](frontend/nginx.conf.template), and the same headers for `npm run preview` in [vite.config.js](frontend/vite.config.js)):
 - **Content-Security-Policy** allowing scripts, styles, fonts and images from the app's own origin only, with `connect-src` limited to the app and the API. Inline scripts are not allowed, which blocks injected script even if markup were to reach the page.
 - **HSTS**, **X-Frame-Options: DENY**, **X-Content-Type-Options: nosniff**, **Referrer-Policy: no-referrer** and a **Permissions-Policy** that turns off the camera, microphone and geolocation.
-- `server_tokens off`, so nginx does not reveal its version [35].
+- `server_tokens off`, so nginx does not reveal its version [18].
 
 ### Rate Limiting
-Five limiters are defined in one place ([middleware/rateLimiters.js](API/middleware/rateLimiters.js)) [18][19]:
+Five limiters are defined in one place ([middleware/rateLimiters.js](API/middleware/rateLimiters.js)) [19][20]:
 
 | Limiter | Applies to | Limit | Counted per |
 |---------|-----------|-------|-------------|
@@ -275,9 +275,9 @@ Login and registration are the endpoints targeted by password brute-forcing and 
 A blocked request receives `429` with a clear message and the standard `RateLimit` headers. The frontend shows a friendly message and pauses the login button for a short time.
 
 ### Input Validation
-Input is validated in three layers, so that no single missed check lets bad data through [16].
+Input is validated in three layers, so that no single missed check lets bad data through [21].
 
-1. **Middleware** - a validator runs before every controller that accepts a body ([middleware/validators.js](API/middleware/validators.js)). Each one checks the type and content of every field, then **rebuilds `req.body` from the cleaned fields only**, which discards any extra properties an attacker adds. This allow-list approach is the recommended defence against mass assignment [30].
+1. **Middleware** - a validator runs before every controller that accepts a body ([middleware/validators.js](API/middleware/validators.js)). Each one checks the type and content of every field, then **rebuilds `req.body` from the cleaned fields only**, which discards any extra properties an attacker adds. This allow-list approach is the recommended defence against mass assignment [22].
 
    | Validator | Rules |
    |-----------|-------|
@@ -293,32 +293,32 @@ Input is validated in three layers, so that no single missed check lets bad data
 
    Any error thrown during validation is caught and returned as `400`, never a `500`.
 2. **Controller** - controllers repeat the critical checks as defence in depth. `register` and `login` re-check presence and type and reject non-string values before any lookup ([controllers/authController.js](API/controllers/authController.js)).
-3. **Database schema** - the Mongoose schemas repeat the length limits, number ranges and enums ([API/models](API/models)), so invalid data is rejected at the last step even if an earlier check is missed [22].
+3. **Database schema** - the Mongoose schemas repeat the length limits, number ranges and enums ([API/models](API/models)), so invalid data is rejected at the last step even if an earlier check is missed [23].
 
 Body size is capped at 10&nbsp;KB (`express.json({ limit: "10kb" })`, [app.js](API/app.js)) so an oversized payload cannot be used to exhaust memory.
 
 The frontend applies the same rules to its forms and shows a password strength meter, so users get feedback before a request is sent. This is for usability; the API never relies on it.
 
-The principle throughout is **reject by default**: only known-good input shapes are accepted; everything else is refused with a `400` and a specific message [21].
+The principle throughout is **reject by default**: only known-good input shapes are accepted; everything else is refused with a `400` and a specific message [24].
 
 ### Injection and XSS Protection
 Three sanitisers sit in [middleware/sanitize.js](API/middleware/sanitize.js):
 
-- **NoSQL injection** - `express-mongo-sanitize` runs on every request and removes any key beginning with `$` or containing `.`. A login body such as `{ "email": { "$gt": "" } }` therefore cannot become a MongoDB query operator [24][26]. The validators add a second barrier by rejecting any value that is not a plain string or number.
-- **HTTP parameter pollution** - `hpp` runs on every request, so a repeated query parameter cannot be used to pass an array where a single value is expected [25].
+- **NoSQL injection** - `express-mongo-sanitize` runs on every request and removes any key beginning with `$` or containing `.`. A login body such as `{ "email": { "$gt": "" } }` therefore cannot become a MongoDB query operator [25][26]. The validators add a second barrier by rejecting any value that is not a plain string or number.
+- **HTTP parameter pollution** - `hpp` runs on every request, so a repeated query parameter cannot be used to pass an array where a single value is expected [27].
 - **HTML stripping** - free-text fields (gig title and description, booking note, review comment) have `<script>` and `<style>` blocks removed with their contents, and any other tag removed. The stripping repeats until nothing changes, so a nested payload such as `<scr<script>ipt>` cannot reassemble itself.
 
-Stored text is protected again on the way out: React escapes everything it renders [28], and the Content-Security-Policy blocks inline scripts. A stored XSS payload would have to get past all three, which follows the layered defence OWASP recommends [17][27].
+Stored text is protected again on the way out: React escapes everything it renders [28], and the Content-Security-Policy blocks inline scripts. A stored XSS payload would have to get past all three, which follows the layered defence OWASP recommends [12][29].
 
 ### HTTPS
-The API is served **only** over HTTPS ([server.js](API/server.js)) - there is no plain-HTTP listener to downgrade to. `minVersion: "TLSv1.2"` refuses the older, broken TLS versions [3][5]. Helmet adds a `Strict-Transport-Security` (HSTS) header instructing browsers to refuse HTTP for this origin in future.
+The API is served **only** over HTTPS ([server.js](API/server.js)) - there is no plain-HTTP listener to downgrade to. `minVersion: "TLSv1.2"` refuses the older, broken TLS versions [30][31]. Helmet adds a `Strict-Transport-Security` (HSTS) header instructing browsers to refuse HTTP for this origin in future.
 
-The frontend is also served only over HTTPS. The Vite dev server reuses the API's certificate, and in Docker nginx accepts TLS 1.2 and 1.3 only and redirects any plain-HTTP request to HTTPS [35].
+The frontend is also served only over HTTPS. The Vite dev server reuses the API's certificate, and in Docker nginx accepts TLS 1.2 and 1.3 only and redirects any plain-HTTP request to HTTPS [18].
 
 Because every request carries either credentials (login) or the auth token (cookie), transport encryption is what prevents anyone on the network path - public Wi-Fi, an ISP, a compromised router - from reading or altering that data in transit. Locally the certificate is a self-signed certificate generated with OpenSSL; production would use a CA-issued certificate.
 
 ### Error Handling
-All errors funnel through one central handler ([middleware/errorHandler.js](API/middleware/errorHandler.js)) [20]:
+All errors funnel through one central handler ([middleware/errorHandler.js](API/middleware/errorHandler.js)) [32]:
 - the full error and stack trace are written to the **server log only**
 - the client always receives a generic `{ "error": "An unexpected error occurred." }` with the correct status code - no stack traces, file paths, dependency names or versions, or configuration are ever returned, so an attacker cannot use error responses to fingerprint the system
 - a small set of safe, specific messages is allowed: malformed JSON → `400`, body too large → `413`, unknown route → `404`, invalid identifier → `400`, invalid data → `400`, duplicate value → `409`. Database errors are translated into these messages, so no Mongoose or MongoDB error text reaches the client
@@ -330,8 +330,8 @@ The frontend adds a second layer ([services/api.js](frontend/src/services/api.js
 ### Database and Container Security
 - **The API will not start without a database.** `MONGO_URL` is required, and the HTTPS listener only opens once the connection succeeds ([server.js](API/server.js)).
 - **The database is not reachable from outside.** In Docker, MongoDB sits on an internal-only network with no published port, so only the API container can connect to it ([docker-compose.yml](docker-compose.yml)) [33].
-- **The database requires authentication**, with credentials supplied from an untracked `.env` file [23].
-- **Containers run with least privilege.** The API image installs production dependencies only and runs as the non-root `node` user. The frontend image is a multi-stage build, so the final image holds only nginx and the built static files [32][34].
+- **The database requires authentication**, with credentials supplied from an untracked `.env` file [34].
+- **Containers run with least privilege.** The API image installs production dependencies only and runs as the non-root `node` user. The frontend image is a multi-stage build, so the final image holds only nginx and the built static files [35][36].
 - **Secrets are never baked into an image or committed.** Certificates are mounted read-only at run time, environment values come from `.env` files, and `.env` and `certs` are in `.gitignore` and `.dockerignore`.
 - **Deleting a user removes their data.** Their gigs, bookings and transactions are deleted with the account, so nothing is left pointing at a user that no longer exists.
 
@@ -496,7 +496,7 @@ The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](AP
 
 The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.
 
-Run it headless with Newman [39]:
+Run it headless with Newman [37]:
 
 ```bash
 cd API
@@ -506,14 +506,14 @@ npm run test:api
 A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the tests can read the token from the response body. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Collection%20Screenshots%20for%20Part%202.pdf).
 
 ### npm audit
-`npm audit` checks every dependency against the public vulnerability database [37]. The API has **0 known vulnerabilities**:
+`npm audit` checks every dependency against the public vulnerability database [38]. The API has **0 known vulnerabilities**:
 
 ![npm audit reporting 0 vulnerabilities](npm-audit.png)
 
 The CI pipeline runs `npm audit --audit-level=high` on every push, so a dependency with a high-severity vulnerability fails the build.
 
 ### OWASP ZAP
-The running API was scanned with the OWASP ZAP baseline scan, which crawls the target and passively checks every response for missing security headers, insecure cookies, information leaks and similar weaknesses [36]. The scan plan is [zap.yaml](zap.yaml) and the full report is [zap-report.html](zap-report.html).
+The running API was scanned with the OWASP ZAP baseline scan, which crawls the target and passively checks every response for missing security headers, insecure cookies, information leaks and similar weaknesses [39]. The scan plan is [zap.yaml](zap.yaml) and the full report is [zap-report.html](zap-report.html).
 
 ```bash
 docker run --rm -v "${PWD}:/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://host.docker.internal:3443 -r zap-report.html
@@ -567,7 +567,7 @@ npm run test:run
 | `api.test.js` | `4xx` messages shown; `429` friendly message; `5xx` never leaks server internals; `401` on a protected route signs the user out |
 
 ## CI Pipeline
-[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push and pull request using GitHub Actions [38].
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push and pull request using GitHub Actions [42].
 
 | Job | Steps |
 |-----|-------|
@@ -643,45 +643,45 @@ Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 
 ## References
 
-- [1] 	Bitwarden, "What is password hashing?," 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
-- [2] 	S. Saha, "The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication," Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
-- [3] 	E. Rescorla, "The Transport Layer Security (TLS) Protocol Version 1.3," RFC 8446, Internet Engineering Task Force, August 2018. [Online]. Available: https://www.rfc-editor.org/rfc/rfc8446. [Accessed 5 September 2026].
-- [4] 	J. Hodges, C. Jackson and A. Barth, "HTTP Strict Transport Security (HSTS)," RFC 6797, Internet Engineering Task Force, November 2012. [Online]. Available: https://www.rfc-editor.org/rfc/rfc6797. [Accessed 5 September 2026].
-- [5] 	OWASP Foundation, "Transport Layer Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [6] 	Helmet.js, "Helmet — Help secure Express apps with various HTTP headers," 2025. [Online]. Available: https://helmetjs.github.io/. [Accessed 5 September 2026].
-- [7] 	Mozilla, "Content-Security-Policy," MDN Web Docs, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy. [Accessed 5 September 2026].
-- [8] 	Mozilla, "Cross-Origin Resource Sharing (CORS)," MDN Web Docs, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS. [Accessed 5 September 2026].
-- [9] 	OWASP Foundation, "Cross-Site Request Forgery Prevention Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [10] 	A. Barth, "HTTP State Management Mechanism," RFC 6265, Internet Engineering Task Force, April 2011. [Online]. Available: https://www.rfc-editor.org/rfc/rfc6265. [Accessed 5 September 2026].
-- [11] 	P. A. Grassi, J. L. Fenton, E. M. Newton et al., "Digital Identity Guidelines: Authentication and Lifecycle Management," NIST Special Publication 800-63B, National Institute of Standards and Technology, June 2017. [Online]. Available: https://pages.nist.gov/800-63-3/sp800-63b.html. [Accessed 5 September 2026].
-- [12] 	OWASP Foundation, "Session Management Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [13] 	M. Jones, J. Bradley and N. Sakimura, "JSON Web Token (JWT)," RFC 7519, Internet Engineering Task Force, May 2015. [Online]. Available: https://www.rfc-editor.org/rfc/rfc7519. [Accessed 5 September 2026].
-- [14] 	OWASP Foundation, "JSON Web Token for Java Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [15] 	OWASP Foundation, "Password Storage Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [16] 	OWASP Foundation, "Input Validation Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [17] 	OWASP Foundation, "OWASP Top 10:2021," OWASP Foundation, 2021. [Online]. Available: https://owasp.org/Top10/. [Accessed 5 September 2026].
-- [18] 	OWASP Foundation, "Blocking Brute Force Attacks," OWASP Foundation, 2023. [Online]. Available: https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks. [Accessed 5 September 2026].
-- [19] 	express-rate-limit, "express-rate-limit — Basic rate-limiting middleware for Express," npm, 2025. [Online]. Available: https://www.npmjs.com/package/express-rate-limit. [Accessed 5 September 2026].
-- [20] 	OWASP Foundation, "Error Handling Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [21] 	OWASP Foundation, "REST Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html. [Accessed 5 September 2026].
-- [22] 	Mongoose, "Validation," Mongoose Documentation, 2026. [Online]. Available: https://mongoosejs.com/docs/validation.html. [Accessed 11 October 2026].
-- [23] 	MongoDB, "Security Checklist for Self-Managed Deployments," MongoDB Database Manual, 2026. [Online]. Available: https://www.mongodb.com/docs/manual/administration/security-checklist/. [Accessed 11 October 2026].
-- [24] 	fiznool, "express-mongo-sanitize — Sanitize your express payload to prevent MongoDB operator injection," GitHub, 2026. [Online]. Available: https://github.com/fiznool/express-mongo-sanitize. [Accessed 11 October 2026].
-- [25] 	analog-nico, "hpp — Express middleware to protect against HTTP Parameter Pollution attacks," GitHub, 2026. [Online]. Available: https://github.com/analog-nico/hpp. [Accessed 11 October 2026].
+- [1] 	Vite, "Getting Started," Vite Guide, 2026. [Online]. Available: https://vite.dev/guide/. [Accessed 11 October 2026].
+- [2] 	Bitwarden, "What is password hashing?," 2026. [Online]. Available: https://bitwarden.com/resources/what-is-password-hashing/. [Accessed 3 September 2026].
+- [3] 	OWASP Foundation, "Password Storage Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [4] 	S. Saha, "The JSON Web Token Handbook: Learn to Use JWTs for Web Authentication," Hashnode, 8 October 2025. [Online]. Available: https://www.freecodecamp.org/news/the-json-web-token-handbook-learn-to-use-jwts-for-web-authentication/. [Accessed 3 September 2026].
+- [5] 	M. Jones, J. Bradley and N. Sakimura, "JSON Web Token (JWT)," RFC 7519, Internet Engineering Task Force, May 2015. [Online]. Available: https://www.rfc-editor.org/rfc/rfc7519. [Accessed 5 September 2026].
+- [6] 	OWASP Foundation, "JSON Web Token for Java Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [7] 	OWASP Foundation, "Session Management Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [8] 	P. A. Grassi, J. L. Fenton, E. M. Newton et al., "Digital Identity Guidelines: Authentication and Lifecycle Management," NIST Special Publication 800-63B, National Institute of Standards and Technology, June 2017. [Online]. Available: https://pages.nist.gov/800-63-3/sp800-63b.html. [Accessed 5 September 2026].
+- [9] 	A. Barth, "HTTP State Management Mechanism," RFC 6265, Internet Engineering Task Force, April 2011. [Online]. Available: https://www.rfc-editor.org/rfc/rfc6265. [Accessed 5 September 2026].
+- [10] 	OWASP Foundation, "Cross-Site Request Forgery Prevention Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [11] 	OWASP Foundation, "Authorization Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [12] 	OWASP Foundation, "OWASP Top 10:2021," OWASP Foundation, 2021. [Online]. Available: https://owasp.org/Top10/. [Accessed 5 September 2026].
+- [13] 	Mozilla, "Cross-Origin Resource Sharing (CORS)," MDN Web Docs, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS. [Accessed 5 September 2026].
+- [14] 	Helmet.js, "Helmet — Help secure Express apps with various HTTP headers," 2025. [Online]. Available: https://helmetjs.github.io/. [Accessed 5 September 2026].
+- [15] 	Mozilla, "Content-Security-Policy," MDN Web Docs, 2026. [Online]. Available: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy. [Accessed 5 September 2026].
+- [16] 	J. Hodges, C. Jackson and A. Barth, "HTTP Strict Transport Security (HSTS)," RFC 6797, Internet Engineering Task Force, November 2012. [Online]. Available: https://www.rfc-editor.org/rfc/rfc6797. [Accessed 5 September 2026].
+- [17] 	OWASP Foundation, "HTTP Headers Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [18] 	nginx, "Configuring HTTPS servers," nginx Documentation, 2026. [Online]. Available: https://nginx.org/en/docs/http/configuring_https_servers.html. [Accessed 11 October 2026].
+- [19] 	OWASP Foundation, "Blocking Brute Force Attacks," OWASP Foundation, 2023. [Online]. Available: https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks. [Accessed 5 September 2026].
+- [20] 	express-rate-limit, "express-rate-limit — Basic rate-limiting middleware for Express," npm, 2025. [Online]. Available: https://www.npmjs.com/package/express-rate-limit. [Accessed 5 September 2026].
+- [21] 	OWASP Foundation, "Input Validation Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [22] 	OWASP Foundation, "Mass Assignment Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [23] 	Mongoose, "Validation," Mongoose Documentation, 2026. [Online]. Available: https://mongoosejs.com/docs/validation.html. [Accessed 11 October 2026].
+- [24] 	OWASP Foundation, "REST Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [25] 	fiznool, "express-mongo-sanitize — Sanitize your express payload to prevent MongoDB operator injection," GitHub, 2026. [Online]. Available: https://github.com/fiznool/express-mongo-sanitize. [Accessed 11 October 2026].
 - [26] 	OWASP Foundation, "Testing for NoSQL Injection," OWASP Web Security Testing Guide, 2026. [Online]. Available: https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05.6-Testing_for_NoSQL_Injection. [Accessed 11 October 2026].
-- [27] 	OWASP Foundation, "Cross Site Scripting Prevention Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [27] 	analog-nico, "hpp — Express middleware to protect against HTTP Parameter Pollution attacks," GitHub, 2026. [Online]. Available: https://github.com/analog-nico/hpp. [Accessed 11 October 2026].
 - [28] 	React, "Common components," React Reference, 2026. [Online]. Available: https://react.dev/reference/react-dom/components/common. [Accessed 11 October 2026].
-- [29] 	OWASP Foundation, "Authorization Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html. [Accessed 11 October 2026].
-- [30] 	OWASP Foundation, "Mass Assignment Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html. [Accessed 11 October 2026].
-- [31] 	OWASP Foundation, "HTTP Headers Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html. [Accessed 11 October 2026].
-- [32] 	OWASP Foundation, "Docker Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [29] 	OWASP Foundation, "Cross Site Scripting Prevention Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [30] 	E. Rescorla, "The Transport Layer Security (TLS) Protocol Version 1.3," RFC 8446, Internet Engineering Task Force, August 2018. [Online]. Available: https://www.rfc-editor.org/rfc/rfc8446. [Accessed 5 September 2026].
+- [31] 	OWASP Foundation, "Transport Layer Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html. [Accessed 5 September 2026].
+- [32] 	OWASP Foundation, "Error Handling Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html. [Accessed 5 September 2026].
 - [33] 	Docker, "Networking in Compose," Docker Docs, 2026. [Online]. Available: https://docs.docker.com/compose/how-tos/networking/. [Accessed 11 October 2026].
-- [34] 	Docker, "Multi-stage builds," Docker Docs, 2026. [Online]. Available: https://docs.docker.com/build/building/multi-stage/. [Accessed 11 October 2026].
-- [35] 	nginx, "Configuring HTTPS servers," nginx Documentation, 2026. [Online]. Available: https://nginx.org/en/docs/http/configuring_https_servers.html. [Accessed 11 October 2026].
-- [36] 	ZAP, "ZAP - Baseline Scan," ZAP Documentation, 2026. [Online]. Available: https://www.zaproxy.org/docs/docker/baseline-scan/. [Accessed 11 October 2026].
-- [37] 	npm, "npm-audit," npm Docs, 2026. [Online]. Available: https://docs.npmjs.com/cli/v11/commands/npm-audit. [Accessed 11 October 2026].
-- [38] 	GitHub, "GitHub Actions documentation," GitHub Docs, 2026. [Online]. Available: https://docs.github.com/en/actions. [Accessed 11 October 2026].
-- [39] 	Postman, "Run and test collections from the command line using Newman CLI," Postman Docs, 2026. [Online]. Available: https://learning.postman.com/docs/collections/using-newman-cli/command-line-integration-with-newman/. [Accessed 11 October 2026].
+- [34] 	MongoDB, "Security Checklist for Self-Managed Deployments," MongoDB Database Manual, 2026. [Online]. Available: https://www.mongodb.com/docs/manual/administration/security-checklist/. [Accessed 11 October 2026].
+- [35] 	OWASP Foundation, "Docker Security Cheat Sheet," OWASP Cheat Sheet Series, 2024. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html. [Accessed 11 October 2026].
+- [36] 	Docker, "Multi-stage builds," Docker Docs, 2026. [Online]. Available: https://docs.docker.com/build/building/multi-stage/. [Accessed 11 October 2026].
+- [37] 	Postman, "Run and test collections from the command line using Newman CLI," Postman Docs, 2026. [Online]. Available: https://learning.postman.com/docs/collections/using-newman-cli/command-line-integration-with-newman/. [Accessed 11 October 2026].
+- [38] 	npm, "npm-audit," npm Docs, 2026. [Online]. Available: https://docs.npmjs.com/cli/v11/commands/npm-audit. [Accessed 11 October 2026].
+- [39] 	ZAP, "ZAP - Baseline Scan," ZAP Documentation, 2026. [Online]. Available: https://www.zaproxy.org/docs/docker/baseline-scan/. [Accessed 11 October 2026].
 - [40] 	Vitest, "Getting Started," Vitest Guide, 2026. [Online]. Available: https://vitest.dev/guide/. [Accessed 11 October 2026].
 - [41] 	Testing Library, "React Testing Library," Testing Library Docs, 2026. [Online]. Available: https://testing-library.com/docs/react-testing-library/intro/. [Accessed 11 October 2026].
-- [42] 	Vite, "Getting Started," Vite Guide, 2026. [Online]. Available: https://vite.dev/guide/. [Accessed 11 October 2026].
+- [42] 	GitHub, "GitHub Actions documentation," GitHub Docs, 2026. [Online]. Available: https://docs.github.com/en/actions. [Accessed 11 October 2026].

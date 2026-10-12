@@ -75,7 +75,7 @@ async function createBooking(req, res, next) {
         amount: booking.price,
       });
     } catch (err) {
-      // ponytail: manual rollback - Mongo multi-document transactions need a replica set; switch to a session if one is used
+      // Manual rollback: Mongo multi-document transactions need a replica set; switch to a session if one is used
       await booking.deleteOne();
       throw err;
     }
