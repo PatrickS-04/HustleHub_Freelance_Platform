@@ -444,7 +444,7 @@ Registration never creates an admin. Register a normal account, then change its 
 mongosh "mongodb://localhost:27017/hustlehub" --eval 'db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })'
 ```
 
-Log in again and the admin dashboard is shown.
+Log in again and the admin dashboard is shown. When running in Docker, use the steps under [Docker](#docker) instead.
 
 ### Docker
 **Requirements:** Docker Desktop (running), plus the certificate and `API/.env` from the steps above.
@@ -467,6 +467,21 @@ docker compose up -d --build
 ![The mongo, api and client containers in Docker Desktop](docker-containers.png)
 
 Stop the containers with `docker compose down` (add `-v` to also delete the MongoDB data volume).
+
+#### Creating an admin account in Docker
+MongoDB has no published port in Docker, so the role is changed from inside the `mongo` container. Register a normal account at `https://localhost:5173`, then open a Mongo shell from the folder containing `docker-compose.yml`. Replace `hustlehub` after `-u` with your `MONGO_USER` if it differs; the shell prompts for `MONGO_PASSWORD`:
+
+```bash
+docker compose exec mongo mongosh -u hustlehub -p --authenticationDatabase admin hustlehub
+```
+
+At the `hustlehub>` prompt, change the role of the account you registered, then type `exit`:
+
+```js
+db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })
+```
+
+The result should show `modifiedCount: 1`. Emails are stored in lowercase, so `matchedCount: 0` means the email does not match. Log in again and the admin dashboard is shown. The account is kept in the MongoDB data volume, so it survives `docker compose down` but not `docker compose down -v`.
 
 ## Testing
 
