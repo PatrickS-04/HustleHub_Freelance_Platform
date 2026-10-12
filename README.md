@@ -23,7 +23,7 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
 - **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, session revocation on password change, and an idle-session timeout.
-- **Testing** - a 109-request Postman/Newman collection, backend self-checks, 46 frontend tests, `npm audit` and an OWASP ZAP scan.
+- **Testing** - a 99-request Postman/Newman collection, backend self-checks, 46 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
 ### What Each Role Can Do
