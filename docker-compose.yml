@@ -1,6 +1,6 @@
 # api + client + mongo. Mongo sits on an internal-only network: no published
 # port and no route out, so only the api container can reach it.
-# Secrets: MONGO_USER / MONGO_PASSWORD in ./.env (see .env.example), the rest in API/.env.
+# Secrets: MONGO_USER / MONGO_PASSWORD in ./.env, the rest in API/.env.
 services:
   mongo:
     image: mongo:7
