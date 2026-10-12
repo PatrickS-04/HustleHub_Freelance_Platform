@@ -41,7 +41,7 @@ async function getUser(req, res, next) {
 
 // Removes the account and everything that hangs off it, so no gig, booking or
 // transaction is left pointing at a user that no longer exists.
-// ponytail: sequential deletes - Mongo multi-document transactions need a replica set; switch to a session if one is used
+// Sequential deletes: Mongo multi-document transactions need a replica set; switch to a session if one is used
 async function deleteUser(req, res, next) {
   try {
     if (req.params.id === req.user.id) {
