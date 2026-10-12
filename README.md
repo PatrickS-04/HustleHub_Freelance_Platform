@@ -507,7 +507,7 @@ npm run test:api
 
 The run above is without the admin credentials set, so the admin folder is skipped: **99/99 requests, 151/151 assertions, 0 failures**.
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the tests can read the token from the response body. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Collection%20Screenshots%20for%20Part%202.pdf).
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. `EXPOSE_TOKEN_IN_BODY=true` must be set (see the `.env` above) so the tests can read the token from the response body. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
 
 ### npm audit
 `npm audit` checks every dependency against the public vulnerability database [38]. The API has **0 known vulnerabilities**:
@@ -635,6 +635,11 @@ The Spending tab breaks the total down by month and by category and lists each t
 Either party can open the receipt for a booking, which can be printed or saved as a PDF.
 
 ![Receipt for a completed booking with its transaction reference](Screenshots/receipt.png)
+
+### Admin - user management
+An admin lists every account, filters by role, searches by name or email, and opens a user to view or delete it.
+
+![Admin Users screen with role filters, search and the user list](Screenshots/user-admin.png)
 
 ### Settings
 Every role can change their display name and password. Email and role cannot be changed, and changing the password signs out every other session.
