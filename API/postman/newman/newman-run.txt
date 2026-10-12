@@ -4,180 +4,180 @@ HustleHub+ Part2
 
 □ 00 Health
 └ Health check
-  GET https://localhost:3443/health [200 OK, 886B, 37ms]
+  GET https://localhost:3443/health [200 OK, 886B, 45ms]
   √  Status is 200
   √  Body reports ok
 
 □ 01 Auth
 └ Register client - valid
-  POST https://localhost:3443/api/auth/register [201 Created, 1.69kB, 298ms]
+  POST https://localhost:3443/api/auth/register [201 Created, 1.69kB, 516ms]
   √  Status is 201
   √  Role is client
   √  No password or hash returned
   √  Auth cookie is httpOnly and Secure
 
 └ Register freelancer - valid
-  POST https://localhost:3443/api/auth/register [201 Created, 1.71kB, 280ms]
+  POST https://localhost:3443/api/auth/register [201 Created, 1.71kB, 371ms]
   √  Status is 201
 
 └ Register other freelancer - valid
-  POST https://localhost:3443/api/auth/register [201 Created, 1.7kB, 330ms]
+  POST https://localhost:3443/api/auth/register [201 Created, 1.7kB, 483ms]
   √  Status is 201
 
 └ Register victim client - valid
-  POST https://localhost:3443/api/auth/register [201 Created, 1.69kB, 325ms]
+  POST https://localhost:3443/api/auth/register [201 Created, 1.69kB, 591ms]
   √  Status is 201
 
 └ Register - role admin rejected
-  POST https://localhost:3443/api/auth/register [400 Bad Request, 927B, 3ms]
+  POST https://localhost:3443/api/auth/register [400 Bad Request, 927B, 4ms]
   √  Status is 400
   √  Error message is controlled
 
 └ Register - duplicate email
-  POST https://localhost:3443/api/auth/register [409 Conflict, 928B, 26ms]
+  POST https://localhost:3443/api/auth/register [409 Conflict, 928B, 200ms]
   √  Status is 409
   √  Error message is controlled
 
 └ Register - weak password
-  POST https://localhost:3443/api/auth/register [400 Bad Request, 976B, 4ms]
+  POST https://localhost:3443/api/auth/register [400 Bad Request, 976B, 9ms]
   √  Status is 400
   √  No stack trace or internals leaked
 
 └ Login - valid
-  POST https://localhost:3443/api/auth/login [200 OK, 1.67kB, 342ms]
+  POST https://localhost:3443/api/auth/login [200 OK, 1.67kB, 445ms]
   √  Status is 200
   √  JWT returned
   √  User info returned without secrets
 
 └ Login - wrong password
-  POST https://localhost:3443/api/auth/login [401 Unauthorized, 914B, 284ms]
+  POST https://localhost:3443/api/auth/login [401 Unauthorized, 914B, 433ms]
   √  Status is 401
   √  Error message is controlled
 
 └ Login - unknown email (same message, no enumeration)
-  POST https://localhost:3443/api/auth/login [401 Unauthorized, 914B, 22ms]
+  POST https://localhost:3443/api/auth/login [401 Unauthorized, 914B, 159ms]
   √  Status is 401
   √  Error message is controlled
 
 └ Get me - valid token
-  GET https://localhost:3443/api/auth/me [200 OK, 995B, 16ms]
+  GET https://localhost:3443/api/auth/me [200 OK, 995B, 90ms]
   √  Status is 200
   √  Returns the client
 
 └ Get me - no token
-  GET https://localhost:3443/api/auth/me [401 Unauthorized, 918B, 2ms]
+  GET https://localhost:3443/api/auth/me [401 Unauthorized, 918B, 4ms]
   √  Status is 401
   √  Error message is controlled
 
 └ Get me - tampered token
-  GET https://localhost:3443/api/auth/me [401 Unauthorized, 919B, 4ms]
+  GET https://localhost:3443/api/auth/me [401 Unauthorized, 919B, 3ms]
   √  Status is 401
   √  Error message is controlled
 
 └ Logout
-  POST https://localhost:3443/api/auth/logout [200 OK, 999B, 3ms]
+  POST https://localhost:3443/api/auth/logout [200 OK, 999B, 4ms]
   √  Status is 200
 
 □ 02 Gigs
 └ Create gig - freelancer (extra owner field ignored)
-  POST https://localhost:3443/api/gigs [201 Created, 1.23kB, 47ms]
+  POST https://localhost:3443/api/gigs [201 Created, 1.23kB, 399ms]
   √  Status is 201
   √  Owner comes from the token, not the body
 
 └ Create second gig - freelancer
-  POST https://localhost:3443/api/gigs [201 Created, 1.23kB, 41ms]
+  POST https://localhost:3443/api/gigs [201 Created, 1.23kB, 340ms]
   √  Status is 201
 
 └ Create gig - client forbidden
-  POST https://localhost:3443/api/gigs [403 Forbidden, 916B, 19ms]
+  POST https://localhost:3443/api/gigs [403 Forbidden, 916B, 80ms]
   √  Status is 403
   √  Error message is controlled
 
 └ Create gig - price too low
-  POST https://localhost:3443/api/gigs [400 Bad Request, 938B, 17ms]
+  POST https://localhost:3443/api/gigs [400 Bad Request, 938B, 59ms]
   √  Status is 400
   √  No stack trace or internals leaked
 
 └ Create gig - invalid category
-  POST https://localhost:3443/api/gigs [400 Bad Request, 917B, 18ms]
+  POST https://localhost:3443/api/gigs [400 Bad Request, 917B, 81ms]
   √  Status is 400
   √  No stack trace or internals leaked
 
 └ Create gig - script in title is stripped or rejected
-  POST https://localhost:3443/api/gigs [201 Created, 1.22kB, 59ms]
+  POST https://localhost:3443/api/gigs [201 Created, 1.22kB, 308ms]
   √  Status is 201
   √  No markup stored
 
 └ List gigs - no token
-  GET https://localhost:3443/api/gigs [401 Unauthorized, 918B, 2ms]
+  GET https://localhost:3443/api/gigs [401 Unauthorized, 918B, 3ms]
   √  Status is 401
 
 └ List gigs - client
-  GET https://localhost:3443/api/gigs [200 OK, 2.78kB, 36ms]
+  GET https://localhost:3443/api/gigs [200 OK, 5.3kB, 443ms]
   √  Status is 200
   √  Contains the live gig
 
 └ My gigs - freelancer
-  GET https://localhost:3443/api/gigs/mine [200 OK, 1.82kB, 42ms]
+  GET https://localhost:3443/api/gigs/mine [200 OK, 1.82kB, 319ms]
   √  Status is 200
   √  Only own gigs
 
 └ My gigs - client forbidden
-  GET https://localhost:3443/api/gigs/mine [403 Forbidden, 916B, 10ms]
+  GET https://localhost:3443/api/gigs/mine [403 Forbidden, 916B, 119ms]
   √  Status is 403
 
 └ Get gig by id
-  GET https://localhost:3443/api/gigs/6ac9f757fcaf8188c2ff39cd [200 OK, 1.2kB, 53ms]
+  GET https://localhost:3443/api/gigs/6acc7f733457a62126e8d775 [200 OK, 1.2kB, 241ms]
   √  Status is 200
   √  Correct gig
 
 └ Get gig - malformed id
-  GET https://localhost:3443/api/gigs/not-an-id [404 Not Found, 910B, 20ms]
+  GET https://localhost:3443/api/gigs/not-an-id [404 Not Found, 910B, 132ms]
   √  Status is 404
   √  Error message is controlled
   √  No stack trace or internals leaked
 
 └ Get gig - unknown id
-  GET https://localhost:3443/api/gigs/000000000000000000000000 [404 Not Found, 905B, 27ms]
+  GET https://localhost:3443/api/gigs/000000000000000000000000 [404 Not Found, 905B, 213ms]
   √  Status is 404
 
 └ Update gig - owner
-  PATCH https://localhost:3443/api/gigs/6ac9f757fcaf8188c2ff39cd [200 OK, 1.22kB, 57ms]
+  PATCH https://localhost:3443/api/gigs/6acc7f733457a62126e8d775 [200 OK, 1.22kB, 438ms]
   √  Status is 200
   √  Price updated
 
 └ Update gig - other freelancer forbidden
-  PATCH https://localhost:3443/api/gigs/6ac9f757fcaf8188c2ff39cd [403 Forbidden, 923B, 27ms]
+  PATCH https://localhost:3443/api/gigs/6acc7f733457a62126e8d775 [403 Forbidden, 923B, 233ms]
   √  Status is 403
 
 └ Update gig - client forbidden
-  PATCH https://localhost:3443/api/gigs/6ac9f757fcaf8188c2ff39cd [403 Forbidden, 916B, 18ms]
+  PATCH https://localhost:3443/api/gigs/6acc7f733457a62126e8d775 [403 Forbidden, 916B, 96ms]
   √  Status is 403
 
 └ Pause gig - owner
-  PATCH https://localhost:3443/api/gigs/6ac9f757fcaf8188c2ff39ce [200 OK, 1.22kB, 54ms]
+  PATCH https://localhost:3443/api/gigs/6acc7f733457a62126e8d776 [200 OK, 1.22kB, 332ms]
   √  Status is 200
   √  Gig paused
 
 └ Paused gig hidden from clients
-  GET https://localhost:3443/api/gigs/6ac9f757fcaf8188c2ff39ce [404 Not Found, 905B, 36ms]
+  GET https://localhost:3443/api/gigs/6acc7f733457a62126e8d776 [404 Not Found, 905B, 322ms]
   √  Status is 404
 
 └ Delete gig - other freelancer forbidden
-  DELETE https://localhost:3443/api/gigs/6ac9f758fcaf8188c2ff39cf [403 Forbidden, 925B, 26ms]
+  DELETE https://localhost:3443/api/gigs/6acc7f743457a62126e8d777 [403 Forbidden, 925B, 223ms]
   √  Status is 403
 
 └ Delete gig - owner
-  DELETE https://localhost:3443/api/gigs/6ac9f758fcaf8188c2ff39cf [200 OK, 898B, 42ms]
+  DELETE https://localhost:3443/api/gigs/6acc7f743457a62126e8d777 [200 OK, 898B, 323ms]
   √  Status is 200
 
 └ Deleted gig is gone
-  GET https://localhost:3443/api/gigs/6ac9f758fcaf8188c2ff39cf [404 Not Found, 905B, 19ms]
+  GET https://localhost:3443/api/gigs/6acc7f743457a62126e8d777 [404 Not Found, 905B, 253ms]
   √  Status is 404
 
 □ 03 Bookings
 └ Create booking A - client (price comes from the gig)
-  POST https://localhost:3443/api/bookings [201 Created, 1.34kB, 66ms]
+  POST https://localhost:3443/api/bookings [201 Created, 1.34kB, 549ms]
   √  Status is 201
   √  Transaction record created
   √  Price taken from the database, not the request
@@ -185,15 +185,15 @@ HustleHub+ Part2
   √  Starts as Pending
 
 └ Create booking B - client
-  POST https://localhost:3443/api/bookings [201 Created, 1.34kB, 69ms]
+  POST https://localhost:3443/api/bookings [201 Created, 1.34kB, 574ms]
   √  Status is 201
 
 └ Create booking C - client
-  POST https://localhost:3443/api/bookings [201 Created, 1.34kB, 70ms]
+  POST https://localhost:3443/api/bookings [201 Created, 1.34kB, 786ms]
   √  Status is 201
 
 └ Create booking - freelancer forbidden
-  POST https://localhost:3443/api/bookings [403 Forbidden, 916B, 17ms]
+  POST https://localhost:3443/api/bookings [403 Forbidden, 916B, 132ms]
   √  Status is 403
 
 └ Create booking - no token
@@ -201,200 +201,200 @@ HustleHub+ Part2
   √  Status is 401
 
 └ Create booking - date in the past
-  POST https://localhost:3443/api/bookings [400 Bad Request, 926B, 25ms]
+  POST https://localhost:3443/api/bookings [400 Bad Request, 926B, 125ms]
   √  Status is 400
 
 └ Create booking - malformed gig id
-  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 16ms]
+  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 144ms]
   √  Status is 400
 
 └ Create booking - unknown gig
-  POST https://localhost:3443/api/bookings [404 Not Found, 901B, 27ms]
+  POST https://localhost:3443/api/bookings [404 Not Found, 901B, 309ms]
   √  Status is 404
 
 └ Create booking - paused gig
-  POST https://localhost:3443/api/bookings [404 Not Found, 901B, 19ms]
+  POST https://localhost:3443/api/bookings [404 Not Found, 901B, 321ms]
   √  Status is 404
 
 └ My bookings - client
-  GET https://localhost:3443/api/bookings/mine [200 OK, 2.1kB, 36ms]
+  GET https://localhost:3443/api/bookings/mine [200 OK, 2.1kB, 660ms]
   √  Status is 200
   √  Contains own bookings only
 
 └ My bookings - freelancer sees bookings on their gigs
-  GET https://localhost:3443/api/bookings/mine [200 OK, 2.1kB, 37ms]
+  GET https://localhost:3443/api/bookings/mine [200 OK, 2.1kB, 440ms]
   √  Status is 200
   √  Only bookings on own gigs
 
 └ My bookings - other freelancer sees none of them
-  GET https://localhost:3443/api/bookings/mine [200 OK, 886B, 30ms]
+  GET https://localhost:3443/api/bookings/mine [200 OK, 886B, 406ms]
   √  Status is 200
   √  No access to others' bookings
 
 └ All bookings - client forbidden
-  GET https://localhost:3443/api/bookings [403 Forbidden, 916B, 12ms]
+  GET https://localhost:3443/api/bookings [403 Forbidden, 916B, 189ms]
   √  Status is 403
 
 └ All bookings - freelancer forbidden
-  GET https://localhost:3443/api/bookings [403 Forbidden, 916B, 12ms]
+  GET https://localhost:3443/api/bookings [403 Forbidden, 916B, 130ms]
   √  Status is 403
 
 └ Get booking - client party
-  GET https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0 [200 OK, 1.29kB, 37ms]
+  GET https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778 [200 OK, 1.29kB, 1217ms]
   √  Status is 200
 
 └ Get booking - freelancer party
-  GET https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0 [200 OK, 1.29kB, 39ms]
+  GET https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778 [200 OK, 1.29kB, 439ms]
   √  Status is 200
 
 └ Get booking - unrelated user gets 404
-  GET https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0 [404 Not Found, 909B, 30ms]
+  GET https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778 [404 Not Found, 909B, 372ms]
   √  Status is 404
   √  Error message is controlled
 
 └ Get booking - no token
-  GET https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0 [401 Unauthorized, 918B, 2ms]
+  GET https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778 [401 Unauthorized, 918B, 3ms]
   √  Status is 401
 
 └ Status - client cannot accept
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [409 Conflict, 943B, 32ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [409 Conflict, 943B, 478ms]
   √  Status is 409
 
 └ Status - cannot set Pending
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [400 Bad Request, 951B, 12ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [400 Bad Request, 951B, 89ms]
   √  Status is 400
 
 └ Status - invalid value
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [400 Bad Request, 951B, 12ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [400 Bad Request, 951B, 115ms]
   √  Status is 400
 
 └ Status - unrelated freelancer gets 404
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [404 Not Found, 909B, 31ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [404 Not Found, 909B, 398ms]
   √  Status is 404
 
 └ Status - cannot complete before accepting
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [409 Conflict, 948B, 31ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [409 Conflict, 948B, 422ms]
   √  Status is 409
 
 └ Status - freelancer accepts A
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [200 OK, 1.32kB, 54ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [200 OK, 1.32kB, 642ms]
   √  Status is 200
   √  Accepted
 
 └ Status - freelancer declines B
-  PATCH https://localhost:3443/api/bookings/6ac9f75afcaf8188c2ff39d2/status [200 OK, 1.32kB, 68ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d77a/status [200 OK, 1.32kB, 1041ms]
   √  Status is 200
 
 └ Status - client cancels C
-  PATCH https://localhost:3443/api/bookings/6ac9f75afcaf8188c2ff39d4/status [200 OK, 1.32kB, 65ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7b3457a62126e8d77c/status [200 OK, 1.32kB, 609ms]
   √  Status is 200
 
 └ Status - declined booking cannot be completed
-  PATCH https://localhost:3443/api/bookings/6ac9f75afcaf8188c2ff39d2/status [409 Conflict, 949B, 31ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d77a/status [409 Conflict, 949B, 353ms]
   √  Status is 409
 
 └ Status - freelancer completes A
-  PATCH https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/status [200 OK, 1.32kB, 103ms]
+  PATCH https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/status [200 OK, 1.32kB, 525ms]
   √  Status is 200
 
 └ Review - not completed (cancelled C)
-  POST https://localhost:3443/api/bookings/6ac9f75afcaf8188c2ff39d4/review [409 Conflict, 930B, 29ms]
+  POST https://localhost:3443/api/bookings/6acc7f7b3457a62126e8d77c/review [409 Conflict, 930B, 316ms]
   √  Status is 409
 
 └ Review - freelancer forbidden
-  POST https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/review [403 Forbidden, 916B, 12ms]
+  POST https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/review [403 Forbidden, 916B, 120ms]
   √  Status is 403
 
 └ Review - invalid rating
-  POST https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/review [400 Bad Request, 935B, 12ms]
+  POST https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/review [400 Bad Request, 935B, 117ms]
   √  Status is 400
 
 └ Review - completed booking
-  POST https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/review [201 Created, 1.41kB, 46ms]
+  POST https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/review [201 Created, 1.41kB, 552ms]
   √  Status is 201
   √  Review stored
 
 └ Review - second review rejected
-  POST https://localhost:3443/api/bookings/6ac9f759fcaf8188c2ff39d0/review [409 Conflict, 929B, 29ms]
+  POST https://localhost:3443/api/bookings/6acc7f7a3457a62126e8d778/review [409 Conflict, 929B, 346ms]
   √  Status is 409
 
 □ 04 Income
 └ Income - freelancer
-  GET https://localhost:3443/api/income [200 OK, 1.31kB, 107ms]
+  GET https://localhost:3443/api/income [200 OK, 1.31kB, 433ms]
   √  Status is 200
   √  Counts only the completed booking (declined/cancelled are refunded)
   √  Grouped by gig
 
 └ Income - other freelancer sees nothing of it
-  GET https://localhost:3443/api/income [200 OK, 985B, 20ms]
+  GET https://localhost:3443/api/income [200 OK, 985B, 212ms]
   √  Status is 200
   √  Zero income
 
 └ Income - client forbidden
-  GET https://localhost:3443/api/income [403 Forbidden, 916B, 11ms]
+  GET https://localhost:3443/api/income [403 Forbidden, 916B, 51ms]
   √  Status is 403
 
 └ Income - no token
-  GET https://localhost:3443/api/income [401 Unauthorized, 918B, 2ms]
+  GET https://localhost:3443/api/income [401 Unauthorized, 918B, 10ms]
   √  Status is 401
 
 □ 05 Account
 └ Update name - valid
-  PATCH https://localhost:3443/api/auth/me [200 OK, 1.02kB, 26ms]
+  PATCH https://localhost:3443/api/auth/me [200 OK, 1.02kB, 236ms]
   √  Status is 200
   √  Name changed
 
 └ Update name - invalid characters
-  PATCH https://localhost:3443/api/auth/me [400 Bad Request, 935B, 11ms]
+  PATCH https://localhost:3443/api/auth/me [400 Bad Request, 935B, 117ms]
   √  Status is 400
 
 └ Update profile - role cannot be changed
-  PATCH https://localhost:3443/api/auth/me [200 OK, 1.02kB, 22ms]
+  PATCH https://localhost:3443/api/auth/me [200 OK, 1.02kB, 207ms]
   √  Status is 200
   √  Role and email unchanged
 
 └ Change password - wrong current password
-  PATCH https://localhost:3443/api/auth/password [400 Bad Request, 917B, 435ms]
+  PATCH https://localhost:3443/api/auth/password [400 Bad Request, 917B, 735ms]
   √  Status is 400
   √  Error message is controlled
 
 └ Change password - same as current
-  PATCH https://localhost:3443/api/auth/password [400 Bad Request, 943B, 12ms]
+  PATCH https://localhost:3443/api/auth/password [400 Bad Request, 943B, 104ms]
   √  Status is 400
 
 └ Change password - weak new password
-  PATCH https://localhost:3443/api/auth/password [400 Bad Request, 974B, 12ms]
+  PATCH https://localhost:3443/api/auth/password [400 Bad Request, 974B, 138ms]
   √  Status is 400
 
 └ Change password - valid
-  PATCH https://localhost:3443/api/auth/password [200 OK, 1.6kB, 685ms]
+  PATCH https://localhost:3443/api/auth/password [200 OK, 1.6kB, 2.4s]
   √  Status is 200
 
 □ 06 Error handling
 └ Unknown route
-  GET https://localhost:3443/api/does-not-exist [404 Not Found, 910B, 1ms]
+  GET https://localhost:3443/api/does-not-exist [404 Not Found, 910B, 6ms]
   √  Status is 404
   √  Error message is controlled
   √  No stack trace or internals leaked
 
 └ Malformed JSON
-  POST https://localhost:3443/api/auth/register [400 Bad Request, 924B, 6ms]
+  POST https://localhost:3443/api/auth/register [400 Bad Request, 924B, 9ms]
   √  Status is 400
   √  Error message is controlled
   √  No stack trace or internals leaked
 
 └ Body over 10 KB
-  POST https://localhost:3443/api/auth/register [413 Payload Too Large, 925B, 4ms]
+  POST https://localhost:3443/api/auth/register [413 Payload Too Large, 925B, 7ms]
   √  Status is 413
   √  Error message is controlled
 
 └ NoSQL operator in login is rejected
-  POST https://localhost:3443/api/auth/login [400 Bad Request, 919B, 2ms]
+  POST https://localhost:3443/api/auth/login [400 Bad Request, 919B, 3ms]
   √  Status is 400
   √  No stack trace or internals leaked
 
 └ Security headers present
-  GET https://localhost:3443/health [200 OK, 886B, 2ms]
+  GET https://localhost:3443/health [200 OK, 886B, 3ms]
   √  Status is 200
   √  HSTS
   √  CSP
@@ -408,56 +408,84 @@ HustleHub+ Part2
   √  Status is 401
 
 └ List users - client forbidden
-  GET https://localhost:3443/api/users [403 Forbidden, 916B, 16ms]
+  GET https://localhost:3443/api/users [403 Forbidden, 916B, 191ms]
   √  Status is 403
   √  Error message is controlled
 
 └ List users - freelancer forbidden
-  GET https://localhost:3443/api/users [403 Forbidden, 916B, 15ms]
+  GET https://localhost:3443/api/users [403 Forbidden, 916B, 131ms]
   √  Status is 403
 
 └ Get user - client forbidden
-  GET https://localhost:3443/api/users/6ac9f755fcaf8188c2ff39ca [403 Forbidden, 916B, 16ms]
+  GET https://localhost:3443/api/users/6acc7f6f3457a62126e8d772 [403 Forbidden, 916B, 120ms]
   √  Status is 403
 
 └ Delete user - client forbidden
-  DELETE https://localhost:3443/api/users/6ac9f755fcaf8188c2ff39ca [403 Forbidden, 916B, 12ms]
+  DELETE https://localhost:3443/api/users/6acc7f6f3457a62126e8d772 [403 Forbidden, 916B, 170ms]
   √  Status is 403
 
 └ Delete user - freelancer forbidden
-  DELETE https://localhost:3443/api/users/6ac9f754fcaf8188c2ff39c9 [403 Forbidden, 916B, 38ms]
+  DELETE https://localhost:3443/api/users/6acc7f6f3457a62126e8d771 [403 Forbidden, 916B, 174ms]
   √  Status is 403
 
 □ 08 Admin (skipped unless adminEmail/adminPassword are set)
 └ Admin login
+  POST https://localhost:3443/api/auth/login [200 OK, 1.65kB, 368ms]
+  √  Status is 200
+  √  Role is admin
 
 └ List users
+  GET https://localhost:3443/api/users [200 OK, 9.36kB, 965ms]
+  √  Status is 200
+  √  Includes the registered users
+  √  No password hashes
 
 └ Get user detail
+  GET https://localhost:3443/api/users/6acc7f6f3457a62126e8d772 [200 OK, 1.1kB, 368ms]
+  √  Status is 200
+  √  Has activity counts
 
 └ Get user - unknown id
+  GET https://localhost:3443/api/users/000000000000000000000000 [404 Not Found, 906B, 174ms]
+  √  Status is 404
 
 └ Get user - malformed id
+  GET https://localhost:3443/api/users/not-an-id [404 Not Found, 910B, 143ms]
+  √  Status is 404
 
 └ All bookings
+  GET https://localhost:3443/api/bookings [200 OK, 15.06kB, 610ms]
+  √  Status is 200
+  √  Sees every booking
 
 └ Delete any gig (moderation)
+  DELETE https://localhost:3443/api/gigs/6acc7f733457a62126e8d776 [200 OK, 898B, 312ms]
+  √  Status is 200
 
 └ Delete own account refused
+  DELETE https://localhost:3443/api/users/6acbca51418a0359379faf1e [400 Bad Request, 928B, 128ms]
+  √  Status is 400
+  √  Error message is controlled
 
 └ Delete user
+  DELETE https://localhost:3443/api/users/6acc7f703457a62126e8d774 [200 OK, 899B, 748ms]
+  √  Status is 200
 
 └ Deleted user is gone
+  GET https://localhost:3443/api/users/6acc7f703457a62126e8d774 [404 Not Found, 906B, 264ms]
+  √  Status is 404
 
 └ Delete user - unknown id
+  DELETE https://localhost:3443/api/users/000000000000000000000000 [404 Not Found, 906B, 268ms]
+  √  Status is 404
 
 □ 09 Rate limiting (run last)
 └ Booking endpoint returns 429 after too many requests
-  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 11ms]
-  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 9ms]
-  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 9ms]
-  POST https://localhost:3443/api/bookings [429 Too Many Requests, 980B, 10ms]
-  POST https://localhost:3443/api/bookings [429 Too Many Requests, 980B, 24ms]
+  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 126ms]
+  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 137ms]
+  POST https://localhost:3443/api/bookings [400 Bad Request, 913B, 153ms]
+  POST https://localhost:3443/api/bookings [429 Too Many Requests, 980B, 108ms]
+  POST https://localhost:3443/api/bookings [429 Too Many Requests, 980B, 187ms]
   √  Status is 429
   √  Meaningful message
   √  Rate limit headers sent
@@ -467,17 +495,17 @@ HustleHub+ Part2
 ├─────────────────────────┼───────────────────┼───────────────────┤
 │              iterations │                 1 │                 0 │
 ├─────────────────────────┼───────────────────┼───────────────────┤
-│                requests │                96 │                 0 │
+│                requests │               107 │                 0 │
 ├─────────────────────────┼───────────────────┼───────────────────┤
-│            test-scripts │                92 │                 0 │
+│            test-scripts │               103 │                 0 │
 ├─────────────────────────┼───────────────────┼───────────────────┤
 │      prerequest-scripts │               116 │                 0 │
 ├─────────────────────────┼───────────────────┼───────────────────┤
-│              assertions │               148 │                 0 │
+│              assertions │               165 │                 0 │
 ├─────────────────────────┴───────────────────┴───────────────────┤
-│ total run duration: 13.3s                                       │
+│ total run duration: 40.5s                                       │
 ├─────────────────────────────────────────────────────────────────┤
-│ total data received: 18.19kB (approx)                           │
+│ total data received: 44.22kB (approx)                           │
 ├─────────────────────────────────────────────────────────────────┤
-│ average response time: 55ms [min: 1ms, max: 685ms, s.d.: 104ms] │
+│ average response time: 297ms [min: 2ms, max: 2.4s, s.d.: 317ms] │
 └─────────────────────────────────────────────────────────────────┘
