@@ -225,7 +225,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Casey Client\",\n  \"email\": \"client{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\",\n  \"role\": \"client\"\n}",
+              "raw": "{\n  \"name\": \"Casey Client\",\n  \"email\": \"client{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\",\n  \"role\": \"client\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -279,7 +279,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Frankie Freelancer\",\n  \"email\": \"freelancer{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\",\n  \"role\": \"freelancer\"\n}",
+              "raw": "{\n  \"name\": \"Frankie Freelancer\",\n  \"email\": \"freelancer{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\",\n  \"role\": \"freelancer\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -333,7 +333,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Olive Other\",\n  \"email\": \"other{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\",\n  \"role\": \"freelancer\"\n}",
+              "raw": "{\n  \"name\": \"Olive Other\",\n  \"email\": \"other{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\",\n  \"role\": \"freelancer\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -386,7 +386,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Victor Victim\",\n  \"email\": \"victim{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\",\n  \"role\": \"client\"\n}",
+              "raw": "{\n  \"name\": \"Victor Victim\",\n  \"email\": \"victim{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\",\n  \"role\": \"client\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -439,7 +439,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mallory Admin\",\n  \"email\": \"mallory{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\",\n  \"role\": \"admin\"\n}",
+              "raw": "{\n  \"name\": \"Mallory Admin\",\n  \"email\": \"mallory{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\",\n  \"role\": \"admin\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -492,7 +492,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Casey Client\",\n  \"email\": \"client{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\",\n  \"role\": \"client\"\n}",
+              "raw": "{\n  \"name\": \"Casey Client\",\n  \"email\": \"client{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\",\n  \"role\": \"client\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -600,7 +600,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"client{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\"\n}",
+              "raw": "{\n  \"email\": \"client{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -706,7 +706,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"nobody{{runId}}@example.com\",\n  \"password\": \"Passw0rd123\"\n}",
+              "raw": "{\n  \"email\": \"nobody{{runId}}@example.com\",\n  \"password\": \"HustleHubTest7319\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4196,7 +4196,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"Passw0rd123\",\n  \"newPassword\": \"Passw0rd123\"\n}",
+              "raw": "{\n  \"currentPassword\": \"HustleHubTest7319\",\n  \"newPassword\": \"HustleHubTest7319\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4253,7 +4253,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"Passw0rd123\",\n  \"newPassword\": \"weak\"\n}",
+              "raw": "{\n  \"currentPassword\": \"HustleHubTest7319\",\n  \"newPassword\": \"weak\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4313,7 +4313,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"Passw0rd123\",\n  \"newPassword\": \"Newpassw0rd456\"\n}",
+              "raw": "{\n  \"currentPassword\": \"HustleHubTest7319\",\n  \"newPassword\": \"Newpassw0rd456\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

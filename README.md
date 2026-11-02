@@ -22,7 +22,7 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 - **MongoDB database** - Mongoose models for users, gigs, bookings and transactions replace the in-memory store.
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
-- **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, session revocation on password change, and an idle-session timeout.
+- **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
 - **Testing** - a 99-request Postman/Newman collection, backend self-checks, 49 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
@@ -124,7 +124,7 @@ Four Mongoose models ([API/models](API/models)):
 
 | Model | Key fields | Security and integrity notes |
 |-------|-----------|------------------------------|
-| **User** | `name`, `email` (unique, lowercased), `passwordHash`, `role`, `passwordChangedAt` | `passwordHash` is `select: false`, so no query returns it unless it is asked for explicitly. `role` is an enum of `client`, `freelancer`, `admin`. |
+| **User** | `name`, `email` (unique, lowercased), `passwordHash`, `role`, `tokenVersion`, `failedLogins`, `lockedUntil` | `passwordHash` is `select: false`, so no query returns it unless it is asked for explicitly, and the lockout fields are the same. `role` is an enum of `client`, `freelancer`, `admin`. |
 | **Gig** | `title`, `description`, `category`, `price`, `deliveryDays`, `active`, `freelancer` | Length and range limits in the schema. `freelancer` is the owner, taken from the JWT and checked on every edit and delete. |
 | **Booking** | `gig`, `client`, `freelancer`, `gigTitle`, `price`, `date`, `note`, `status`, `review` | `gigTitle` and `price` are snapshotted at booking time, so a later gig edit or delete cannot change what was agreed. `status` is an enum. |
 | **Transaction** | `reference`, `booking` (unique), `client`, `freelancer`, `amount`, `status` | One per booking, enforced by a unique index. `reference` is a random `TX-` code. Payment is simulated. |
@@ -179,7 +179,7 @@ const payload = jwt.verify(token, process.env.JWT_SECRET, {
 ```
 
 **Decisions and why:**
-- **Minimal payload:** the token carries only `sub` (user id) and `role`. If a token is ever intercepted, no name, email, or other personal data leaks with it.
+- **Minimal payload:** the token carries only `sub` (user id), `role` and `ver` (the token version, see Session Management). If a token is ever intercepted, no name, email, or other personal data leaks with it.
 - **Short-lived:** a 1-hour expiry limits how long a stolen token stays usable.
 - **HS256 (symmetric) signing:** the same Express API both issues and verifies tokens - one trusted party, and the secret never leaves the server. Asymmetric signing (RS256) exists so a *separate* service can verify tokens without being able to mint them; there is no such service here, so RS256 would only add key management for no benefit.
 - **Algorithm pinned on verify:** `algorithms: ["HS256"]` is set explicitly so the API cannot be tricked into accepting a token signed with `alg: none` or a different algorithm [6].
@@ -191,8 +191,9 @@ A valid signature alone is not enough. On every request `requireAuth` also loads
 
 - **Deleted users are locked out immediately.** If the account no longer exists the token is rejected, even though it has not expired.
 - **The role is read from the database, not the token.** `req.user.role` comes from the user record, so a role change takes effect on the next request.
-- **Changing a password signs out every other session.** The user record stores `passwordChangedAt`, and any token issued before that moment is rejected. The session that made the change receives a fresh token and stays signed in.
-- **Logout clears the cookie on the server.** The cookie is `httpOnly`, so only the API can remove it (`POST /api/auth/logout`).
+- **Tokens can be revoked.** The user record stores a `tokenVersion`, copied into each token as `ver`, and a token whose version no longer matches is rejected even though it has not expired.
+- **Changing a password signs out every other session.** It raises `tokenVersion`, which rejects all existing tokens. The session that made the change receives a fresh token and stays signed in.
+- **Logout revokes the session on the server.** It clears the cookie, which is `httpOnly` so only the API can remove it, and raises `tokenVersion`, so a stolen copy of the token stops working too (`POST /api/auth/logout`). Because the version is per user, logging out signs out all of that user's devices. Only a currently valid token can trigger this, so an old stolen one cannot be used to keep signing the user out.
 - **Idle timeout in the browser.** The frontend signs the user out after 15 minutes without activity, with a one-minute warning and a "stay signed in" option [8] ([hooks/useIdleLogout.js](frontend/src/hooks/useIdleLogout.js)). The limit can be changed with `VITE_IDLE_MINUTES`.
 
 ### JWT Storage and Transport
@@ -278,6 +279,8 @@ Login and registration are the endpoints targeted by password brute-forcing and 
 A blocked request receives `429` with a clear message and the standard `RateLimit` headers. The frontend shows a friendly message and pauses the login button for a short time.
 
 The login limiter counts per IP, so it cannot see guessing spread across many addresses. Accounts therefore have their own lockout: 10 wrong passwords locks the account for 15 minutes ([controllers/authController.js](API/controllers/authController.js)). A locked account gets the same `401` as any failed login, so the lock does not reveal that the account exists. The limit sits above the per-IP limit so that one person mistyping is stopped by the limiter, with a clear message, before they ever reach it. The lock is temporary because a permanent one would let an attacker shut anyone out of their account.
+
+Registration and password changes also reject passwords found in known data breaches, using the Have I Been Pwned range API ([middleware/breachedPassword.js](API/middleware/breachedPassword.js)). Only the first 5 characters of the password's SHA-1 hash leave the server, and the match is made locally, so the service never sees the password or its full hash. If the service cannot be reached within 2 seconds the password is allowed and a warning is logged, so an outage elsewhere does not stop people signing up.
 
 ### Input Validation
 Input is validated in three layers, so that no single missed check lets bad data through [21].

@@ -13,30 +13,27 @@ function tokenFromRequest(req) {
   return header.startsWith("Bearer ") ? header.slice(7) : null;
 }
 
-// JWT `iat` is in whole seconds and passwordChangedAt is stored rounded down to
-// the second, so the token issued in the same request as the change stays valid.
-// Limitation: a token minted elsewhere in that same second also survives; a stored token version would close that gap.
-const issuedBeforePasswordChange = (payload, user) =>
-  Boolean(user.passwordChangedAt) &&
-  payload.iat < Math.floor(user.passwordChangedAt.getTime() / 1000);
+// The user a token belongs to, or null if that user is deleted or the token has
+// been revoked. Throws if the token itself is invalid or expired. A malformed
+// sub also throws (a CastError).
+async function userFromToken(token) {
+  const payload = jwt.verify(token, process.env.JWT_SECRET, {
+    algorithms: ["HS256"],
+    issuer: [process.env.APP_NAME],
+    audience: ["hustlehubClient"]
+  });
+  const user = await User.findById(payload.sub);
+  // `?? 0`: tokens issued before tokenVersion existed have no `ver`.
+  return user && (payload.ver ?? 0) === user.tokenVersion ? user : null;
+}
 
 async function requireAuth(req, res, next) {
   const token = tokenFromRequest(req);
   if (!token) return res.status(401).json({ error: "Authentication required." });
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET, {
-      algorithms: ["HS256"],
-      issuer: [process.env.APP_NAME],
-      audience: ["hustlehubClient"]
-    });
-    // Also rejects tokens for deleted users. A malformed sub throws a CastError,
-    // which lands in the catch below as a 401.
-    const user = await User.findById(payload.sub);
+    const user = await userFromToken(token);
     if (!user) return res.status(401).json({ error: "Authentication required." });
-    if (issuedBeforePasswordChange(payload, user)) {
-      return res.status(401).json({ error: "Invalid or expired token." });
-    }
     req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
     next();
   } catch {
@@ -54,4 +51,4 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole, tokenFromRequest, issuedBeforePasswordChange };
+module.exports = { requireAuth, requireRole, tokenFromRequest, userFromToken };

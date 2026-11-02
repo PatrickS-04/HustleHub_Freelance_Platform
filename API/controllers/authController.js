@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
+const { tokenFromRequest, userFromToken } = require("../middleware/auth");
 const { logger, requestContext } = require("../utils/logger");
 
 const SALT_ROUNDS = 12;
@@ -179,8 +180,8 @@ async function updateMe(req, res, next) {
 }
 
 // Changes the logged-in user's password after checking the current one.
-// Every other session is signed out (requireAuth rejects tokens issued before
-// passwordChangedAt) and this one gets a fresh token so it stays logged in.
+// Every other session is signed out (requireAuth rejects tokens with an old
+// tokenVersion) and this one gets a fresh token so it stays logged in.
 async function changePassword(req, res, next) {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -195,8 +196,7 @@ async function changePassword(req, res, next) {
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    // Whole seconds, to line up with the JWT `iat` claim.
-    user.passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+    user.tokenVersion += 1;
     await user.save();
 
     const token = generateToken(user);
@@ -214,7 +214,20 @@ async function changePassword(req, res, next) {
 
 // The cookie is httpOnly, so only the server can remove it. Attributes must
 // match those used in setAuthCookie or the browser will not clear it.
-function logout(req, res) {
+// Also revokes the user's tokens, so a stolen copy stops working too. That signs
+// out all their devices. Only a currently valid token can do this, so an old
+// stolen one can't be replayed here to keep signing them out. Failures are logged
+// rather than returned because the cookie must still be cleared.
+async function logout(req, res) {
+  const token = tokenFromRequest(req);
+  if (token) {
+    try {
+      const user = await userFromToken(token);
+      if (user) await User.updateOne({ _id: user.id }, { $inc: { tokenVersion: 1 } });
+    } catch (err) {
+      logger.warn("auth.logout.revoke_failed", { ...requestContext(req), message: err.message });
+    }
+  }
   res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "strict" });
   return res.status(200).json({ message: "Logged out." });
 }

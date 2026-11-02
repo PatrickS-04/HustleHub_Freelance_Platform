@@ -8,10 +8,11 @@ const {
 } = require("../middleware/validators");
 const { requireAuth } = require("../middleware/auth");
 const { loginLimiter, registerLimiter, passwordLimiter } = require("../middleware/rateLimiters");
+const { rejectBreachedPassword } = require("../middleware/breachedPassword");
 
 const router = express.Router();
 
-router.post("/register", registerLimiter, validateRegister, register);
+router.post("/register", registerLimiter, validateRegister, rejectBreachedPassword, register);
 router.post("/login", loginLimiter, validateLogin, login);
 router.post("/logout", logout);
 
@@ -19,6 +20,6 @@ router.post("/logout", logout);
 router.get("/me", requireAuth, (req, res) => res.status(200).json({ user: req.user }));
 router.patch("/me", requireAuth, validateProfile, updateMe);
 // Limiter runs after requireAuth so it can count attempts per user.
-router.patch("/password", requireAuth, passwordLimiter, validatePasswordChange, changePassword);
+router.patch("/password", requireAuth, passwordLimiter, validatePasswordChange, rejectBreachedPassword, changePassword);
 
 module.exports = router;

@@ -2,9 +2,13 @@
 const assert = require("node:assert");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
-const { login, SALT_ROUNDS } = require("../controllers/authController");
+const crypto = require("node:crypto");
+const jwt = require("jsonwebtoken");
+const generateToken = require("../utils/generateToken");
+const { login, logout, changePassword, SALT_ROUNDS } = require("../controllers/authController");
 const { validatePasswordChange } = require("./validators");
-const { tokenFromRequest, issuedBeforePasswordChange } = require("./auth");
+const { rejectBreachedPassword } = require("./breachedPassword");
+const { tokenFromRequest, userFromToken } = require("./auth");
 
 // cookie wins over header
 assert.strictEqual(
@@ -23,12 +27,6 @@ assert.strictEqual(
 );
 // nothing -> null
 assert.strictEqual(tokenFromRequest({ headers: {} }), null);
-
-// tokens issued before a password change are rejected, the new one is not
-const changedAt = new Date(1_700_000_000_000);
-assert.ok(issuedBeforePasswordChange({ iat: 1_699_999_999 }, { passwordChangedAt: changedAt }));
-assert.ok(!issuedBeforePasswordChange({ iat: 1_700_000_000 }, { passwordChangedAt: changedAt }));
-assert.ok(!issuedBeforePasswordChange({ iat: 1 }, {})); // never changed
 
 // an unknown email still costs a full bcrypt compare, so timing can't reveal it
 (async () => {
@@ -112,6 +110,89 @@ assert.ok(!issuedBeforePasswordChange({ iat: 1 }, {})); // never changed
   assert.strictEqual(newPasswordStatus("Aa1" + "x".repeat(69)), 200);
   assert.strictEqual(newPasswordStatus("Aa1" + "x".repeat(70)), 400);
   assert.strictEqual(newPasswordStatus("Aa1" + "é".repeat(35)), 400);
+
+  // token revocation, against a fake in-memory user
+  const fakeRes = () => ({
+    status(code) { this.code = code; return this; },
+    json(body) { this.body = body; return this; },
+    cookie() {},
+    clearCookie() { this.cleared = true; },
+  });
+  User.findById = () => Object.assign(Promise.resolve(stored), { select: async () => stored });
+  User.updateOne = async (filter, update) => {
+    stored.tokenVersion += update.$inc.tokenVersion;
+  };
+  const session = (token) => ({ headers: { authorization: `Bearer ${token}` } });
+  stored = { id: "1", role: "client", tokenVersion: 0, passwordHash, save: async () => {} };
+
+  // a token matches until the version moves on
+  const token = generateToken(stored);
+  assert.strictEqual(await userFromToken(token), stored);
+
+  // a token from before tokenVersion existed still counts as version 0
+  const oldStyle = jwt.sign({ sub: "1" }, process.env.JWT_SECRET, { issuer: "check", audience: ["hustlehubClient"] });
+  assert.strictEqual(await userFromToken(oldStyle), stored);
+
+  // logout revokes the token and clears the cookie
+  let out = fakeRes();
+  await logout(session(token), out);
+  assert.strictEqual(stored.tokenVersion, 1);
+  assert.ok(out.cleared);
+  assert.strictEqual(await userFromToken(token), null);
+
+  // replaying the revoked token can't sign the user out of newer sessions
+  out = fakeRes();
+  await logout(session(token), out);
+  assert.strictEqual(stored.tokenVersion, 1);
+  assert.ok(out.cleared);
+
+  // a garbage token, or none, still logs out cleanly
+  for (const req of [session("garbage"), { headers: {} }]) {
+    out = fakeRes();
+    await logout(req, out);
+    assert.strictEqual(out.code, 200);
+    assert.ok(out.cleared);
+    assert.strictEqual(stored.tokenVersion, 1);
+  }
+
+  // changing the password revokes old tokens and returns one that works
+  const beforeChange = generateToken(stored);
+  process.env.EXPOSE_TOKEN_IN_BODY = "true";
+  out = fakeRes();
+  await changePassword(
+    { user: { id: "1" }, body: { currentPassword: "Password1", newPassword: "Newpassw0rd456" }, headers: {} },
+    out,
+    assert.fail
+  );
+  assert.strictEqual(out.code, 200);
+  assert.strictEqual(await userFromToken(beforeChange), null);
+  assert.strictEqual(await userFromToken(out.body.token), stored);
+
+  // breached password check, against a fake Have I Been Pwned
+  const sha1 = crypto.createHash("sha1").update("Breached123").digest("hex").toUpperCase();
+  const breachCheck = async (fakeFetch, body = { password: "Breached123" }) => {
+    global.fetch = fakeFetch;
+    const response = fakeRes();
+    let passed = false;
+    await rejectBreachedPassword({ body, headers: {} }, response, () => { passed = true; });
+    return { passed, code: response.code };
+  };
+  const hibp = (text) => async (url) => {
+    assert.ok(url.endsWith(`/range/${sha1.slice(0, 5)}`)); // only the prefix is sent
+    return { ok: true, text: async () => text };
+  };
+  assert.deepStrictEqual(await breachCheck(hibp(`AAA:5\r\n${sha1.slice(5)}:3\r\nBBB:1`)), { passed: false, code: 400 });
+  assert.deepStrictEqual(await breachCheck(hibp("AAA:5\r\nBBB:1")), { passed: true, code: undefined });
+  // a padding entry (count 0) isn't a breach
+  assert.deepStrictEqual(await breachCheck(hibp(`${sha1.slice(5)}:0`)), { passed: true, code: undefined });
+  // change-password requests are checked on newPassword
+  assert.deepStrictEqual(
+    await breachCheck(hibp(`${sha1.slice(5)}:3`), { currentPassword: "Whatever1", newPassword: "Breached123" }),
+    { passed: false, code: 400 }
+  );
+  // service down or erroring: allowed through
+  assert.strictEqual((await breachCheck(async () => { throw new Error("offline"); })).passed, true);
+  assert.strictEqual((await breachCheck(async () => ({ ok: false, status: 503 }))).passed, true);
 
   console.log("auth.check.js passed");
 })().catch((err) => {
