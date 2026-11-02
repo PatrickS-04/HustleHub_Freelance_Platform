@@ -1,4 +1,5 @@
 const Gig = require("../models/Gig");
+const { logger, requestContext } = require("../utils/logger");
 
 // Owners manage their own gigs; admins may remove any gig (moderation).
 const isOwner = (gig, user) => String(gig.freelancer?._id ?? gig.freelancer) === String(user.id);
@@ -90,6 +91,7 @@ async function deleteGig(req, res, next) {
 
     // Bookings keep their own snapshot of title/price, so history survives this.
     await gig.deleteOne();
+    if (!isOwner(gig, req.user)) logger.warn("admin.gig_removed", { ...requestContext(req), gigId: gig.id });
     res.json({ message: "Gig deleted." });
   } catch (err) {
     next(err);

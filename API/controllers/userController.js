@@ -2,6 +2,7 @@ const User = require("../models/User");
 const Gig = require("../models/Gig");
 const Booking = require("../models/Booking");
 const Transaction = require("../models/Transaction");
+const { logger, requestContext } = require("../utils/logger");
 
 // Never includes the password hash (it is `select: false` on the model).
 const toUser = (u) => ({
@@ -55,6 +56,7 @@ async function deleteUser(req, res, next) {
     await Booking.deleteMany({ _id: { $in: bookings.map((b) => b._id) } });
     await Gig.deleteMany({ freelancer: user._id });
     await user.deleteOne();
+    logger.warn("admin.user_deleted", { ...requestContext(req), deletedUserId: user.id, bookingsRemoved: bookings.length });
 
     res.json({ message: "User deleted." });
   } catch (err) {

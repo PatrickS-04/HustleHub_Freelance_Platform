@@ -54,6 +54,7 @@ jobs:
           npm run test:bookings
           npm run test:income
           npm run test:sanitize
+          npm run test:logger
 
       - name: Boot API and run Postman/Newman tests
         env:

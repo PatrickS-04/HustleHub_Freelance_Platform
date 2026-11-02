@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { logger, requestContext } = require('../utils/logger');
 
 function createRateLimiter({ windowMs, max, message, keyGenerator }) {
   return rateLimit({
@@ -8,6 +9,7 @@ function createRateLimiter({ windowMs, max, message, keyGenerator }) {
     legacyHeaders: false,
     ...(keyGenerator && { keyGenerator }),
     handler: (req, res) => {
+      logger.warn('rate_limit.exceeded', { ...requestContext(req), path: req.originalUrl.split('?')[0] });
       res.status(429).json({ error: message });
     }
   });
