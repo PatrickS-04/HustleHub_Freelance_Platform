@@ -54,6 +54,7 @@ jobs:
           npm run test:bookings
           npm run test:income
           npm run test:sanitize
+          npm run test:logger
 
       - name: Boot API and run Postman/Newman tests
         env:
@@ -129,6 +130,20 @@ jobs:
           name: semgrep-report
           path: reports/
 
+  sonarcloud:
+    # The free plan only analyses main and PRs into it; Semgrep covers the others.
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Sonar needs the full history
+
+      # Settings are in sonar-project.properties; a failed quality gate fails the job.
+      - uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   docker-zap:
     runs-on: ubuntu-latest
     steps:
@@ -184,7 +199,7 @@ jobs:
           path: reports/
 
   deploy:
-    needs: [backend-test, frontend-build, static-analysis, docker-zap]
+    needs: [backend-test, frontend-build, static-analysis, sonarcloud, docker-zap]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     # environment: production

@@ -9,6 +9,7 @@ const incomeRoutes = require("./routes/incomeRoutes");
 const userRoutes = require("./routes/userRoutes");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 const { noSqlInjection, parameterPollution } = require("./middleware/sanitize");
+const requestLogger = require("./middleware/requestLogger");
 
 const app = express();
 
@@ -18,6 +19,7 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "https://localhost:5173")
   .split(",")
   .map((o) => o.trim());
 
+app.use(requestLogger); // first, so requests rejected by later middleware are logged too
 app.use(securityHeaders);
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(globalLimiter);

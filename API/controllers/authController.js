@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
+const { logger, requestContext } = require("../utils/logger");
 
 const SALT_ROUNDS = 12;
 const COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour, matches the JWT expiry
@@ -53,6 +54,7 @@ async function register(req, res, next) {
 
     const token = generateToken(user);
     setAuthCookie(res, token);
+    logger.info("auth.register.success", { ...requestContext(req), userId: user.id, role: user.role });
 
     return res.status(201).json({
       message: "User registered successfully.",
@@ -85,17 +87,22 @@ async function login(req, res, next) {
 
     // Deliberately identical response whether the email doesn't exist or the
     // password is wrong - prevents attackers from enumerating valid accounts.
+    // The log may record the real reason; it is never sent to the client. The
+    // submitted email is left out: people sometimes type a password in that box.
     if (!user) {
+      logger.warn("auth.login.failed", { ...requestContext(req), reason: "unknown_email" });
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
+      logger.warn("auth.login.failed", { ...requestContext(req), reason: "wrong_password", userId: user.id });
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
     const token = generateToken(user);
     setAuthCookie(res, token);
+    logger.info("auth.login.success", { ...requestContext(req), userId: user.id, role: user.role });
 
     return res.status(200).json({
       message: "Login successful.",
@@ -142,7 +149,10 @@ async function changePassword(req, res, next) {
 
     // 400 rather than 401: a 401 would make the frontend sign the user out.
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!matches) return res.status(400).json({ error: "Current password is incorrect." });
+    if (!matches) {
+      logger.warn("auth.password_change.failed", requestContext(req));
+      return res.status(400).json({ error: "Current password is incorrect." });
+    }
 
     user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     // Whole seconds, to line up with the JWT `iat` claim.
@@ -151,6 +161,7 @@ async function changePassword(req, res, next) {
 
     const token = generateToken(user);
     setAuthCookie(res, token);
+    logger.info("auth.password_change.success", requestContext(req));
 
     return res.status(200).json({
       message: "Password changed. Other sessions have been signed out.",

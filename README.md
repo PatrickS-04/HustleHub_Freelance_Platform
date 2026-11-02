@@ -61,6 +61,7 @@ Every role can also change their display name and password in Settings.
 │   │   ├── sanitize.js            # NoSQL injection, parameter pollution, HTML stripping
 │   │   ├── rateLimiters.js        # Global, login, register, booking and password limiters
 │   │   ├── securityHeaders.js     # Helmet, CSP, HSTS, no-store
+│   │   ├── requestLogger.js       # Request id and one log line per finished request
 │   │   └── errorHandler.js        # Centralised error responses (no internal leakage)
 │   ├── models/
 │   │   ├── User.js
@@ -74,6 +75,7 @@ Every role can also change their display name and password in Settings.
 │   │   ├── incomeRoutes.js        # /api/income
 │   │   └── userRoutes.js          # /api/users (admin only)
 │   ├── utils/
+│   │   ├── logger.js              # Structured JSON logs with secret redaction
 │   │   └── generateToken.js       # JWT signing
 │   └── postman/                   # Part 1 and Part 2 collections, captured Newman run
 └── frontend/
@@ -94,12 +96,13 @@ The separation of routes, middleware, controllers and models within their respec
 
 ![HustleHub+ architecture](HustleHubArchitecture.png)
 
-The diagram covers the full MERN design. Part 1 implemented the request pipeline and authentication. **Part 2 implements the boxes that were deferred to it:** the React SPA, MongoDB/Mongoose, `express-mongo-sanitize` + `hpp`, and the domain services (Gigs, Bookings, Transactions, Income/Tax). Docker Compose and the CI pipeline, originally planned for Part 3, are also in place. **Still deferred to Part 3:** structured logging, the cloud log sink, and a real deployment step. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is identical in every part.
+The diagram covers the full MERN design. Part 1 implemented the request pipeline and authentication. **Part 2 implements the boxes that were deferred to it:** the React SPA, MongoDB/Mongoose, `express-mongo-sanitize` + `hpp`, and the domain services (Gigs, Bookings, Transactions, Income/Tax). Docker Compose and the CI pipeline, originally planned for Part 3, are also in place. Part 3 adds structured logging (see [Logging](#logging)). **Still to do:** the cloud log sink and a real deployment step. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is identical in every part.
 
 ### Request Pipeline
 Every request passes through the same middleware, in this order ([app.js](API/app.js)):
 
 ```js
+app.use(requestLogger);
 app.use(securityHeaders);
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(globalLimiter);
@@ -542,6 +545,7 @@ The pure logic in the API has assert-based self-checks that need no server or da
 | `npm run test:bookings` | allowed status changes per role; who counts as a party to a booking; booking, status and review validation |
 | `npm run test:income` | income totals, tax estimate and `TAX_RATE` validation |
 | `npm run test:sanitize` | HTML stripping, including nested tags |
+| `npm run test:logger` | log line format; secrets masked; forged log lines blocked; log level and error response for each status |
 
 ```bash
 cd API
@@ -575,13 +579,51 @@ npm run test:run
 
 | Job | Steps |
 |-----|-------|
-| **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the five self-checks; then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
+| **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the six self-checks; then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
 | **frontend-build** | install from the lockfile; lint with Oxlint; run the Vitest tests; production build |
 | **static-analysis** | scan the code, Dockerfiles and workflows with Semgrep; any finding fails the job; the report is uploaded as the `semgrep-report` artifact |
+| **sonarcloud** | runs only on pushes to `main` and pull requests into it, because the free plan only analyses those; scan the code with SonarQube Cloud using the settings in `sonar-project.properties`; a failed quality gate fails the job |
 | **docker-zap** | build the Docker images; start the full Compose stack with throwaway secrets; run the OWASP ZAP baseline scan against the API and the client; the reports are uploaded as the `zap-reports` artifact |
 | **deploy** | runs only on `main`, and only after all the other jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
 
-A failing check, test, audit, Semgrep finding or Docker build in any job fails the build. ZAP warnings do not fail the build, so they are reviewed in the report.
+A failing check, test, audit, Semgrep finding, SonarQube quality gate or Docker build in any job fails the build. ZAP warnings do not fail the build, so they are reviewed in the report.
+
+## Logging
+The API writes structured logs through [utils/logger.js](API/utils/logger.js): one JSON object per line on stdout. Docker captures stdout, so the logs can be read with `docker compose logs api`, and because each line is JSON a log platform can filter it by any field. No logging library is needed for this, so no dependency was added.
+
+```json
+{"timestamp":"2026-11-02T19:32:50.751Z","level":"info","event":"transaction.created","requestId":"664e447c-1b0f-4e90-9804-b5b070c6c50a","ip":"::1","userId":"64b000000000000000000001","reference":"TX-TEST","bookingId":"64b000000000000000000004","amount":100,"status":"Simulated"}
+```
+
+Every line from a request carries the same `requestId`, the client IP and, once signed in, the `userId`, so one request can be followed from start to finish.
+
+### What Is Logged and Why
+
+| Event | Level | Why it matters |
+|-------|-------|----------------|
+| `auth.login.success` | info | Shows when and from where an account was accessed, which helps to spot a stolen account |
+| `auth.login.failed` | warn | Repeated failures point to password guessing or credential stuffing. `reason` tells the two failure types apart in the log, while the client still gets the same message for both |
+| `auth.register.success` | info | Records new accounts and their role |
+| `auth.password_change.success`, `auth.password_change.failed` | info, warn | Failures can mean someone with a stolen session is guessing the current password |
+| `booking.created`, `booking.status_changed` | info | An audit trail of who booked what and who changed its status |
+| `transaction.created`, `transaction.refunded` | info | A financial audit trail that can be matched against the database |
+| `transaction.create_failed` | error | A booking was rolled back because its payment record failed, which is a data integrity problem |
+| `admin.user_deleted`, `admin.gig_removed` | warn | Destructive admin actions must be traceable to the admin who did them |
+| `rate_limit.exceeded` | warn | Shows automated abuse, and the path shows which endpoint was targeted |
+| `http.request` | info, warn or error | One line per request with its method, path, status and duration. Spikes of `401`, `403` and `404` can show someone probing for access. `/health` is skipped because it is only noise |
+| `http.error` | warn or error | `5xx` errors include the message and stack trace for debugging; these stay on the server and never reach the client |
+| `server.started`, `server.config_invalid`, `db.connected`, `db.connect_failed` | info, error | Startup and availability problems |
+
+### Keeping Logs Safe
+Logs are a target too, so they follow the OWASP logging guidance [43]:
+
+- **Secrets are never logged.** Controllers pass only chosen fields, and as a safety net the logger masks any field whose name contains `pass`, `token`, `secret`, `authorization` or `cookie`, at any depth.
+- **Personal data is kept to a minimum.** Users are identified by id. A failed login does not record the submitted email, because people sometimes type a password into that box.
+- **Query strings are left out** of logged paths, because they can hold user data.
+- **Client errors have no message or stack trace**, because those can repeat what the user submitted.
+- **Log injection is blocked.** JSON encoding escapes line breaks in user input, so input cannot forge an extra log line.
+
+`npm run test:logger` checks the masking and injection rules in CI.
 
 ## Screenshots
 
@@ -696,3 +738,4 @@ Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 - [40] 	Vitest, "Getting Started," Vitest Guide, 2026. [Online]. Available: https://vitest.dev/guide/. [Accessed 11 October 2026].
 - [41] 	Testing Library, "React Testing Library," Testing Library Docs, 2026. [Online]. Available: https://testing-library.com/docs/react-testing-library/intro/. [Accessed 11 October 2026].
 - [42] 	GitHub, "GitHub Actions documentation," GitHub Docs, 2026. [Online]. Available: https://docs.github.com/en/actions. [Accessed 11 October 2026].
+- [43] 	OWASP, "Logging Cheat Sheet," OWASP Cheat Sheet Series, 2026. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html. [Accessed 2 November 2026].
