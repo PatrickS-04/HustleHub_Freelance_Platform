@@ -577,9 +577,11 @@ npm run test:run
 |-----|-------|
 | **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the five self-checks; then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
 | **frontend-build** | install from the lockfile; lint with Oxlint; run the Vitest tests; production build |
-| **deploy** | runs only on `main`, and only after both jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
+| **static-analysis** | scan the code, Dockerfiles and workflows with Semgrep; any finding fails the job; the report is uploaded as the `semgrep-report` artifact |
+| **docker-zap** | build the Docker images; start the full Compose stack with throwaway secrets; run the OWASP ZAP baseline scan against the API and the client; the reports are uploaded as the `zap-reports` artifact |
+| **deploy** | runs only on `main`, and only after all the other jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
 
-A failing check, test or audit in either job fails the build.
+A failing check, test, audit, Semgrep finding or Docker build in any job fails the build. ZAP warnings do not fail the build, so they are reviewed in the report.
 
 ## Screenshots
 

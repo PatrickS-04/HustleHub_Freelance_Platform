@@ -22,6 +22,9 @@ export default defineConfig(({ command, mode }) => {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'no-referrer',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Resource-Policy': 'same-origin',
   }
 
   // Strict CSP for the built app (`npm run preview`). The dev server gets the
