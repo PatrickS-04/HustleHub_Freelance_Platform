@@ -582,10 +582,11 @@ npm run test:run
 | **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the six self-checks; then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
 | **frontend-build** | install from the lockfile; lint with Oxlint; run the Vitest tests; production build |
 | **static-analysis** | scan the code, Dockerfiles and workflows with Semgrep; any finding fails the job; the report is uploaded as the `semgrep-report` artifact |
+| **sonarcloud** | runs only on pushes to `main`, because the free plan only analyses that branch; scan the code with SonarQube Cloud using the settings in `sonar-project.properties`; a failed quality gate fails the job |
 | **docker-zap** | build the Docker images; start the full Compose stack with throwaway secrets; run the OWASP ZAP baseline scan against the API and the client; the reports are uploaded as the `zap-reports` artifact |
 | **deploy** | runs only on `main`, and only after all the other jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
 
-A failing check, test, audit, Semgrep finding or Docker build in any job fails the build. ZAP warnings do not fail the build, so they are reviewed in the report.
+A failing check, test, audit, Semgrep finding, SonarQube quality gate or Docker build in any job fails the build. ZAP warnings do not fail the build, so they are reviewed in the report.
 
 ## Logging
 The API writes structured logs through [utils/logger.js](API/utils/logger.js): one JSON object per line on stdout. Docker captures stdout, so the logs can be read with `docker compose logs api`, and because each line is JSON a log platform can filter it by any field. No logging library is needed for this, so no dependency was added.
