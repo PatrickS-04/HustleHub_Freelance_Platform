@@ -12,9 +12,11 @@ const isValidName = (name) =>
   validator.isAlpha(name, "en-US", { ignore: " '-" });
 
 const PASSWORD_ERROR =
-  "Password is required and must be 8-128 chars with an uppercase, lowercase and a number.";
+  "Password is required and must be 8-72 chars with an uppercase, lowercase and a number.";
+// bcrypt only uses the first 72 bytes, so anything longer would be silently
+// ignored. Bytes, not characters: an accented letter or emoji takes several.
 const isStrongPassword = (password) =>
-  validator.isLength(password, { min: 8, max: 128 }) &&
+  Buffer.byteLength(password) <= 72 &&
   validator.isStrongPassword(password, {
     minLength: 8,
     minLowercase: 1,

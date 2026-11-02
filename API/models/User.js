@@ -10,6 +10,9 @@ const userSchema = new mongoose.Schema(
     // Tokens issued before this are rejected, so changing the password signs
     // out every other session (see requireAuth).
     passwordChangedAt: Date,
+    // Per-account login lockout (see login in authController).
+    failedLogins: { type: Number, default: 0, select: false },
+    lockedUntil: { type: Date, select: false },
   },
   { timestamps: true }
 );

@@ -1185,7 +1185,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n    \"error\": \"Password is required and must be 8-128 chars with an uppercase, lowercase and a number.\"\n}"
+          "body": "{\n    \"error\": \"Password is required and must be 8-72 chars with an uppercase, lowercase and a number.\"\n}"
         },
         {
           "name": "Register - Missing Role Field",
@@ -1515,7 +1515,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n    \"error\": \"Password is required and must be 8-128 chars with an uppercase, lowercase and a number.\"\n}"
+          "body": "{\n    \"error\": \"Password is required and must be 8-72 chars with an uppercase, lowercase and a number.\"\n}"
         }
       ]
     },

@@ -31,7 +31,7 @@ describe('RegisterForm', () => {
   it('rejects a weak password without calling the API', async () => {
     render(<RegisterForm onRegister={vi.fn()} onSwitch={vi.fn()} />)
     await fill({ password: 'weak' })
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Password must be 8-128 characters/)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Password must be 8-72 characters/)
     expect(register).not.toHaveBeenCalled()
   })
 

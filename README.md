@@ -277,6 +277,8 @@ Login and registration are the endpoints targeted by password brute-forcing and 
 
 A blocked request receives `429` with a clear message and the standard `RateLimit` headers. The frontend shows a friendly message and pauses the login button for a short time.
 
+The login limiter counts per IP, so it cannot see guessing spread across many addresses. Accounts therefore have their own lockout: 10 wrong passwords locks the account for 15 minutes ([controllers/authController.js](API/controllers/authController.js)). A locked account gets the same `401` as any failed login, so the lock does not reveal that the account exists. The limit sits above the per-IP limit so that one person mistyping is stopped by the limiter, with a clear message, before they ever reach it. The lock is temporary because a permanent one would let an attacker shut anyone out of their account.
+
 ### Input Validation
 Input is validated in three layers, so that no single missed check lets bad data through [21].
 
@@ -284,7 +286,7 @@ Input is validated in three layers, so that no single missed check lets bad data
 
    | Validator | Rules |
    |-----------|-------|
-   | `validateRegister` | name 2-50 letters (spaces, `'` and `-` allowed); email checked with `validator.isEmail`, lowercased, max 254; password 8-128 characters with an uppercase, a lowercase and a number; `role` allow-listed to `client` or `freelancer` |
+   | `validateRegister` | name 2-50 letters (spaces, `'` and `-` allowed); email checked with `validator.isEmail`, lowercased, max 254; password 8-72 bytes (bcrypt ignores anything longer) with an uppercase, a lowercase and a number; `role` allow-listed to `client` or `freelancer` |
    | `validateLogin` | `email` and `password` only - **login does not take a `role`**; any `role` sent is dropped |
    | `validateProfile` | only the display name can change; email and role are dropped |
    | `validatePasswordChange` | current password required; new password meets the registration rule and must differ |

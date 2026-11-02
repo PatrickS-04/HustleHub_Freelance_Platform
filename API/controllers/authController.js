@@ -8,6 +8,11 @@ const COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour, matches the JWT expiry
 // Compared against when the email is unknown, so that login takes as long as a
 // wrong password and response time can't reveal which emails have accounts.
 const DUMMY_HASH = bcrypt.hashSync("no-account-has-this-hash", SALT_ROUNDS);
+// Catches guessing spread across many IPs, which loginLimiter can't see. Set
+// above that limiter's 5 per IP so one person mistyping hits the limiter first
+// and is told to wait. Temporary, so an attacker can't lock someone out for good.
+const MAX_FAILED_LOGINS = 10;
+const LOCK_MS = 15 * 60 * 1000;
 
 // The httpOnly cookie is the real token transport. The token is echoed in the
 // JSON body only when EXPOSE_TOKEN_IN_BODY=true (for Postman / Newman, which have
@@ -78,6 +83,23 @@ async function register(req, res, next) {
   }
 }
 
+// Counts a wrong password and locks the account once the limit is reached.
+// Limitation: failures only clear on a successful login or a lock, so old ones add up; store the first failure's time if that locks people out.
+async function recordFailedLogin(req, user) {
+  const updated = await User.findByIdAndUpdate(
+    user.id,
+    { $inc: { failedLogins: 1 } },
+    { returnDocument: "after" }
+  ).select("+failedLogins");
+  if (!updated || updated.failedLogins < MAX_FAILED_LOGINS) return;
+
+  await User.updateOne(
+    { _id: user.id },
+    { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCK_MS) }
+  );
+  logger.warn("auth.account_locked", { ...requestContext(req), userId: user.id });
+}
+
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
@@ -86,7 +108,7 @@ async function login(req, res, next) {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    const user = await User.findOne({ email }).select("+passwordHash");
+    const user = await User.findOne({ email }).select("+passwordHash +failedLogins +lockedUntil");
 
     // Deliberately identical response whether the email doesn't exist or the
     // password is wrong - prevents attackers from enumerating valid accounts.
@@ -98,11 +120,25 @@ async function login(req, res, next) {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
+    // Compared even when locked, and answered with the same 401, so neither the
+    // response nor its timing shows that the account exists or is locked.
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    if (user.lockedUntil > Date.now()) {
+      logger.warn("auth.login.failed", { ...requestContext(req), reason: "account_locked", userId: user.id });
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
     if (!passwordMatches) {
+      // Not awaited: unknown emails do no database write, so waiting here would
+      // make wrong passwords measurably slower and reveal the account exists.
+      recordFailedLogin(req, user).catch((err) =>
+        logger.error("auth.login.record_failed", { ...requestContext(req), userId: user.id, message: err.message })
+      );
       logger.warn("auth.login.failed", { ...requestContext(req), reason: "wrong_password", userId: user.id });
       return res.status(401).json({ error: "Invalid email or password." });
     }
+
+    if (user.failedLogins) await User.updateOne({ _id: user.id }, { failedLogins: 0 });
 
     const token = generateToken(user);
     setAuthCookie(res, token);
