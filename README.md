@@ -326,7 +326,7 @@ All errors funnel through one central handler ([middleware/errorHandler.js](API/
 - the client always receives a generic `{ "error": "An unexpected error occurred." }` with the correct status code - no stack traces, file paths, dependency names or versions, or configuration are ever returned, so an attacker cannot use error responses to fingerprint the system
 - a small set of safe, specific messages is allowed: malformed JSON → `400`, body too large → `413`, unknown route → `404`, invalid identifier → `400`, invalid data → `400`, duplicate value → `409`. Database errors are translated into these messages, so no Mongoose or MongoDB error text reaches the client
 
-Login errors are deliberately vague in the same way: login returns the identical `"Invalid email or password."` whether the email is unknown or the password is wrong ([controllers/authController.js](API/controllers/authController.js)), so the login endpoint cannot be used to discover which email addresses have accounts.
+Login errors are deliberately vague in the same way: login returns the identical `"Invalid email or password."` whether the email is unknown or the password is wrong ([controllers/authController.js](API/controllers/authController.js)), so the login endpoint cannot be used to discover which email addresses have accounts. An unknown email still goes through a full bcrypt comparison against a dummy hash, so response time does not give it away either.
 
 The frontend adds a second layer ([services/api.js](frontend/src/services/api.js)). The API's own `4xx` messages are shown to the user, but any `5xx` response is replaced with a generic message, so server internals never reach the screen. A `401` on a protected request signs the user out with a "session expired" notice.
 

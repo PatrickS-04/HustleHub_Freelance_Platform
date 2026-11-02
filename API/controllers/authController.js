@@ -5,6 +5,9 @@ const { logger, requestContext } = require("../utils/logger");
 
 const SALT_ROUNDS = 12;
 const COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour, matches the JWT expiry
+// Compared against when the email is unknown, so that login takes as long as a
+// wrong password and response time can't reveal which emails have accounts.
+const DUMMY_HASH = bcrypt.hashSync("no-account-has-this-hash", SALT_ROUNDS);
 
 // The httpOnly cookie is the real token transport. The token is echoed in the
 // JSON body only when EXPOSE_TOKEN_IN_BODY=true (for Postman / Newman, which have
@@ -90,6 +93,7 @@ async function login(req, res, next) {
     // The log may record the real reason; it is never sent to the client. The
     // submitted email is left out: people sometimes type a password in that box.
     if (!user) {
+      await bcrypt.compare(password, DUMMY_HASH);
       logger.warn("auth.login.failed", { ...requestContext(req), reason: "unknown_email" });
       return res.status(401).json({ error: "Invalid email or password." });
     }
@@ -179,4 +183,4 @@ function logout(req, res) {
   return res.status(200).json({ message: "Logged out." });
 }
 
-module.exports = { register, login, logout, updateMe, changePassword };
+module.exports = { register, login, logout, updateMe, changePassword, SALT_ROUNDS };
