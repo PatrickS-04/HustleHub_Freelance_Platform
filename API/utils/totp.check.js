@@ -47,6 +47,9 @@ const [iv, tag, data] = stored.split(".");
 const tampered = Buffer.from(data, "base64");
 tampered[0] ^= 1;
 assert.throws(() => decryptSecret([iv, tag, tampered.toString("base64")].join(".")));
+// a shortened tag is refused, otherwise a forgery only has to guess a few bytes
+const shortTag = Buffer.from(tag, "base64").subarray(0, 4).toString("base64");
+assert.throws(() => decryptSecret([iv, shortTag, data].join(".")));
 
 // recovery codes are unique, and dashes and case don't matter when entered
 const codes = generateRecoveryCodes();

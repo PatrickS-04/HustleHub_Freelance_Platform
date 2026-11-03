@@ -69,7 +69,7 @@ function encryptSecret(secret) {
 
 function decryptSecret(stored) {
   const [iv, tag, encrypted] = stored.split(".").map((part) => Buffer.from(part, "base64"));
-  const decipher = crypto.createDecipheriv("aes-256-gcm", secretKey(), iv);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", secretKey(), iv, { authTagLength: 16 });
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
 }
