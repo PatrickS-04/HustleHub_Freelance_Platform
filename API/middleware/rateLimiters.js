@@ -42,10 +42,18 @@ function createRateLimiter({ windowMs, max, message, keyGenerator }) {
     keyGenerator: (req) => (req.user ? `user:${req.user.id}` : req.ip)
   });
 
+  // Per user: stops someone with a stolen session guessing a code or the password.
+  const mfaLimiter = createRateLimiter({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: 'Too many two-factor attempts, please try again in 15 minutes.',
+    keyGenerator: (req) => (req.user ? `user:${req.user.id}` : req.ip)
+  });
+
   const globalLimiter = createRateLimiter({
     windowMs: 15 *60 * 1000,
     max: 300,
     message: 'Too many requests, please slow down and try again later.'
   });
 
-module.exports = { loginLimiter, registerLimiter, bookingLimiter, passwordLimiter, globalLimiter };
+module.exports = { loginLimiter, registerLimiter, bookingLimiter, passwordLimiter, mfaLimiter, globalLimiter };

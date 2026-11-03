@@ -42,6 +42,11 @@
       "type": "string"
     },
     {
+      "key": "adminCode",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "adminToken",
       "value": "",
       "type": "string"
@@ -128,6 +133,26 @@
     },
     {
       "key": "oversizedBody",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mfaSecret",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "mfaCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "recoveryCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "preMfaToken",
       "value": "",
       "type": "string"
     }
@@ -4322,6 +4347,532 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "MFA setup - wrong password",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/setup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mfa",
+                "setup"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"NotMyPass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MFA setup - valid",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "pm.collectionVariables.set(\"mfaSecret\", json.secret);",
+                  "pm.test(\"Returns a base32 secret\", () => pm.expect(json.secret).to.match(/^[A-Z2-7]{32}$/));",
+                  "pm.test(\"Returns a QR code\", () => pm.expect(json.qrCode).to.match(/^data:image\\//));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/setup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mfa",
+                "setup"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"Newpassw0rd456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MFA enable - wrong code",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/enable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mfa",
+                "enable"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"000000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MFA enable - valid",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Works out the current code from the secret, as an authenticator app would.",
+                  "const alphabet = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567\";",
+                  "const bits = pm.collectionVariables.get(\"mfaSecret\").split(\"\").map((c) => alphabet.indexOf(c).toString(2).padStart(5, \"0\")).join(\"\");",
+                  "const keyHex = bits.match(/.{8}/g).map((b) => parseInt(b, 2).toString(16).padStart(2, \"0\")).join(\"\");",
+                  "const counterHex = Math.floor(Date.now() / 30000).toString(16).padStart(16, \"0\");",
+                  "const mac = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counterHex), CryptoJS.enc.Hex.parse(keyHex)).toString();",
+                  "const offset = parseInt(mac.slice(-1), 16);",
+                  "const value = (parseInt(mac.substr(offset * 2, 8), 16) & 0x7fffffff) % 1000000;",
+                  "pm.collectionVariables.set(\"mfaCode\", String(value).padStart(6, \"0\"));",
+                  "// Kept so the next request can check that this session has been revoked.",
+                  "pm.collectionVariables.set(\"preMfaToken\", pm.collectionVariables.get(\"otherToken\"));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "pm.collectionVariables.set(\"otherToken\", json.token);",
+                  "pm.collectionVariables.set(\"recoveryCode\", json.recoveryCodes[0]);",
+                  "pm.test(\"Returns 8 recovery codes\", () => pm.expect(json.recoveryCodes).to.have.lengthOf(8));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/enable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mfa",
+                "enable"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{mfaCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Token from before MFA was enabled is rejected",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{preMfaToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New token shows MFA is on",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"mfaEnabled is true\", () => pm.expect(json.user.mfaEnabled).to.eql(true));",
+                  "pm.test(\"Secret and recovery codes are not returned\", () => pm.expect(pm.response.text()).to.not.match(/mfaSecret|mfaRecovery|mfaLastStep/));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - MFA account, password only",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "pm.test(\"Asks for a code\", () => pm.expect(json.mfaRequired).to.eql(true));",
+                  "pm.test(\"No token is issued\", () => pm.expect(json.token).to.eql(undefined));",
+                  "pm.test(\"No user is returned\", () => pm.expect(json.user).to.eql(undefined));",
+                  "pm.test(\"No cookie is set\", () => pm.expect(pm.response.headers.get(\"Set-Cookie\")).to.eql(undefined));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"other{{runId}}@example.com\",\n  \"password\": \"Newpassw0rd456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MFA disable - code already used is rejected",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/disable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mfa",
+                "disable"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"Newpassw0rd456\",\n  \"code\": \"{{mfaCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MFA disable - valid, with a recovery code",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "let json = {};",
+                  "try { json = pm.response.json(); } catch (e) {}",
+                  "pm.collectionVariables.set(\"otherToken\", json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/mfa/disable",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "mfa",
+                "disable"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"Newpassw0rd456\",\n  \"code\": \"{{recoveryCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -4844,7 +5395,7 @@
     },
     {
       "name": "08 Admin (skipped unless adminEmail/adminPassword are set)",
-      "description": "These requests need an admin account, which can only be created in the database. Set the collection variables adminEmail and adminPassword (or pass --env-var / --global-var to Newman). Without them every request here is skipped.",
+      "description": "These requests need an admin account, which can only be created in the database. The account must have two-factor authentication turned on. Set the collection variables adminEmail, adminPassword and adminCode, a current code from the authenticator app (or pass --env-var / --global-var to Newman). Without them every request here is skipped.",
       "item": [
         {
           "name": "Admin login",
@@ -4900,7 +5451,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"code\": \"{{adminCode}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

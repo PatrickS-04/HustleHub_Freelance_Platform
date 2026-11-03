@@ -34,12 +34,16 @@ async function requireAuth(req, res, next) {
   try {
     const user = await userFromToken(token);
     if (!user) return res.status(401).json({ error: "Authentication required." });
-    req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
+    req.user = { id: user.id, name: user.name, email: user.email, role: user.role, mfaEnabled: user.mfaEnabled };
     next();
   } catch {
     return res.status(401).json({ error: "Invalid or expired token." });
   }
 }
+
+// An admin only counts as one once two-factor authentication is on. They can
+// still sign in and use their own account, which is how they turn it on.
+const isAdminWithMfa = (user) => user.role === "admin" && Boolean(user.mfaEnabled);
 
 // Role gate - not needed for Part 1, but Part 2 RBAC plugs straight in.
 function requireRole(...roles) {
@@ -47,8 +51,11 @@ function requireRole(...roles) {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ error: "Insufficient permissions." });
     }
+    if (req.user.role === "admin" && !isAdminWithMfa(req.user)) {
+      return res.status(403).json({ error: "Turn on two-factor authentication in Settings to use admin features." });
+    }
     next();
   };
 }
 
-module.exports = { requireAuth, requireRole, tokenFromRequest, userFromToken };
+module.exports = { requireAuth, requireRole, isAdminWithMfa, tokenFromRequest, userFromToken };

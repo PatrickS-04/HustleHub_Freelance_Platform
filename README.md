@@ -22,7 +22,7 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 - **MongoDB database** - Mongoose models for users, gigs, bookings and transactions replace the in-memory store.
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
-- **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
+- **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, two-factor authentication (required for admins), session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
 - **Testing** - a 99-request Postman/Newman collection, backend self-checks, 49 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
@@ -59,7 +59,7 @@ Every role can also change their display name and password in Settings.
 │   │   ├── auth.js                # requireAuth (JWT from cookie or Bearer), requireRole (RBAC)
 │   │   ├── validators.js          # Input validation for every write endpoint
 │   │   ├── sanitize.js            # NoSQL injection, parameter pollution, HTML stripping
-│   │   ├── rateLimiters.js        # Global, login, register, booking and password limiters
+│   │   ├── rateLimiters.js        # Global, login, register, booking, password and MFA limiters
 │   │   ├── securityHeaders.js     # Helmet, CSP, HSTS, no-store
 │   │   ├── requestLogger.js       # Request id and one log line per finished request
 │   │   └── errorHandler.js        # Centralised error responses (no internal leakage)
@@ -76,6 +76,7 @@ Every role can also change their display name and password in Settings.
 │   │   └── userRoutes.js          # /api/users (admin only)
 │   ├── utils/
 │   │   ├── logger.js              # Structured JSON logs with secret redaction
+│   │   ├── totp.js                # Two-factor codes, secret encryption, recovery codes
 │   │   └── generateToken.js       # JWT signing
 │   └── postman/                   # Part 1 and Part 2 collections, captured Newman run
 └── frontend/
@@ -124,7 +125,7 @@ Four Mongoose models ([API/models](API/models)):
 
 | Model | Key fields | Security and integrity notes |
 |-------|-----------|------------------------------|
-| **User** | `name`, `email` (unique, lowercased), `passwordHash`, `role`, `tokenVersion`, `failedLogins`, `lockedUntil` | `passwordHash` is `select: false`, so no query returns it unless it is asked for explicitly, and the lockout fields are the same. `role` is an enum of `client`, `freelancer`, `admin`. |
+| **User** | `name`, `email` (unique, lowercased), `passwordHash`, `role`, `tokenVersion`, `failedLogins`, `lockedUntil`, `mfaEnabled`, `mfaSecret`, `mfaLastStep`, `mfaRecoveryHashes` | `passwordHash` is `select: false`, so no query returns it unless it is asked for explicitly, and the lockout and two-factor fields are the same (except `mfaEnabled`). The two-factor secret is encrypted and the recovery codes are hashed. `role` is an enum of `client`, `freelancer`, `admin`. |
 | **Gig** | `title`, `description`, `category`, `price`, `deliveryDays`, `active`, `freelancer` | Length and range limits in the schema. `freelancer` is the owner, taken from the JWT and checked on every edit and delete. |
 | **Booking** | `gig`, `client`, `freelancer`, `gigTitle`, `price`, `date`, `note`, `status`, `review` | `gigTitle` and `price` are snapshotted at booking time, so a later gig edit or delete cannot change what was agreed. `status` is an enum. |
 | **Transaction** | `reference`, `booking` (unique), `client`, `freelancer`, `amount`, `status` | One per booking, enforced by a unique index. `reference` is a random `TX-` code. Payment is simulated. |
@@ -196,6 +197,15 @@ A valid signature alone is not enough. On every request `requireAuth` also loads
 - **Logout revokes the session on the server.** It clears the cookie, which is `httpOnly` so only the API can remove it, and raises `tokenVersion`, so a stolen copy of the token stops working too (`POST /api/auth/logout`). Because the version is per user, logging out signs out all of that user's devices. Only a currently valid token can trigger this, so an old stolen one cannot be used to keep signing the user out.
 - **Idle timeout in the browser.** The frontend signs the user out after 15 minutes without activity, with a one-minute warning and a "stay signed in" option [8] ([hooks/useIdleLogout.js](frontend/src/hooks/useIdleLogout.js)). The limit can be changed with `VITE_IDLE_MINUTES`.
 
+### Two-Factor Authentication
+Any user can turn on two-factor authentication in Settings, using an authenticator app (TOTP, RFC 6238). It is required for admins: until an admin turns it on they can sign in and use their own account, but every admin feature returns `403` ([middleware/auth.js](API/middleware/auth.js)). A single stolen admin password would otherwise give control over every user and booking.
+
+- **Login takes two steps.** With the right password, the API answers `{ mfaRequired: true }` and issues no cookie or token. The frontend then sends the password again with the code, so the API holds no half-finished login state ([controllers/authController.js](API/controllers/authController.js)).
+- **Codes can't be guessed or reused.** Wrong codes count towards the account lockout. The time step of each accepted code is stored, and a database condition refuses that step or an earlier one, so an intercepted code cannot be replayed, even by a request at the same moment.
+- **The secret is encrypted at rest** with AES-256-GCM, so a database leak alone does not give away codes ([utils/totp.js](API/utils/totp.js)). The key is derived from `JWT_SECRET`, so **rotating `JWT_SECRET` makes existing two-factor secrets unreadable**. Those users could no longer log in until the field is cleared in the database.
+- **Recovery codes.** Turning it on shows eight one-time codes once, and only their SHA-256 hashes are stored. A fast hash is fine here because the codes are random, unlike passwords. Using one is logged as a warning.
+- **Changes need proof.** Starting setup needs the password, so someone with a stolen session cannot lock the owner out with their own app. Turning it off needs the password and a code. Turning it on or off also signs out every other session, and the `mfaLimiter` limits attempts per user.
+
 ### JWT Storage and Transport
 On successful register or login the API sets the token in a cookie ([controllers/authController.js](API/controllers/authController.js)):
 ```js
@@ -264,7 +274,7 @@ The API only accepts cross-origin requests from the configured frontend origin (
 - `server_tokens off`, so nginx does not reveal its version [18].
 
 ### Rate Limiting
-Five limiters are defined in one place ([middleware/rateLimiters.js](API/middleware/rateLimiters.js)) [19][20]:
+Six limiters are defined in one place ([middleware/rateLimiters.js](API/middleware/rateLimiters.js)) [19][20]:
 
 | Limiter | Applies to | Limit | Counted per |
 |---------|-----------|-------|-------------|
@@ -272,6 +282,7 @@ Five limiters are defined in one place ([middleware/rateLimiters.js](API/middlew
 | `loginLimiter` | `POST /api/auth/login` | 5 per 15 minutes | IP |
 | `registerLimiter` | `POST /api/auth/register` | 10 per 15 minutes | IP |
 | `passwordLimiter` | `PATCH /api/auth/password` | 5 per 15 minutes | User |
+| `mfaLimiter` | `POST /api/auth/mfa/*` | 10 per 15 minutes | User |
 | `bookingLimiter` | `POST /api/bookings` | 10 per 10 minutes | User |
 
 Login and registration are the endpoints targeted by password brute-forcing and account enumeration, so they get tight limits rather than relying on the global one. The password-change limiter is counted per user, which stops someone with a stolen session from guessing the current password. Booking creation has its own per-user limit because it writes financial records. Read endpoints are cheap and sit behind the looser global limiter.
@@ -358,6 +369,9 @@ Authenticated requests are identified by the `token` cookie (set automatically o
 | GET | `/api/auth/me` | Any signed-in user | Returns the signed-in user |
 | PATCH | `/api/auth/me` | Any signed-in user | Change display name - body: `name` |
 | PATCH | `/api/auth/password` | Any signed-in user | Change password - body: `currentPassword`, `newPassword` |
+| POST | `/api/auth/mfa/setup` | Any signed-in user | Start two-factor setup, returns the secret and QR code - body: `password` |
+| POST | `/api/auth/mfa/enable` | Any signed-in user | Confirm with a code, returns the recovery codes - body: `code` |
+| POST | `/api/auth/mfa/disable` | Any signed-in user | Turn two-factor off - body: `password`, `code` |
 
 ### Gigs
 
@@ -451,7 +465,7 @@ Registration never creates an admin. Register a normal account, then change its 
 mongosh "mongodb://localhost:27017/hustlehub" --eval 'db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })'
 ```
 
-Log in again and the admin dashboard is shown. When running in Docker, use the steps under [Docker](#docker) instead.
+Log in again and the admin dashboard is shown. Admin features stay locked until you turn on two-factor authentication under Settings. When running in Docker, use the steps under [Docker](#docker) instead.
 
 ### Docker
 **Requirements:** Docker Desktop (running), plus the certificate and `API/.env` from the steps above.
@@ -488,7 +502,7 @@ At the `hustlehub>` prompt, change the role of the account you registered, then 
 db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })
 ```
 
-The result should show `modifiedCount: 1`. Emails are stored in lowercase, so `matchedCount: 0` means the email does not match. Log in again and the admin dashboard is shown. The account is kept in the MongoDB data volume, so it survives `docker compose down` but not `docker compose down -v`.
+The result should show `modifiedCount: 1`. Emails are stored in lowercase, so `matchedCount: 0` means the email does not match. Log in again and the admin dashboard is shown. Admin features stay locked until you turn on two-factor authentication under Settings. The account is kept in the MongoDB data volume, so it survives `docker compose down` but not `docker compose down -v`.
 
 ## Testing
 
@@ -498,7 +512,7 @@ The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](AP
 - **00 Health, 01 Auth, 05 Account** - register, login, `/me`, profile and password changes, with their `400`/`401`/`409` failure paths.
 - **02 Gigs, 03 Bookings, 04 Income** - the domain flows, including validation failures, ownership checks, review rules and the freelancer-only income summary.
 - **06 Error handling** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the controlled error message so nothing internal leaks.
-- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword` are set, which leaves 99 requests / 151 assertions (this is what CI runs).
+- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword`/`adminCode` are set (the account needs two-factor on, and `adminCode` is a current code from its app), which leaves 99 requests / 151 assertions (this is what CI runs).
 - **09 Rate limiting** - runs last and asserts the `429` response, its message and the rate-limit headers on both the booking and the login endpoint.
 
 The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.

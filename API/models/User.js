@@ -13,6 +13,12 @@ const userSchema = new mongoose.Schema(
     // Per-account login lockout (see login in authController).
     failedLogins: { type: Number, default: 0, select: false },
     lockedUntil: { type: Date, select: false },
+    // Two-factor authentication (see utils/totp.js). The secret is encrypted and
+    // the recovery codes are hashed. mfaLastStep stops a code being used twice.
+    mfaEnabled: { type: Boolean, default: false },
+    mfaSecret: { type: String, select: false },
+    mfaLastStep: { type: Number, select: false },
+    mfaRecoveryHashes: { type: [String], select: false },
   },
   { timestamps: true }
 );

@@ -67,6 +67,46 @@ describe('LoginForm', () => {
     expect(await screen.findByRole('button', { name: /Try again in \d+s/ })).toBeDisabled()
   })
 
+  it('asks for a code when the account needs one, then signs in with it', async () => {
+    login.mockResolvedValueOnce({ mfaRequired: true }).mockResolvedValueOnce({ user })
+    const onLogin = vi.fn()
+    render(<LoginForm onLogin={onLogin} onSwitch={vi.fn()} />)
+    const u = await fillAndSubmit()
+    expect(onLogin).not.toHaveBeenCalled()
+
+    await u.type(await screen.findByLabelText('Authentication code'), ' 123456 ')
+    await u.click(screen.getByRole('button', { name: 'Verify' }))
+    expect(login).toHaveBeenLastCalledWith('test@example.com', 'Passw0rd!', '123456')
+    expect(onLogin).toHaveBeenCalledWith(user)
+  })
+
+  it('stays on the code step after a wrong code, keeping the password for the next try', async () => {
+    login
+      .mockResolvedValueOnce({ mfaRequired: true })
+      .mockRejectedValueOnce(new ApiError('Invalid authentication code.', 401))
+      .mockResolvedValueOnce({ user })
+    render(<LoginForm onLogin={vi.fn()} onSwitch={vi.fn()} />)
+    const u = await fillAndSubmit()
+
+    await u.type(await screen.findByLabelText('Authentication code'), '000000')
+    await u.click(screen.getByRole('button', { name: 'Verify' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Invalid authentication code.')
+    expect(screen.getByLabelText('Authentication code')).toHaveValue('')
+
+    await u.type(screen.getByLabelText('Authentication code'), '654321')
+    await u.click(screen.getByRole('button', { name: 'Verify' }))
+    expect(login).toHaveBeenLastCalledWith('test@example.com', 'Passw0rd!', '654321')
+  })
+
+  it('goes back to the password step and clears the password', async () => {
+    login.mockResolvedValueOnce({ mfaRequired: true })
+    render(<LoginForm onLogin={vi.fn()} onSwitch={vi.fn()} />)
+    const u = await fillAndSubmit()
+    await u.click(await screen.findByRole('button', { name: 'Back to login' }))
+    expect(screen.getByLabelText('Password')).toHaveValue('')
+    expect(screen.queryByLabelText('Authentication code')).not.toBeInTheDocument()
+  })
+
   it('switches to registration', async () => {
     const onSwitch = vi.fn()
     render(<LoginForm onLogin={vi.fn()} onSwitch={onSwitch} />)

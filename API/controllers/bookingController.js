@@ -2,6 +2,7 @@ const Booking = require("../models/Booking");
 const Gig = require("../models/Gig");
 const Transaction = require("../models/Transaction");
 const { logger, requestContext } = require("../utils/logger");
+const { isAdminWithMfa } = require("../middleware/auth");
 
 // Allowed status changes per role. Mirrors STATUS_ACTIONS in the frontend.
 const TRANSITIONS = {
@@ -128,7 +129,7 @@ async function getBooking(req, res, next) {
   try {
     const booking = await Booking.findById(req.params.id).populate(POPULATE);
     // 404 rather than 403 so other users can't probe which booking ids exist.
-    if (!booking || (!partyRole(booking, req.user) && req.user.role !== "admin")) {
+    if (!booking || (!partyRole(booking, req.user) && !isAdminWithMfa(req.user))) {
       return res.status(404).json({ error: "Booking not found." });
     }
     const [shaped] = await withReferences([booking]);
