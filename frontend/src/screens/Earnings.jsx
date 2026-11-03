@@ -9,6 +9,8 @@ const tidy = (t) => {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
+const percent = (fraction) => `${+(fraction * 100).toFixed(1)}%`
+
 // Income summary from GET /api/income. The API works it out from this
 // freelancer's transaction records (filtered by the JWT, never a parameter):
 // only Accepted and Completed bookings count, refunded ones don't.
@@ -34,7 +36,7 @@ function Earnings() {
   }
   if (!income) return <p className="empty">Loading...</p>
 
-  const { total, paidOut, inProgress, taxRate, estimatedTax, byMonth, byGig, transactions } = income
+  const { total, paidOut, inProgress, tax, byMonth, byGig, transactions } = income
   const months = monthlySeries(
     Object.fromEntries(byMonth.map((m) => [m.month, m.total])),
     now,
@@ -49,8 +51,8 @@ function Earnings() {
     { label: 'Total income', value: money(total) },
     { label: 'Paid out', value: money(paidOut) },
     { label: 'In progress', value: money(inProgress) },
-    // Flat-rate estimate from the API, not a tax calculation.
-    { label: `Estimated tax (${Math.round(taxRate * 100)}%)`, value: money(estimatedTax) },
+    // Worked out by the API from the SARS brackets, for this tax year only.
+    { label: `Estimated tax (${tax.taxYear})`, value: money(tax.estimated) },
   ]
 
   return (
@@ -69,6 +71,42 @@ function Earnings() {
             <span className="stat-value">{s.value}</span>
           </div>
         ))}
+      </section>
+
+      <section className="panel">
+        <h2>How your tax estimate works</h2>
+        <p className="muted">
+          {tax.estimated === 0
+            ? `Your ${tax.taxYear} income of ${money(tax.income)} is within the ${money(tax.threshold)} tax threshold, so no tax is estimated yet.`
+            : `You keep about ${percent(1 - tax.effectiveRate)} of your ${tax.taxYear} income of ${money(tax.income)}. Tax is ${percent(tax.effectiveRate)} of it overall, and each extra rand you earn is taxed at ${percent(tax.marginalRate)}.`}
+        </p>
+        {tax.bands.length > 0 && (
+          <ul className="row-list">
+            {tax.bands.map((b) => (
+              <li className="row" key={b.rate}>
+                <span>
+                  {money(b.income)} taxed at {percent(b.rate)}
+                </span>
+                <span className="job-budget">{money(b.tax)}</span>
+              </li>
+            ))}
+            <li className="row">
+              <span>Less primary rebate (every individual gets this)</span>
+              <span className="job-budget">- {money(tax.rebate)}</span>
+            </li>
+            <li className="row">
+              <strong>Estimated tax</strong>
+              <strong className="job-budget">{money(tax.estimated)}</strong>
+            </li>
+          </ul>
+        )}
+        <p className="muted">
+          A rate only applies to the part of your income inside its bracket, so earning more never
+          lowers what you keep. This uses SARS {tax.ratesYear} rates on Accepted and Completed
+          bookings dated in the {tax.taxYear} tax year (March to February). It is a guide, not tax
+          advice: it does not deduct business expenses or include other income, and extra rebates
+          apply from age 65. Your actual tax is assessed by SARS.
+        </p>
       </section>
 
       <div className="dash-grid charts-grid">

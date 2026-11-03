@@ -403,7 +403,7 @@ Authenticated requests are identified by the `token` cookie (set automatically o
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/api/income` | Freelancer | Income total, paid out, in progress, estimated tax, by month and by gig |
+| GET | `/api/income` | Freelancer | Income total, paid out, in progress, estimated tax with its breakdown (SARS 2026/27 brackets less the primary rebate, on the current tax year's income), by month and by gig |
 | GET | `/api/users` | Admin | List all users |
 | GET | `/api/users/:id` | Admin | One user with their gig and booking counts |
 | DELETE | `/api/users/:id` | Admin | Delete a user and their data (not your own account) |
@@ -437,10 +437,9 @@ CORS_ORIGIN=https://localhost:5173
 SSL_KEY_PATH=./certs/key.pem
 SSL_CERT_PATH=./certs/cert.pem
 MONGO_URL=mongodb://localhost:27017/hustlehub
-TAX_RATE=0.25
 ```
 
-`MONGO_URL` is the MongoDB connection string; the server refuses to start without it. `TAX_RATE` is the flat rate (a fraction between 0 and 1, default `0.25`) used for the freelancer's estimated tax on `GET /api/income`; any other value stops the API from starting. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY` is deliberately left out: by default the `httpOnly` cookie is the only token transport and no response body contains the JWT. Add `EXPOSE_TOKEN_IN_BODY=true` only for a Postman/Newman run (see [Testing](#testing)), which has no cookie jar, and remove it afterwards.
+`MONGO_URL` is the MongoDB connection string; the server refuses to start without it. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY` is deliberately left out: by default the `httpOnly` cookie is the only token transport and no response body contains the JWT. Add `EXPOSE_TOKEN_IN_BODY=true` only for a Postman/Newman run (see [Testing](#testing)), which has no cookie jar, and remove it afterwards.
  
 And Then Lastly Run the server:
  
@@ -569,7 +568,7 @@ The pure logic in the API has assert-based self-checks that need no server or da
 | `npm run test:auth` | reading the token from the cookie or header; rejecting tokens issued before a password change |
 | `npm run test:gigs` | gig ownership and delete rules; gig validation, including an injected owner or query operator |
 | `npm run test:bookings` | allowed status changes per role; who counts as a party to a booking; booking, status and review validation |
-| `npm run test:income` | income totals, tax estimate and `TAX_RATE` validation |
+| `npm run test:income` | income totals, tax brackets, rebate and tax-year boundaries |
 | `npm run test:sanitize` | HTML stripping, including nested tags |
 | `npm run test:logger` | log line format; secrets masked; forged log lines blocked; log level and error response for each status |
 
