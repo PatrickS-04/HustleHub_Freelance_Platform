@@ -1,0 +1,42 @@
+# ZAP active scan of the API. The API has no pages to crawl, so the routes come
+# from the Postman collection. Fails the job on any High alert.
+# ponytail: one signed-in freelancer, so client and admin only routes answer 403;
+# the login and register limiters also cut those routes short after a few requests.
+env:
+  contexts:
+    - name: api
+      urls: ["${ZAP_TARGET}"]
+  parameters:
+    failOnError: true
+    progressToStdout: true
+jobs:
+  - type: replacer
+    parameters:
+      deleteAllRules: true
+    rules:
+      - description: Send every request as the signed-in user
+        matchType: req_header
+        matchString: Authorization
+        replacementString: Bearer ${ZAP_TOKEN}
+  - type: postman
+    parameters:
+      # A copy with {{base_url}} filled in by CI: the add-on silently sends nothing otherwise.
+      collectionFile: /zap/collection.json
+  - type: passiveScan-wait
+  - type: activeScan
+    parameters:
+      context: api
+      maxScanDurationInMins: 10
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk
+      reportFile: zap-api-active.html
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: /zap/wrk
+      reportFile: zap-api-active.json
+  - type: exitStatus
+    parameters:
+      errorLevel: High

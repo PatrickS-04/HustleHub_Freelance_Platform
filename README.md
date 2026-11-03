@@ -40,8 +40,10 @@ Every role can also change their display name and password in Settings.
 
 ```
 ├── docker-compose.yml         # mongo + api + client containers
+├── mongo-init.js              # creates the API's limited MongoDB user
 ├── zap.yaml                   # OWASP ZAP scan plan (report: zap-report.html)
 ├── .github/workflows/ci.yml   # CI pipeline
+├── .github/zap-api-active.yaml # ZAP active scan plan for the API, run by CI
 ├── API/
 │   ├── server.js              # HTTPS entry point, secret checks, connects to Mongo, boots the app
 │   ├── app.js                 # Express app: middleware pipeline, routes, error handling
@@ -350,7 +352,9 @@ The frontend adds a second layer ([services/api.js](frontend/src/services/api.js
 - **The API will not start without a database.** `MONGO_URL` is required, and the HTTPS listener only opens once the connection succeeds ([server.js](API/server.js)).
 - **The database is not reachable from outside.** In Docker, MongoDB sits on an internal-only network with no published port, so only the API container can connect to it ([docker-compose.yml](docker-compose.yml)) [33].
 - **The database requires authentication**, with credentials supplied from an untracked `.env` file [34].
-- **Containers run with least privilege.** The API image installs production dependencies only and runs as the non-root `node` user. The frontend image is a multi-stage build, so the final image holds only nginx and the built static files [35][36].
+- **The API does not connect as the database administrator.** It logs in as `hustlehub_app`, which only has `readWrite` on the `hustlehub` database, so a compromised API cannot read other databases or manage users. The root login is only given to the `mongo` and `mongo-init` containers ([mongo-init.js](mongo-init.js)) [34].
+- **Containers run with least privilege.** The API image installs production dependencies only, removes npm and runs as the non-root `node` user. The frontend image is a multi-stage build, so the final image holds only nginx and the built static files [35][36].
+- **Containers are locked down at runtime.** Every container has a read-only filesystem, cannot gain new privileges and drops all Linux capabilities. The `client` container adds back only the four nginx needs to start (`NET_BIND_SERVICE`, `CHOWN`, `SETUID`, `SETGID`), and folders that must be written at start-up are in-memory `tmpfs` mounts ([docker-compose.yml](docker-compose.yml)).
 - **Secrets are never baked into an image or committed.** Certificates are mounted read-only at run time, environment values come from `.env` files, and `.env` and `certs` are in `.gitignore` and `.dockerignore`.
 - **Deleting a user removes their data.** Their gigs, bookings and transactions are deleted with the account, so nothing is left pointing at a user that no longer exists.
 
@@ -472,12 +476,15 @@ Log in again and the admin dashboard is shown. Admin features stay locked until 
 
 [docker-compose.yml](docker-compose.yml) starts three containers: `mongo` (MongoDB 7, on an internal-only network with no published port), `api` (`https://localhost:3443`) and `client` (the frontend, `https://localhost:5173`).
 
-Create a second `.env` file next to `docker-compose.yml` with the MongoDB root credentials. Use letters and digits only for the password - it is placed inside the connection string, so characters such as `@` or `/` break it:
+Create a second `.env` file next to `docker-compose.yml` with the MongoDB root credentials and a separate password for the API's own database user. Use letters and digits only for `MONGO_APP_PASSWORD` - it is placed inside the connection string, so characters such as `@` or `/` break it:
 
 ```env
 MONGO_USER=hustlehub
 MONGO_PASSWORD=replace-with-a-long-random-string
+MONGO_APP_PASSWORD=replace-with-a-different-long-random-string
 ```
+
+On every start, the short-lived `mongo-init` container creates the `hustlehub_app` user (or updates its password), then exits. Seeing it as `Exited (0)` is normal.
 
 Then build and start everything:
 
@@ -599,13 +606,13 @@ npm run test:run
 | Job | Steps |
 |-----|-------|
 | **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the six self-checks; then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
-| **frontend-build** | install from the lockfile; lint with Oxlint; run the Vitest tests; production build |
+| **frontend-build** | install from the lockfile; `npm audit` at high severity; lint with Oxlint; run the Vitest tests; production build |
 | **static-analysis** | scan the code, Dockerfiles and workflows with Semgrep; any finding fails the job; the report is uploaded as the `semgrep-report` artifact |
 | **sonarcloud** | runs only on pushes to `main` and pull requests into it, because the free plan only analyses those; scan the code with SonarQube Cloud using the settings in `sonar-project.properties`; a failed quality gate fails the job |
-| **docker-zap** | build the Docker images; start the full Compose stack with throwaway secrets; run the OWASP ZAP baseline scan against the API and the client; the reports are uploaded as the `zap-reports` artifact |
+| **docker-zap** | build the Docker images; start the full Compose stack with throwaway secrets; run an OWASP ZAP active scan against the API (signed in, with routes from the Postman collection) and the client; scan the images with Trivy; the reports are uploaded as the `security-scan-reports` artifact |
 | **deploy** | runs only on `main`, and only after all the other jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
 
-A failing check, test, audit, Semgrep finding, SonarQube quality gate or Docker build in any job fails the build. ZAP warnings do not fail the build, so they are reviewed in the report.
+A failing check, test, audit, Semgrep finding, SonarQube quality gate or Docker build in any job fails the build. So does a High ZAP alert, a ZAP scan that covers nothing, or a fixable HIGH or CRITICAL Trivy finding in the `api` or `client` image. Lower ZAP alerts do not fail the build, so they are reviewed in the report. `mongo:7` is an upstream image, so its Trivy results are report-only.
 
 ## Logging
 The API writes structured logs through [utils/logger.js](API/utils/logger.js): one JSON object per line on stdout. Docker captures stdout, so the logs can be read with `docker compose logs api`, and because each line is JSON a log platform can filter it by any field. No logging library is needed for this, so no dependency was added.

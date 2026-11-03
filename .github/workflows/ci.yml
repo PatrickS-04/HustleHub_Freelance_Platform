@@ -33,18 +33,7 @@ jobs:
         run: git ls-files '*.js' | grep -v node_modules | xargs -n1 node --check
 
       - name: Audit dependencies
-        run: |
-          for i in 1 2 3; do
-            out=$(npm audit --audit-level=high 2>&1) && { echo "$out"; exit 0; }
-            echo "$out"
-            # npm exits 1 both for real vulns and for endpoint errors; tell them apart by the message
-            if ! echo "$out" | grep -qiE 'audit endpoint returned an error|Service Unavailable|Bad Request|ECONNRESET|ETIMEDOUT'; then
-              exit 1  # genuine vulnerabilities at/above high
-            fi
-            echo "audit endpoint error (attempt $i), retrying in 30s..."
-            sleep 30
-          done
-          echo "::warning::npm audit endpoint unavailable after 3 attempts, skipping"
+        run: bash ../.github/scripts/npm-audit.sh
 
       # Pure-logic self-checks (node --check-style asserts), no server needed.
       - name: Unit tests
@@ -100,6 +89,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
+
+      - name: Audit dependencies
+        run: bash ../.github/scripts/npm-audit.sh
 
       - name: Lint
         run: npm run lint
@@ -159,7 +151,8 @@ jobs:
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
             -keyout API/certs/key.pem -out API/certs/cert.pem -subj "/CN=localhost"
           chmod 644 API/certs/key.pem
-          printf 'MONGO_USER=ci\nMONGO_PASSWORD=%s\n' "$(openssl rand -hex 24)" > .env
+          printf 'MONGO_USER=ci\nMONGO_PASSWORD=%s\nMONGO_APP_PASSWORD=%s\n' \
+            "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
           printf 'JWT_SECRET=%s\nAPP_NAME=HustleHubPlusAPI\nCORS_ORIGIN=https://localhost:5173\n' \
             "$(openssl rand -hex 32)" > API/.env
 
@@ -176,18 +169,50 @@ jobs:
             curl -ksf "$url" > /dev/null
           done
 
-      # Passive baseline scan. -I reports warnings without failing the job, so
-      # read the report; only a FAIL rule or a scan error turns this red.
-      - name: ZAP baseline scan (API)
+      # Active scan as a throwaway freelancer, plan in .github/zap-api-active.yaml.
+      # High alerts fail the job, lower ones are in the report. An empty report
+      # means nothing was scanned, which must not pass as clean.
+      - name: ZAP active scan (API)
         run: |
-          docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t https://localhost:3443 -I -r zap-api.html -J zap-api.json
+          set -o pipefail
+          base=https://localhost:3443
+          token=$(curl -ksSf -c - -o /dev/null -X POST "$base/api/auth/register" -H 'Content-Type: application/json' \
+            -d "{\"name\":\"Zap Scanner\",\"email\":\"zap@example.com\",\"password\":\"Aa1!$(openssl rand -hex 16)\",\"role\":\"freelancer\"}" \
+            | awk '$6=="token"{print $7}')
+          gig=$(curl -ksSf -X POST "$base/api/gigs" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"title":"ZAP scan gig","description":"Created for the ZAP active scan to target.","category":"Design","price":100,"deliveryDays":3}' \
+            | jq -r .gig.id)
+          sed "s#{{base_url}}#$base#g; s#{{gigId}}#$gig#g" "API/postman/HustleHub+ Part2.postman_collection.json" > "$RUNNER_TEMP/collection.json"
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" -v "$RUNNER_TEMP/collection.json:/zap/collection.json:ro" \
+            -v "$PWD/.github/zap-api-active.yaml:/zap/plan.yaml:ro" -e ZAP_TARGET="$base" -e ZAP_TOKEN="$token" \
+            ghcr.io/zaproxy/zaproxy:stable zap.sh -cmd -autorun /zap/plan.yaml
+          jq -e '.site | length > 0' reports/zap-api-active.json
 
-      - name: ZAP baseline scan (client)
+      # Spider and active scan. -I keeps warnings from failing the script, so High alerts are checked after.
+      - name: ZAP active scan (client)
         if: always()
         run: |
           docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t https://localhost:5173 -I -r zap-client.html -J zap-client.json
+            zap-full-scan.py -t https://localhost:5173 -m 1 -T 15 -I -r zap-client.html -J zap-client.json
+          jq -e '(.site | length > 0) and ([.site[].alerts[] | select(.riskcode == "3")] | length == 0)' reports/zap-client.json
+
+      # The images built here fail on fixable HIGH/CRITICAL. mongo:7 is upstream's
+      # and carries findings in tools this stack never runs, so it is report-only.
+      - name: Trivy image scan
+        if: always()
+        run: |
+          set -o pipefail
+          trivy() {
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+              image --quiet --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL "$@"
+          }
+          status=0
+          for image in $(docker compose config --images | grep -v '^mongo'); do
+            trivy --exit-code 1 "$image" | tee "reports/trivy-$image.txt" || status=1
+          done
+          trivy mongo:7 | tee reports/trivy-mongo.txt
+          exit $status
 
       - name: Container logs
         if: failure()
@@ -196,7 +221,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: zap-reports
+          name: security-scan-reports
           path: reports/
 
   deploy:
