@@ -12,9 +12,11 @@ const isValidName = (name) =>
   validator.isAlpha(name, "en-US", { ignore: " '-" });
 
 const PASSWORD_ERROR =
-  "Password is required and must be 8-128 chars with an uppercase, lowercase and a number.";
+  "Password is required and must be 8-72 chars with an uppercase, lowercase and a number.";
+// bcrypt only uses the first 72 bytes, so anything longer would be silently
+// ignored. Bytes, not characters: an accented letter or emoji takes several.
 const isStrongPassword = (password) =>
-  validator.isLength(password, { min: 8, max: 128 }) &&
+  Buffer.byteLength(password) <= 72 &&
   validator.isStrongPassword(password, {
     minLength: 8,
     minLowercase: 1,
@@ -22,6 +24,14 @@ const isStrongPassword = (password) =>
     minNumbers: 1,
     minSymbols: 0,
   });
+
+// A 6-digit code or a recovery code. Which one, and whether it's right, is
+// decided in the controller.
+const MFA_CODE_ERROR = "Enter a valid authentication code.";
+const isMfaCode = (code) => typeof code === "string" && /^[0-9A-Za-z-]{1,20}$/.test(code);
+const PASSWORD_REQUIRED = "Enter your password.";
+const isCurrentPassword = (password) =>
+  typeof password === "string" && password.length > 0 && password.length <= 128;
 
 function validateRegister(req, res, next) {
   // try/catch so any unexpected error during validation returns a 400, never a 500.
@@ -62,12 +72,15 @@ function validateLogin(req, res, next) {
     const email = typeof b.email === "string" ? b.email.trim().toLowerCase() : "";
     const password = typeof b.password === "string" ? b.password : "";
 
+    const code = typeof b.code === "string" ? b.code.trim() : "";
+
     if (!validator.isEmail(email) || !password) {
       return fail(res, "Email and password are required.");
     }
+    if (code && !isMfaCode(code)) return fail(res, MFA_CODE_ERROR);
 
     // Login never takes a role - it is read from the signed JWT after auth.
-    req.body = { email, password };
+    req.body = { email, password, code };
     next();
   } catch (err) {
     return fail(res, "Invalid request data.");
@@ -99,6 +112,29 @@ function validatePasswordChange(req, res, next) {
   }
 
   req.body = { currentPassword, newPassword };
+  next();
+}
+
+function validateMfaSetup(req, res, next) {
+  const password = req.body?.password;
+  if (!isCurrentPassword(password)) return fail(res, PASSWORD_REQUIRED);
+  req.body = { password };
+  next();
+}
+
+function validateMfaEnable(req, res, next) {
+  const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+  if (!isMfaCode(code)) return fail(res, MFA_CODE_ERROR);
+  req.body = { code };
+  next();
+}
+
+function validateMfaDisable(req, res, next) {
+  const password = req.body?.password;
+  const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+  if (!isCurrentPassword(password)) return fail(res, PASSWORD_REQUIRED);
+  if (!isMfaCode(code)) return fail(res, MFA_CODE_ERROR);
+  req.body = { password, code };
   next();
 }
 
@@ -227,6 +263,9 @@ module.exports = {
   validateLogin,
   validateProfile,
   validatePasswordChange,
+  validateMfaSetup,
+  validateMfaEnable,
+  validateMfaDisable,
   validateGig,
   validateId,
   validateBooking,

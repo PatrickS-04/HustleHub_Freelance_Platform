@@ -13,6 +13,9 @@ function LoginForm({ onLogin, onSwitch, notice }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  // Set once the password was accepted but the account needs a code as well.
+  const [needsCode, setNeedsCode] = useState(false)
+  const [code, setCode] = useState('')
   const failures = useRef(0)
 
   useEffect(() => {
@@ -21,19 +24,34 @@ function LoginForm({ onLogin, onSwitch, notice }) {
     return () => clearTimeout(t)
   }, [cooldown])
 
+  function backToPassword() {
+    setNeedsCode(false)
+    setCode('')
+    setPassword('')
+    setError('')
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (cooldown > 0) return
     setError('')
     setLoading(true)
     try {
-      const data = await login(email.trim(), password)
+      const data = needsCode
+        ? await login(email.trim(), password, code.trim())
+        : await login(email.trim(), password)
       failures.current = 0
+      if (data.mfaRequired) {
+        setNeedsCode(true)
+        return
+      }
       onLogin(data.user)
     } catch (err) {
       setError(err.message)
-      // Never leave a rejected password sitting in the form.
-      setPassword('')
+      // Never leave a rejected password sitting in the form. At the code step the
+      // password was accepted and is needed for the next try, so only the code goes.
+      if (needsCode) setCode('')
+      else setPassword('')
       failures.current += 1
       if (err.status === 429 || failures.current >= MAX_FAILURES) {
         failures.current = 0
@@ -57,43 +75,63 @@ function LoginForm({ onLogin, onSwitch, notice }) {
           </p>
         )}
 
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            maxLength={254}
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="field">
-          <label htmlFor="password">Password</label>
-          <div className="input-wrap">
+        {needsCode ? (
+          <div className="field">
+            <label htmlFor="mfa-code">Authentication code</label>
             <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              maxLength={128}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              id="mfa-code"
+              type="text"
+              autoComplete="one-time-code"
+              maxLength={20}
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoFocus
               required
             />
-            <button
-              type="button"
-              className="toggle-pw"
-              onClick={() => setShowPassword((s) => !s)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
+            <p className="muted">Enter the 6-digit code from your authenticator app, or a recovery code.</p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                autoComplete="email"
+                maxLength={254}
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <div className="input-wrap">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  maxLength={128}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="toggle-pw"
+                  onClick={() => setShowPassword((s) => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         {error && (
           <p className="auth-error" role="alert">
@@ -106,15 +144,25 @@ function LoginForm({ onLogin, onSwitch, notice }) {
             ? 'Logging in...'
             : cooldown > 0
               ? `Try again in ${cooldown}s`
-              : 'Log in'}
+              : needsCode
+                ? 'Verify'
+                : 'Log in'}
         </button>
 
-        <p className="auth-switch">
-          New here?{' '}
-          <button type="button" className="link-btn" onClick={onSwitch}>
-            Create an account
-          </button>
-        </p>
+        {needsCode ? (
+          <p className="auth-switch">
+            <button type="button" className="link-btn" onClick={backToPassword}>
+              Back to login
+            </button>
+          </p>
+        ) : (
+          <p className="auth-switch">
+            New here?{' '}
+            <button type="button" className="link-btn" onClick={onSwitch}>
+              Create an account
+            </button>
+          </p>
+        )}
       </form>
     </div>
   )

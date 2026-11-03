@@ -1,11 +1,23 @@
 # api + client + mongo. Mongo sits on an internal-only network: no published
 # port and no route out, so only the api container can reach it.
-# Secrets: MONGO_USER / MONGO_PASSWORD in ./.env, the rest in API/.env.
+# Secrets: MONGO_USER / MONGO_PASSWORD (root) and MONGO_APP_PASSWORD (api) in
+# ./.env, the rest in API/.env. Only mongo and mongo-init ever see the root login.
+x-hardened: &hardened
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: [/tmp]
+
 services:
   mongo:
+    <<: *hardened
     image: mongo:7
+    # Start as mongodb directly: the image's root start-up needs extra capabilities.
+    user: mongodb
     restart: unless-stopped
     environment:
+      # mongodb's home is /data/db; this keeps mongosh's log files out of the data volume.
+      HOME: /tmp
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?set MONGO_USER in .env}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?set MONGO_PASSWORD in .env}
     volumes:
@@ -17,13 +29,31 @@ services:
       timeout: 5s
       retries: 20
 
+  # One-shot: creates the api's database user, then exits.
+  mongo-init:
+    <<: *hardened
+    image: mongo:7
+    user: mongodb
+    environment:
+      MONGO_USER: ${MONGO_USER}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?set MONGO_APP_PASSWORD in .env}
+    volumes:
+      - ./mongo-init.js:/mongo-init.js:ro
+    entrypoint: ["sh", "-c", 'exec mongosh --quiet mongodb://mongo:27017/admin -u "$$MONGO_USER" -p "$$MONGO_PASSWORD" /mongo-init.js']
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [data]
+
   api:
+    <<: *hardened
     build: ./API
     restart: unless-stopped
     env_file: ./API/.env
     environment:
       # Overrides API/.env so the api talks to the mongo container, with auth.
-      MONGO_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/hustlehub?authSource=admin
+      MONGO_URL: mongodb://hustlehub_app:${MONGO_APP_PASSWORD}@mongo:27017/hustlehub
       SSL_KEY_PATH: /app/certs/key.pem
       SSL_CERT_PATH: /app/certs/cert.pem
       PORT: 3443
@@ -32,11 +62,16 @@ services:
     ports:
       - "3443:3443"
     depends_on:
-      mongo:
-        condition: service_healthy
+      mongo-init:
+        condition: service_completed_successfully
     networks: [data, public]
 
   client:
+    <<: *hardened
+    # nginx starts as root to bind 443 and read the key, then drops to its own user.
+    cap_add: [NET_BIND_SERVICE, CHOWN, SETUID, SETGID]
+    # Written at start-up: the rendered config, proxy temp folders and the pid file.
+    tmpfs: [/etc/nginx/conf.d, /var/cache/nginx, /var/run, /tmp]
     build:
       context: ./frontend
       args:

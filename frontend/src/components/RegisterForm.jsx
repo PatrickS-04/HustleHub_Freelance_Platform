@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { register } from '../services/api'
+import { passwordProblem } from '../utils/password'
 import Select from './Select'
 import PasswordStrength from './PasswordStrength'
 
@@ -17,16 +18,7 @@ function validate({ name, email, password }) {
   if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
     return 'Enter a valid email address.'
   }
-  if (
-    password.length < 8 ||
-    password.length > 128 ||
-    !/[a-z]/.test(password) ||
-    !/[A-Z]/.test(password) ||
-    !/[0-9]/.test(password)
-  ) {
-    return 'Password must be 8-128 characters with an uppercase letter, a lowercase letter and a number.'
-  }
-  return ''
+  return passwordProblem(password)
 }
 
 function RegisterForm({ onRegister, onSwitch }) {

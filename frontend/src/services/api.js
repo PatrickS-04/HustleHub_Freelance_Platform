@@ -48,10 +48,11 @@ async function request(path, options = {}) {
   throw new ApiError(message, res.status)
 }
 
-export const login = (email, password) =>
+// `code` is only sent once the API has answered with { mfaRequired: true }.
+export const login = (email, password, code) =>
   request('/api/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, code }),
   })
 
 export const register = (name, email, password, role) =>
@@ -73,6 +74,13 @@ export const updateMe = (name) => request('/api/auth/me', send('PATCH', { name }
 // other session is signed out.
 export const changePassword = (currentPassword, newPassword) =>
   request('/api/auth/password', send('PATCH', { currentPassword, newPassword }))
+
+// ---- Two-factor authentication ----
+// Enable and disable replace the auth cookie, signing out every other session.
+export const mfaSetup = (password) => request('/api/auth/mfa/setup', send('POST', { password }))
+export const mfaEnable = (code) => request('/api/auth/mfa/enable', send('POST', { code }))
+export const mfaDisable = (password, code) =>
+  request('/api/auth/mfa/disable', send('POST', { password, code }))
 
 // ---- Gigs ----
 // The owner is never sent: the API takes it from the JWT.

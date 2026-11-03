@@ -200,7 +200,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -227,7 +227,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -391,7 +391,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\"\r\n}",
+          "raw": "{\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -418,7 +418,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\"\r\n}",
+              "raw": "{\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -735,7 +735,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -762,7 +762,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+              "raw": "{\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -906,7 +906,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1185,7 +1185,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n    \"error\": \"Password is required and must be 8-128 chars with an uppercase, lowercase and a number.\"\n}"
+          "body": "{\n    \"error\": \"Password is required and must be 8-72 chars with an uppercase, lowercase and a number.\"\n}"
         },
         {
           "name": "Register - Missing Role Field",
@@ -1194,7 +1194,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\"\r\n}",
+              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1515,7 +1515,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n    \"error\": \"Password is required and must be 8-128 chars with an uppercase, lowercase and a number.\"\n}"
+          "body": "{\n    \"error\": \"Password is required and must be 8-72 chars with an uppercase, lowercase and a number.\"\n}"
         }
       ]
     },
@@ -1539,7 +1539,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+          "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -1566,7 +1566,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"JohnDoe2012\",\r\n    \"role\": \"client\"\r\n}",
+              "raw": "{\r\n    \"name\": \"John Doe\",\r\n    \"email\": \"jdoe@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\",\r\n    \"role\": \"client\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1911,7 +1911,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"email\": \"benjamin@ymail.com\",\r\n    \"password\": \"JohnDoe2012\"\r\n}",
+          "raw": "{\r\n    \"email\": \"benjamin@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -1938,7 +1938,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"benjamin@ymail.com\",\r\n    \"password\": \"JohnDoe2012\"\r\n}",
+              "raw": "{\r\n    \"email\": \"benjamin@ymail.com\",\r\n    \"password\": \"HustleHubTest7319\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2312,7 +2312,7 @@
               "pm.collectionVariables.set(\"oversizedBody\", JSON.stringify({",
               "    name: \"John Doe\",",
               "    email: \"jdoe@ymail.com\",",
-              "    password: \"JohnDoe2012\",",
+              "    password: \"HustleHubTest7319\",",
               "    role: \"client\",",
               "    filler: filler",
               "}));"
