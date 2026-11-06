@@ -46,4 +46,53 @@ const unexpected = errorResponse(new Error("connect ECONNREFUSED mongo:27017"));
 assert.strictEqual(unexpected.status, 500);
 assert.strictEqual(unexpected.error, "An unexpected error occurred.");
 
-console.log("logger checks passed");
+// Loki payload: one stream per level, nanosecond string timestamps, lines untouched
+const { lokiPayload } = require("./logger");
+const payload = lokiPayload([
+  { level: "info", ms: 1700000000000, line: "a" },
+  { level: "warn", ms: 1700000000001, line: "b" },
+  { level: "info", ms: 1700000000002, line: "c" },
+]);
+assert.deepStrictEqual(payload, {
+  streams: [
+    { stream: { service: "hustlehub-api", level: "info" }, values: [["1700000000000000000", "a"], ["1700000000002000000", "c"]] },
+    { stream: { service: "hustlehub-api", level: "warn" }, values: [["1700000000001000000", "b"]] },
+  ],
+});
+
+// End to end against a fake Loki: basic auth is sent, the body is a valid push,
+// and secrets are already masked before anything leaves the server.
+(async () => {
+  const http = require("node:http");
+  let received;
+  const server = http.createServer((req, res) => {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      received = { auth: req.headers.authorization, body: JSON.parse(body) };
+      res.writeHead(204).end();
+    });
+  });
+  await new Promise((r) => server.listen(0, r));
+  Object.assign(process.env, {
+    LOKI_URL: `http://127.0.0.1:${server.address().port}/loki/api/v1/push`,
+    LOKI_USER: "123",
+    LOKI_TOKEN: "glc_test",
+  });
+  delete require.cache[require.resolve("./logger")];
+  const fresh = require("./logger");
+  fresh.logger.warn("auth.login.failed", { password: "hunter2" });
+  await fresh.flush();
+  server.close();
+
+  assert.strictEqual(received.auth, `Basic ${Buffer.from("123:glc_test").toString("base64")}`);
+  const [stream] = received.body.streams;
+  assert.strictEqual(stream.stream.level, "warn");
+  assert.ok(!stream.values[0][1].includes("hunter2"));
+  assert.strictEqual(JSON.parse(stream.values[0][1]).event, "auth.login.failed");
+
+  console.log("logger checks passed");
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

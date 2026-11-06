@@ -4,26 +4,74 @@ const Transaction = require("../models/Transaction");
 // agreed yet, and Declined/Cancelled ones were refunded.
 const EARNING = ["Accepted", "Completed"];
 
-// Flat-rate estimate (TAX_RATE is a fraction, e.g. 0.25). Not tax advice: it
-// ignores brackets, rebates and deductible expenses.
-// A real estimate would need the SARS brackets and the primary rebate.
-const DEFAULT_TAX_RATE = 0.25;
-function taxRateFromEnv(value = process.env.TAX_RATE) {
-  if (value === undefined || value === "") return DEFAULT_TAX_RATE;
-  const rate = Number(value);
-  if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
-    throw new Error("TAX_RATE must be a number between 0 and 1.");
-  }
-  return rate;
+// SARS individual rates for 1 March 2026 - 28 February 2027:
+// https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/
+// ponytail: one table, so later tax years reuse these rates (the response and
+// screen name them); replace the table when SARS publishes new ones.
+const SARS_RATES = {
+  year: "2026/27",
+  primaryRebate: 17820,
+  threshold: 99000, // income where 18% of it equals the rebate, so no tax is due below it
+  brackets: [
+    { upTo: 245100, rate: 0.18 },
+    { upTo: 383100, rate: 0.26 },
+    { upTo: 530200, rate: 0.31 },
+    { upTo: 695800, rate: 0.36 },
+    { upTo: 887000, rate: 0.39 },
+    { upTo: 1878600, rate: 0.41 },
+    { upTo: Infinity, rate: 0.45 },
+  ],
+};
+
+const cents = (n) => Math.round(n * 100) / 100;
+
+// The SA tax year runs March to February, so January 2027 is in "2026/27".
+function taxYearOf(date) {
+  const start = date.getUTCMonth() >= 2 ? date.getUTCFullYear() : date.getUTCFullYear() - 1;
+  return `${start}/${String(start + 1).slice(2)}`;
 }
-const TAX_RATE = taxRateFromEnv();
+
+// Progressive tax on one tax year's income, with each step returned so the
+// screen can show how the figure was reached. Each rate only applies to the part
+// of the income inside its bracket, then the primary rebate comes off the result.
+// Not tax advice: it treats booking income as taxable income, so it ignores
+// deductible expenses, other income and the extra rebates from age 65.
+function estimateTax(income) {
+  const bands = [];
+  let from = 0;
+  for (const { upTo, rate } of SARS_RATES.brackets) {
+    if (income <= from) break;
+    const amount = Math.min(income, upTo) - from;
+    bands.push({ income: cents(amount), rate, tax: cents(amount * rate) });
+    from = upTo;
+  }
+
+  // Added from the rounded bands so the breakdown on screen adds up exactly.
+  const beforeRebate = cents(bands.reduce((s, b) => s + b.tax, 0));
+  const rebate = Math.min(beforeRebate, SARS_RATES.primaryRebate); // can't go below zero
+  const estimated = cents(beforeRebate - rebate);
+
+  return {
+    ratesYear: SARS_RATES.year,
+    threshold: SARS_RATES.threshold,
+    income,
+    bands,
+    beforeRebate,
+    rebate,
+    estimated,
+    // Effective: share of all income that goes to tax. Marginal: tax on the next rand.
+    effectiveRate: income > 0 ? Math.round((estimated / income) * 10000) / 10000 : 0,
+    marginalRate: estimated > 0 ? bands[bands.length - 1].rate : 0,
+  };
+}
 
 // Pure summary of a freelancer's income rows, kept separate so it can be checked
 // without a database. Each row: { reference, amount, status, gigId, gigTitle, clientName, date }.
-function summarise(rows, taxRate = TAX_RATE) {
+function summarise(rows, now = new Date()) {
   const earning = rows.filter((r) => EARNING.includes(r.status));
   const total = earning.reduce((s, r) => s + r.amount, 0);
   const paidOut = earning.filter((r) => r.status === "Completed").reduce((s, r) => s + r.amount, 0);
+  const taxYear = taxYearOf(now);
 
   const group = (keyOf, init) =>
     Object.values(
@@ -40,9 +88,12 @@ function summarise(rows, taxRate = TAX_RATE) {
     total,
     paidOut,
     inProgress: total - paidOut,
-    taxRate,
-    // On all earning income (Accepted + Completed), rounded to cents.
-    estimatedTax: Math.round(total * taxRate * 100) / 100,
+    // Brackets apply per tax year, so only this year's earning income
+    // (Accepted + Completed, by booking date) counts, unlike the all-time total.
+    tax: {
+      taxYear,
+      ...estimateTax(cents(earning.filter((r) => taxYearOf(new Date(r.date)) === taxYear).reduce((s, r) => s + r.amount, 0))),
+    },
     // Grouped by the booking's start-date month, like the frontend chart.
     byMonth: group((r) => r.date.slice(0, 7), (r) => ({ month: r.date.slice(0, 7) })).sort((a, b) =>
       a.month.localeCompare(b.month)
@@ -78,4 +129,4 @@ async function myIncome(req, res, next) {
   }
 }
 
-module.exports = { myIncome, summarise, taxRateFromEnv };
+module.exports = { myIncome, summarise, estimateTax, taxYearOf };

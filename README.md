@@ -403,7 +403,7 @@ Authenticated requests are identified by the `token` cookie (set automatically o
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/api/income` | Freelancer | Income total, paid out, in progress, estimated tax, by month and by gig |
+| GET | `/api/income` | Freelancer | Income total, paid out, in progress, estimated tax with its breakdown (SARS 2026/27 brackets less the primary rebate, on the current tax year's income), by month and by gig |
 | GET | `/api/users` | Admin | List all users |
 | GET | `/api/users/:id` | Admin | One user with their gig and booking counts |
 | DELETE | `/api/users/:id` | Admin | Delete a user and their data (not your own account) |
@@ -437,10 +437,9 @@ CORS_ORIGIN=https://localhost:5173
 SSL_KEY_PATH=./certs/key.pem
 SSL_CERT_PATH=./certs/cert.pem
 MONGO_URL=mongodb://localhost:27017/hustlehub
-TAX_RATE=0.25
 ```
 
-`MONGO_URL` is the MongoDB connection string; the server refuses to start without it. `TAX_RATE` is the flat rate (a fraction between 0 and 1, default `0.25`) used for the freelancer's estimated tax on `GET /api/income`; any other value stops the API from starting. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY` is deliberately left out: by default the `httpOnly` cookie is the only token transport and no response body contains the JWT. Add `EXPOSE_TOKEN_IN_BODY=true` only for a Postman/Newman run (see [Testing](#testing)), which has no cookie jar, and remove it afterwards.
+`MONGO_URL` is the MongoDB connection string; the server refuses to start without it. `JWT_SECRET` must be at least 32 characters or the server will refuse to start. `APP_NAME` is the JWT issuer and is validated on every request. `CORS_ORIGIN` is the browser origin allowed to call the API (comma-separated for more than one). `EXPOSE_TOKEN_IN_BODY` is deliberately left out: by default the `httpOnly` cookie is the only token transport and no response body contains the JWT. Add `EXPOSE_TOKEN_IN_BODY=true` only for a Postman/Newman run (see [Testing](#testing)), which has no cookie jar, and remove it afterwards.
  
 And Then Lastly Run the server:
  
@@ -569,9 +568,9 @@ The pure logic in the API has assert-based self-checks that need no server or da
 | `npm run test:auth` | reading the token from the cookie or header; rejecting tokens issued before a password change |
 | `npm run test:gigs` | gig ownership and delete rules; gig validation, including an injected owner or query operator |
 | `npm run test:bookings` | allowed status changes per role; who counts as a party to a booking; booking, status and review validation |
-| `npm run test:income` | income totals, tax estimate and `TAX_RATE` validation |
+| `npm run test:income` | income totals, tax brackets, rebate and tax-year boundaries |
 | `npm run test:sanitize` | HTML stripping, including nested tags |
-| `npm run test:logger` | log line format; secrets masked; forged log lines blocked; log level and error response for each status |
+| `npm run test:logger` | log line format; secrets masked; forged log lines blocked; log level and error response for each status; Loki push format, basic auth and masking, checked against a local fake Loki |
 
 ```bash
 cd API
@@ -650,6 +649,51 @@ Logs are a target too, so they follow the OWASP logging guidance [43]:
 - **Log injection is blocked.** JSON encoding escapes line breaks in user input, so input cannot forge an extra log line.
 
 `npm run test:logger` checks the masking and injection rules in CI.
+
+### Cloud Logging with Grafana Cloud
+The same log lines are also sent to Grafana Cloud Loki, where they can be searched and graphed from anywhere [44]. [utils/logger.js](API/utils/logger.js) still writes every line to stdout. It also buffers each line and pushes the buffer to Loki's HTTP push API every 5 seconds, or sooner once 100 lines are waiting. It uses Node's built-in `fetch`, so no extra dependency or container was needed. Each line is labelled with `service` (the `APP_NAME`) and `level`; every other field stays in the JSON line and can be read in Grafana with `| json`.
+
+- **It is optional.** Without the three variables below nothing is sent, so local runs and CI are unchanged.
+- **A Loki outage cannot take the API down.** A failed push is logged to stdout as `logging.loki_push_failed` and that batch is dropped (stdout still has it). The buffer holds at most 1,000 lines, so memory stays bounded.
+- **Nothing extra leaves the server.** Lines are masked before they are buffered, so Loki receives exactly what stdout shows. The push goes over HTTPS with a token that can only write logs.
+- **The last lines are not lost.** The buffer is sent before the API exits on `SIGTERM` (`docker compose stop`) or on a failed database connection.
+
+**Setting it up**
+
+1. In Grafana Cloud, open your stack, choose **Loki → Details**, and note the URL and the user (a number).
+2. Under **Administration → Cloud access policies**, create a policy with only the `logs:write` scope, then create a token for it.
+3. Add these lines to `API/.env`, which is not committed. Docker Compose reads the same file.
+
+```env
+LOKI_URL=https://logs-prod-XXX.grafana.net/loki/api/v1/push
+LOKI_USER=123456
+LOKI_TOKEN=glc_...
+```
+
+4. Restart the API, sign in a few times (including one wrong password), make a booking, then open **Explore → Loki** in Grafana.
+
+**Useful queries**
+
+| What | LogQL |
+|------|-------|
+| Everything from the API | `{service="HustleHubPlusAPI"}` |
+| Failed logins | `{service="HustleHubPlusAPI"} \| json \| event="auth.login.failed"` |
+| Bookings and transactions | `{service="HustleHubPlusAPI"} \| json \| event=~"(booking\|transaction).*"` |
+| Errors | `{service="HustleHubPlusAPI", level="error"}` |
+| Failed logins per 5 minutes (dashboard panel) | `sum(count_over_time({service="HustleHubPlusAPI"} \| json \| event="auth.login.failed" [5m]))` |
+
+**Dashboard**
+
+[grafana/hustlehub-dashboard.json](grafana/hustlehub-dashboard.json) is a ready-made dashboard. Import it in Grafana under **Dashboards → New → Import**, then pick the Loki data source when asked. It shows:
+
+| Panel | Why it is there |
+|-------|-----------------|
+| Failed logins, Successful logins | Counts for the selected time range. Failed logins turn orange at 5 and red at 20, so password guessing stands out |
+| Transactions | Simulated payments recorded |
+| Errors | Any `level="error"` line turns the panel red |
+| Login attempts per 5 minutes | Successes and failures over time, by event |
+| Bookings and transactions per 5 minutes | Booking, status change, transaction and refund events over time |
+| Warnings and errors | The raw `warn` and `error` lines, newest first, each with its `requestId`, `ip` and `userId` |
 
 ## Screenshots
 
@@ -765,3 +809,4 @@ Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 - [41] 	Testing Library, "React Testing Library," Testing Library Docs, 2026. [Online]. Available: https://testing-library.com/docs/react-testing-library/intro/. [Accessed 11 October 2026].
 - [42] 	GitHub, "GitHub Actions documentation," GitHub Docs, 2026. [Online]. Available: https://docs.github.com/en/actions. [Accessed 11 October 2026].
 - [43] 	OWASP, "Logging Cheat Sheet," OWASP Cheat Sheet Series, 2026. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html. [Accessed 2 November 2026].
+- [44] 	Grafana Labs, "Loki HTTP API," Grafana Loki Documentation, 2026. [Online]. Available: https://grafana.com/docs/loki/latest/reference/loki-http-api/. [Accessed 6 November 2026].
