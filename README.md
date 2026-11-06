@@ -682,6 +682,19 @@ LOKI_TOKEN=glc_...
 | Errors | `{service="HustleHubPlusAPI", level="error"}` |
 | Failed logins per 5 minutes (dashboard panel) | `sum(count_over_time({service="HustleHubPlusAPI"} \| json \| event="auth.login.failed" [5m]))` |
 
+**Dashboard**
+
+[grafana/hustlehub-dashboard.json](grafana/hustlehub-dashboard.json) is a ready-made dashboard. Import it in Grafana under **Dashboards → New → Import**, then pick the Loki data source when asked. It shows:
+
+| Panel | Why it is there |
+|-------|-----------------|
+| Failed logins, Successful logins | Counts for the selected time range. Failed logins turn orange at 5 and red at 20, so password guessing stands out |
+| Transactions | Simulated payments recorded |
+| Errors | Any `level="error"` line turns the panel red |
+| Login attempts per 5 minutes | Successes and failures over time, by event |
+| Bookings and transactions per 5 minutes | Booking, status change, transaction and refund events over time |
+| Warnings and errors | The raw `warn` and `error` lines, newest first, each with its `requestId`, `ip` and `userId` |
+
 ## Screenshots
 
 The screenshots below follow one booking through the application, from sign-in to the freelancer's earnings. The image files are in [Screenshots](Screenshots).
