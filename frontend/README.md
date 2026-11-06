@@ -36,6 +36,30 @@ An optional `.env` file in this folder can set:
 
 A captured test run is in [test-results/vitest-run.txt](test-results/vitest-run.txt).
 
+## End-to-end tests
+Vitest checks components in isolation with the API mocked. The end-to-end suite checks the whole path: a real browser drives the built React app, served by the nginx container over HTTPS, which calls the real API and MongoDB in the Compose stack. It uses [Playwright](https://playwright.dev/) with Chromium. The specs are in [frontend/e2e/](frontend/e2e/) and the settings in [frontend/playwright.config.js](frontend/playwright.config.js).
+
+| Test | What it checks |
+|------|----------------|
+| `a client books a gig and both sides see the same transaction reference` | a freelancer registers and publishes a gig; a client registers, finds it and books it; the receipt shows a `TX-` reference in the format the API generates; after a page reload the client's booking list shows the same reference (so it was stored, not just displayed); the freelancer logs in through the login form, sees the request, accepts it and the receipt shows the same reference |
+| `a wrong password gets a generic error and stays on the login screen` | the API's `Invalid email or password.` message is shown, the password field is cleared and no dashboard appears |
+| `logging out ends the session, even after a reload` | the login screen is shown after a reload and the API treats the next request as anonymous (`401`) |
+
+Run it against the running stack:
+
+```bash
+docker compose up -d --build
+cd frontend
+npm ci
+npx playwright install chromium
+npm run test:e2e
+npx playwright show-report      # HTML report with a screenshot per step
+```
+
+The API's rate limiters are counted per process (login 5 per 15 minutes, registration 10), and one run uses 2 logins and 3 registrations, so run `docker compose restart api` before running the suite again. Every run creates fresh accounts with random e-mail addresses and passwords, so it never depends on earlier data. The suite writes its own output to `frontend/e2e-results/` and `frontend/playwright-report/`, not to `frontend/test-results/`, which holds the committed Vitest run.
+
+In CI the **e2e** job builds the images, starts the Compose stack with throwaway secrets, runs the suite and uploads the `playwright-report` artifact (HTML report, screenshots and, for a failure, a trace). It has its own stack, separate from **docker-zap**, because the ZAP active scan uses up the same per-IP rate limits. A failing test fails the build and blocks **deploy**.
+
 ## Structure
 
 ```

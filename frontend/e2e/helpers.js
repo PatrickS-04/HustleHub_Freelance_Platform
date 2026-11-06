@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 export const TX_REF = /^TX-[0-9A-F]{8}$/
 
-export const API_URL = process.env.E2E_API_URL || 'http://localhost:3443'
+export const API_URL = process.env.E2E_API_URL || 'https://localhost:3443'
 
 const rand = (bytes = 4) => randomBytes(bytes).toString('hex')
 
