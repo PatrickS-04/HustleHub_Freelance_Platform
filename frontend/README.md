@@ -60,6 +60,8 @@ The API's rate limiters are counted per process (login 5 per 15 minutes, registr
 
 In CI the **e2e** job builds the images, starts the Compose stack with throwaway secrets, runs the suite and uploads the `playwright-report` artifact (HTML report, screenshots and, for a failure, a trace). It has its own stack, separate from **docker-zap**, because the ZAP active scan uses up the same per-IP rate limits. A failing test fails the build and blocks **deploy**.
 
+![alt text](Playwright_Test_Report.png)
+
 ## Structure
 
 ```
