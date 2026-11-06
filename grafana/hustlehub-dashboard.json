@@ -1,0 +1,107 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "description": "The Grafana Cloud Loki data source the API pushes to",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
+    }
+  ],
+  "title": "HustleHub+ API - Security and Activity",
+  "uid": "hustlehub-api",
+  "tags": ["hustlehub", "security"],
+  "timezone": "browser",
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Failed logins",
+      "description": "auth.login.failed in the selected time range. A spike points to password guessing or credential stuffing.",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "queryType": "instant", "expr": "sum(count_over_time({service=\"HustleHubPlusAPI\"} | json | event=\"auth.login.failed\" [$__range]))" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 5 }, { "color": "red", "value": 20 }] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+    },
+    {
+      "type": "stat",
+      "title": "Successful logins",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "queryType": "instant", "expr": "sum(count_over_time({service=\"HustleHubPlusAPI\"} | json | event=\"auth.login.success\" [$__range]))" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Transactions",
+      "description": "Simulated payments recorded (transaction.created).",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "queryType": "instant", "expr": "sum(count_over_time({service=\"HustleHubPlusAPI\"} | json | event=\"transaction.created\" [$__range]))" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Errors",
+      "description": "Lines logged at level error, such as 5xx responses or a failed transaction.",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "queryType": "instant", "expr": "sum(count_over_time({service=\"HustleHubPlusAPI\", level=\"error\"} [$__range]))" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Login attempts per 5 minutes",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (event) (count_over_time({service=\"HustleHubPlusAPI\"} | json | event=~\"auth.login.*\" [5m]))", "legendFormat": "{{event}}" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 80 } } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Bookings and transactions per 5 minutes",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "expr": "sum by (event) (count_over_time({service=\"HustleHubPlusAPI\"} | json | event=~\"(booking|transaction).*\" [5m]))", "legendFormat": "{{event}}" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 80 } } }
+    },
+    {
+      "type": "logs",
+      "title": "Warnings and errors",
+      "description": "Every warn and error line, newest first. Expand a line to see its requestId, ip and userId.",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 10 },
+      "datasource": { "type": "loki", "uid": "${DS_LOKI}" },
+      "targets": [
+        { "refId": "A", "expr": "{service=\"HustleHubPlusAPI\", level=~\"warn|error\"}" }
+      ],
+      "options": { "sortOrder": "Descending", "wrapLogMessage": true, "showTime": true }
+    }
+  ]
+}

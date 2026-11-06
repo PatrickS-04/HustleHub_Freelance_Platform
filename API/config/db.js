@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { logger } = require('../utils/logger');
+const { logger, flush } = require('../utils/logger');
 
 const connectDB = async () => {
     try {
@@ -7,6 +7,7 @@ const connectDB = async () => {
         logger.info('db.connected');
     } catch (error) {
         logger.error('db.connect_failed', { message: error.message });
+        await flush(); // so the failure reaches Grafana too
         process.exit(1);
     }
 };
