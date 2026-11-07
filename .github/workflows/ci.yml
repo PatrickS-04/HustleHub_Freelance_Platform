@@ -225,7 +225,7 @@ jobs:
           path: reports/
 
   deploy:
-    needs: [backend-test, frontend-build, static-analysis, sonarcloud, docker-zap]
+    needs: [backend-test, frontend-build, static-analysis, sonarcloud, docker-zap, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     # environment: production

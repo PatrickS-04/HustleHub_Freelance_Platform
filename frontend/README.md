@@ -33,11 +33,12 @@ An optional `.env` file in this folder can set:
 | `npm run lint` | Lints with Oxlint |
 | `npm test` | Vitest in watch mode |
 | `npm run test:run` | Runs the tests once (used by CI) |
+| `npm run test:e2e` | Playwright end-to-end tests against the running Compose stack |
 
 A captured test run is in [test-results/vitest-run.txt](test-results/vitest-run.txt).
 
 ## End-to-end tests
-Vitest checks components in isolation with the API mocked. The end-to-end suite checks the whole path: a real browser drives the built React app, served by the nginx container over HTTPS, which calls the real API and MongoDB in the Compose stack. It uses [Playwright](https://playwright.dev/) with Chromium. The specs are in [frontend/e2e/](frontend/e2e/) and the settings in [frontend/playwright.config.js](frontend/playwright.config.js).
+Vitest checks components in isolation with the API mocked. The end-to-end suite checks the whole path: a real browser drives the built React app, served by the nginx container over HTTPS, which calls the real API and MongoDB in the Compose stack. It uses [Playwright](https://playwright.dev/) with Chromium. The specs are in [e2e/](e2e/) and the settings in [playwright.config.js](playwright.config.js).
 
 | Test | What it checks |
 |------|----------------|
@@ -60,7 +61,7 @@ The API's rate limiters are counted per process (login 5 per 15 minutes, registr
 
 In CI the **e2e** job builds the images, starts the Compose stack with throwaway secrets, runs the suite and uploads the `playwright-report` artifact (HTML report, screenshots and, for a failure, a trace). It has its own stack, separate from **docker-zap**, because the ZAP active scan uses up the same per-IP rate limits. A failing test fails the build and blocks **deploy**.
 
-![alt text](Playwright_Test_Report.png)
+![Playwright report: 3 of 3 tests passed](Playwright_Test_Report.png)
 
 ## Structure
 
