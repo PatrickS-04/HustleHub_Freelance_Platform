@@ -4,3 +4,8 @@ test-results
 .env
 Dockerfile
 .dockerignore
+
+e2e
+e2e-results
+playwright-report
+playwright.config.js

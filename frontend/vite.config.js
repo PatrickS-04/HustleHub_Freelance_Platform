@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+import { configDefaults } from 'vitest/config'
 
 // The API only accepts the origin https://localhost:5173 (CORS + SameSite=Strict
 // cookie), so the dev server must run over HTTPS. Reuse the API's local cert.
@@ -51,6 +52,7 @@ export default defineConfig(({ command, mode }) => {
       globals: true,
       setupFiles: './src/test/setup.js',
       css: false,
+      exclude: [...configDefaults.exclude, 'e2e/**'],
     },
     server: {
       port: 5173,
