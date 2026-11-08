@@ -56,12 +56,10 @@ function ReviewModal({ booking, onSubmit, onClose }) {
             <span className="field-label" id="rating-label">
               Your rating
             </span>
-            <div
-              className="star-picker"
-              role="radiogroup"
-              aria-labelledby="rating-label"
-              onMouseLeave={() => setHover(0)}
-            >
+            {/* Hover lives on the stars, not the group: the group is not a focus
+                target, so it carries no handlers. Stars touch (no gap), so moving
+                between them never drops the hover. */}
+            <div className="star-picker" role="radiogroup" aria-labelledby="rating-label">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
                   key={n}
@@ -71,6 +69,7 @@ function ReviewModal({ booking, onSubmit, onClose }) {
                   aria-label={`${n} star${n > 1 ? 's' : ''}`}
                   className={n <= shown ? 'star on' : 'star'}
                   onMouseEnter={() => setHover(n)}
+                  onMouseLeave={() => setHover(0)}
                   onClick={() => setRating(n)}
                 >
                   &#9733;

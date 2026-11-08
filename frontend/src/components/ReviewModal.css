@@ -7,11 +7,11 @@
 .star-picker {
   display: flex;
   align-items: center;
-  gap: 4px;
 }
 
+/* Horizontal padding stands in for a gap so the stars' hit areas touch. */
 .star {
-  padding: 2px;
+  padding: 2px 4px;
   font-size: 32px;
   line-height: 1;
   color: var(--border);
