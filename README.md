@@ -141,10 +141,10 @@ Before deciding how to protect HustleHub+, we asked one question: what could som
 
 HustleHub+ holds four kinds of information worth protecting:
 
-Login details: users' passwords and the digital "pass" (a token) that keeps them signed in
-Bookings and payments: who booked what, for how much, and the transaction records
-Income and tax figures: what each freelancer has earned and owes
-Personal details: names and email addresses
+- Login details: users' passwords and the digital "pass" (a token) that keeps them signed in
+- Bookings and payments: who booked what, for how much, and the transaction records
+- Income and tax figures: what each freelancer has earned and owes
+- Personal details: names and email addresses
 
 To make sure no type of attack was missed, we sorted the threats with STRIDE, a checklist used across the industry [45]. Each letter is one kind of attack:
 
@@ -163,31 +163,32 @@ We also matched each threat to the OWASP Top 10 [12], the best-known list of the
 
 Each row reads left to right. The first part of the "How we stop it" column explains the protection in plain language. The technical detail follows it for readers who want it. The "Where" column links to the code, and the Security Decisions section after this one explains each control in full.
 
-| # | The threat, in plain words | Type | OWASP | How we stop it | Where | Reference |
+
+| # | The threat, in plain words | Type | OWASP | How we stop it | Where | Ref |
 | :--- | :--- | :---: | :---: | :--- | :--- | :---: |
-| **T1** | Someone tries thousands of passwords until one works | S | A07 | Too many wrong guesses get blocked, and weak passwords are refused. Login is limited to 5 attempts per 15 minutes per address. An account locks for 15 minutes after 10 failures. Passwords known from past data breaches are rejected when an account is created | `rateLimiters.js`, `authController.js`, `breachedPassword.js` |, [19] |
-| **T2** | Someone steals or fakes the digital pass that keeps a user signed in | S | A07 | The pass expires quickly, is checked on every request, and can be cancelled. JWT signed with HS256 and checked for issuer and audience. It expires after 1 hour. A tokenVersion cancels it on logout or password change | `auth.js`, `generateToken.js` |, [7] |
-| **T3** | An admin's password is stolen | S, E | A07 | Admins also need a code from their phone. Admin features stay locked (403) until two-factor authentication is on. Each code works only once | `auth.js`, `totp.js` | [7] |
-| **T4** | Someone walks away from a shared computer while still signed in | S | A07 | The app signs them out by itself after 15 minutes of no activity. The browser timer also cancels the session on the server | `useIdleLogout.js`, `Dashboard.jsx` | [8] |
-| **T5** | A malicious website tricks a signed-in user's browser into making a booking or change | T | A01 | The browser only sends the user's sign-in to HustleHub+ itself, never to other sites. SameSite=Strict cookie, and CORS only allows the HustleHub+ frontend | `authController.js`, `app.js` |, [13] |
-| **T6** | A client changes the price of a gig before booking, or claims to own someone else's gig | T | A04 | The app ignores prices and owners sent by the user and uses its own records. Validators keep only allowed fields. Price, owner, client and freelancer come from the database or the sign-in, and the price is fixed at booking time | `validators.js`, `bookingController.js` | [22] |
-| **T7** | A booking is pushed to "completed" without being accepted, or charged twice | T | A04 | Bookings must follow the proper steps, and each one can only have one payment. Status changes are checked per role and refused with 409. A unique index allows one transaction per booking | `bookingController.js`, `Transaction.js` | [11] |
-| **T8** | Someone types database commands into a form to trick the database | T | A03 | Anything that looks like a database command is stripped out before it gets near the database. express-mongo-sanitize and hpp run on every request, and validators accept only plain text and numbers | `sanitize.js`, `validators.js` |, [26], [27] |
-| **T9** | Someone hides harmful code in a gig description or review so it runs in other users' browsers | T, I | A03 | Code is removed from text, and the browser is told not to run anything it did not load from HustleHub+. HTML is stripped from free text. React escapes output, and the Content-Security-Policy blocks inline scripts | `sanitize.js`, `nginx.conf.template` |, [28], [29] |
-| **T10** | A fake website shows HustleHub+ in a hidden frame to trick users into clicking buttons | T | A05 | HustleHub+ refuses to be shown inside another website. X-Frame-Options: DENY and frame-ancestors 'none' | `securityHeaders.js`, `nginx.conf.template` | [17] |
-| **T11** | Someone on the same Wi-Fi reads or changes data on its way between the user and the app | I, T | A02 | All traffic is encrypted, the same way online banking is. HTTPS only, with TLS 1.2 or newer, and HSTS tells browsers never to use an unencrypted connection | `server.js`, `nginx.conf.template` |, [30], [31] |
-| **T12** | The database is stolen and the attacker reads the passwords | I | A02 | Passwords are stored scrambled so they cannot be turned back into the original. bcrypt at cost 12 with a unique salt. Two-factor secrets are encrypted (AES-256-GCM) and recovery codes are hashed | `authController.js`, `User.js`, `totp.js` | [3] |
-| **T13** | A user changes a number in the web address to view someone else's booking or income | I | A01 | Every request checks that the record belongs to the person asking. Ownership is checked in each controller. Non-owners get "not found", so they cannot tell the record exists | `bookingController.js`, `gigController.js`, `incomeController.js` | [11] |
-| **T14** | Error messages reveal how the system is built, or whether an email address has an account | I | A05, A07 | Users only ever see short, general messages. A central error handler hides internal details. Login gives the same message and takes the same time whether the email exists or not | `errorHandler.js`, `authController.js`, `api.js` | [32] |
-| **T15** | Financial pages are saved on a shared computer and read by the next person | I | A05 | The browser is told never to keep a copy. Cache-Control: no-store on every API response | `securityHeaders.js` | [17] |
-| **T16** | Someone floods the app with requests so real users cannot get in | D | A04 | Each user and address has a limit on how fast it can make requests, and oversized requests are refused. Global and per-endpoint rate limiters, and request bodies capped at 10 KB | `rateLimiters.js`, `app.js`, `validators.js` |, [20] |
-| **T17** | Someone does damage and denies it, or an attack goes unnoticed | R | A09 | Every important action is recorded with who did it and when, and shown on a monitoring dashboard. Structured logs with requestId, ip and userId, sent to Grafana Cloud. Passwords and tokens are never written to the logs | `logger.js`, `requestLogger.js`, `hustlehub-dashboard.json` |, [44] |
-| **T18** | A user makes themselves an admin | E | A01 | Nobody can sign up as an admin, and the app checks the user's role on every request. Registration only allows client or freelancer, and the role is read from the database each time | `validators.js`, `auth.js` | [11] |
-| **T19** | An attacker who breaks into one part of the system uses it to reach the rest | E | A05 | Each part runs in its own locked-down box with as few permissions as possible, and the database is hidden from the internet. Read-only, non-root containers with all capabilities dropped. MongoDB is on an internal network | `docker-compose.yml`, `API/Dockerfile`, `mongo-init.js` |, [34], [35] |
-| **T20** | A security flaw in a third-party building block the app uses | T, E | A06 | Every change is automatically scanned for known flaws, and the build stops if a serious one is found. npm audit, the Trivy image scan, Semgrep and SonarQube Cloud run in CI | `ci.yml`, `frontend/Dockerfile` |, [47] |
-| **T21** | Someone tampers with the automated tools that build the app | T | A08 | The build tools are locked to exact, known versions. GitHub Actions are pinned to a commit SHA, Trivy is pinned by digest, and dependencies install from the lockfile | `ci.yml` | [42] |
-| **T22** | The app is started with a weak or missing secret key | S, I | A05 | The app refuses to start until it is set up safely. It needs a JWT_SECRET of at least 32 characters and a database address. Secret files are never uploaded to GitHub | `server.js`, `docker-compose.yml` | [34] |
-| **T23** | The server is tricked into fetching a web address chosen by the attacker | I | A10 | The server never visits a web address supplied by a user. Its only outside calls go to two fixed services: the breached-password check and the log service | `breachedPassword.js`, `logger.js` | |
+| **T1** | Someone tries thousands of passwords until one works | S | A07 | Too many wrong guesses get blocked, and weak passwords are refused. Login is limited to 5 attempts per 15 minutes per address. An account locks for 15 minutes after 10 failures. Passwords known from past data breaches are rejected when an account is created | `rateLimiters.js`, `authController.js`, `breachedPassword.js` | \[8\], \[19\] |
+| **T2** | Someone steals or fakes the digital pass that keeps a user signed in | S | A07 | The pass expires quickly, is checked on every request, and can be cancelled. JWT signed with HS256 and checked for issuer and audience. It expires after 1 hour. A tokenVersion cancels it on logout or password change | `auth.js`, `generateToken.js` | \[6\], \[7\] |
+| **T3** | An admin's password is stolen | S, E | A07 | Admins also need a code from their phone. Admin features stay locked (403) until two-factor authentication is on. Each code works only once | `auth.js`, `totp.js` | \[7\] |
+| **T4** | Someone walks away from a shared computer while still signed in | S | A07 | The app signs them out by itself after 15 minutes of no activity. The browser timer also cancels the session on the server | `useIdleLogout.js`, `Dashboard.jsx` | \[8\] |
+| **T5** | A malicious website tricks a signed-in user's browser into making a booking or change | T | A01 | The browser only sends the user's sign-in to HustleHub+ itself, never to other sites. SameSite=Strict cookie, and CORS only allows the HustleHub+ frontend | `authController.js`, `app.js` | \[10\], \[13\] |
+| **T6** | A client changes the price of a gig before booking, or claims to own someone else's gig | T | A04 | The app ignores prices and owners sent by the user and uses its own records. Validators keep only allowed fields. Price, owner, client and freelancer come from the database or the sign-in, and the price is fixed at booking time | `validators.js`, `bookingController.js` | \[22\] |
+| **T7** | A booking is pushed to "completed" without being accepted, or charged twice | T | A04 | Bookings must follow the proper steps, and each one can only have one payment. Status changes are checked per role and refused with 409. A unique index allows one transaction per booking | `bookingController.js`, `Transaction.js` | \[11\] |
+| **T8** | Someone types database commands into a form to trick the database | T | A03 | Anything that looks like a database command is stripped out before it gets near the database. express-mongo-sanitize and hpp run on every request, and validators accept only plain text and numbers | `sanitize.js`, `validators.js` | \[25\], \[26\], \[27\] |
+| **T9** | Someone hides harmful code in a gig description or review so it runs in other users' browsers | T, I | A03 | Code is removed from text, and the browser is told not to run anything it did not load from HustleHub+. HTML is stripped from free text. React escapes output, and the Content-Security-Policy blocks inline scripts | `sanitize.js`, `nginx.conf.template` | \[15\], \[28\], \[29\] |
+| **T10** | A fake website shows HustleHub+ in a hidden frame to trick users into clicking buttons | T | A05 | HustleHub+ refuses to be shown inside another website. X-Frame-Options: DENY and frame-ancestors 'none' | `securityHeaders.js`, `nginx.conf.template` | \[17\] |
+| **T11** | Someone on the same Wi-Fi reads or changes data on its way between the user and the app | I, T | A02 | All traffic is encrypted, the same way online banking is. HTTPS only, with TLS 1.2 or newer, and HSTS tells browsers never to use an unencrypted connection | `server.js`, `nginx.conf.template` | \[16\], \[30\], \[31\] |
+| **T12** | The database is stolen and the attacker reads the passwords | I | A02 | Passwords are stored scrambled so they cannot be turned back into the original. bcrypt at cost 12 with a unique salt. Two-factor secrets are encrypted (AES-256-GCM) and recovery codes are hashed | `authController.js`, `User.js`, `totp.js` | \[3\] |
+| **T13** | A user changes a number in the web address to view someone else's booking or income | I | A01 | Every request checks that the record belongs to the person asking. Ownership is checked in each controller. Non-owners get "not found", so they cannot tell the record exists | `bookingController.js`, `gigController.js`, `incomeController.js` | \[11\] |
+| **T14** | Error messages reveal how the system is built, or whether an email address has an account | I | A05, A07 | Users only ever see short, general messages. A central error handler hides internal details. Login gives the same message and takes the same time whether the email exists or not | `errorHandler.js`, `authController.js`, `api.js` | \[32\] |
+| **T15** | Financial pages are saved on a shared computer and read by the next person | I | A05 | The browser is told never to keep a copy. Cache-Control: no-store on every API response | `securityHeaders.js` | \[17\] |
+| **T16** | Someone floods the app with requests so real users cannot get in | D | A04 | Each user and address has a limit on how fast it can make requests, and oversized requests are refused. Global and per-endpoint rate limiters, and request bodies capped at 10 KB | `rateLimiters.js`, `app.js`, `validators.js` | \[19\], \[20\] |
+| **T17** | Someone does damage and denies it, or an attack goes unnoticed | R | A09 | Every important action is recorded with who did it and when, and shown on a monitoring dashboard. Structured logs with requestId, ip and userId, sent to Grafana Cloud. Passwords and tokens are never written to the logs | `logger.js`, `requestLogger.js`, `hustlehub-dashboard.json` | \[43\], \[44\] |
+| **T18** | A user makes themselves an admin | E | A01 | Nobody can sign up as an admin, and the app checks the user's role on every request. Registration only allows client or freelancer, and the role is read from the database each time | `validators.js`, `auth.js` | \[11\] |
+| **T19** | An attacker who breaks into one part of the system uses it to reach the rest | E | A05 | Each part runs in its own locked-down box with as few permissions as possible, and the database is hidden from the internet. Read-only, non-root containers with all capabilities dropped. MongoDB is on an internal network | `docker-compose.yml`, `API/Dockerfile`, `mongo-init.js` | \[33\], \[34\], \[35\] |
+| **T20** | A security flaw in a third-party building block the app uses | T, E | A06 | The building blocks are checked against a public list of known flaws, and the website's base image installs the latest security updates. npm audit reports 0 known vulnerabilities in the API (see Testing), and the frontend image runs apk upgrade when it is built | `npm-audit.png`, `frontend/Dockerfile` | \[38\] |
+| **T21** | A different, tampered version of a building block ends up in the app | T | A08 | Every building block is locked to an exact, recorded version. package-lock.json records the exact version and checksum of each dependency, and the Docker images install from it with npm ci | `API/Dockerfile`, `frontend/Dockerfile` | \[35\] |
+| **T22** | The app is started with a weak or missing secret key | S, I | A05 | The app refuses to start until it is set up safely. It needs a JWT_SECRET of at least 32 characters and a database address. Secret files are never uploaded to GitHub | `server.js`, `docker-compose.yml` | \[34\] |
+| **T23** | The server is tricked into fetching a web address chosen by the attacker | I | A10 | The server never visits a web address supplied by a user. Its only outside calls go to two fixed services: the breached-password check and the log service | `breachedPassword.js`, `logger.js` | \[12\] |
 
 ## OWASP Top 10 Coverage
 
@@ -210,13 +211,13 @@ Every category on the OWASP Top 10, 2021 list is covered by at least one control
 
 No system is perfectly secure. These are the remaining gaps we know about, and why each is acceptable for this project:
 
-Test security certificate. The certificate that encrypts traffic is one we made ourselves for testing, so browsers show a warning. A live version would use a certificate from a trusted provider.
-Request limits are counted per server. Each copy of the API keeps its own count. Running several copies would need a shared counter such as Redis. Today there is only one copy.
-The inactivity timer runs in the browser. If someone had already stolen a user's sign-in pass, it would keep working until it expires (at most 1 hour) or the user logs out. Both of those cancel it.
-The breached-password check is skipped if the outside service is down. If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
-Changing the main secret key affects two-factor. The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
-Payments are simulated. No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
-The automated attack test signs in as a freelancer only. Client-only and admin-only pages refuse it, so those pages are checked by the Postman access tests instead.
+**Test security certificate**: The certificate that encrypts traffic is one we made ourselves for testing, so browsers show a warning. A live version would use a certificate from a trusted provider.
+**Request limits are counted per server**: Each copy of the API keeps its own count. Running several copies would need a shared counter such as Redis. Today there is only one copy.
+**The inactivity timer runs in the browser**: If someone had already stolen a user's sign-in pass, it would keep working until it expires (at most 1 hour) or the user logs out. Both of those cancel it.
+**The breached-password check is skipped if the outside service is down**: If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
+**Changing the main secret key affects two-factor**: The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
+**Payments are simulated**: No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
+**Security checks now have to be run by hand**: GitHub Actions has been switched off for our organisation's repositories, so the checks that used to run automatically on every push no longer do. Until it is available again, npm audit and the tests in Testing need to be run manually before each release.
 
 ### Security Decisions
 Every decision below is driven by the same fact: HustleHub+ handles user credentials, authentication tokens, and financial records (booking income, tax estimates), so the confidentiality and integrity of that data are the priority.
@@ -446,15 +447,13 @@ The frontend adds a second layer ([services/api.js](frontend/src/services/api.js
 **In Plain Terms**
 The POE brief lists the security every group must build, such as scrambled passwords, encrypted connections, checking what users type in, and limits on login attempts. These are covered in Security Decisions. Two-factor authentication is not counted here either, because it may fall under the brief.
 
-The five features below are extra protections our group chose to add. The threat review above showed gaps that the required features did not fully close.
+The three features below are extra protections our group chose to add. The threat review above showed gaps that the required features did not fully close.
 
 | Feature | What it means for users | Threat it closes | Code | Evidence |
 | :--- | :--- | :---: | :--- | :--- |
 | **Breached-password check** | You cannot pick a password that criminals already have on their lists | **T1** | `breachedPassword.js` | Screenshot of a refused password |
 | **Automatic sign-out when idle** | If you walk away, your account will not stay open for the next person | **T4** | `useIdleLogout.js` | Screenshots of the warning and sign-out |
 | **Locked-down containers** | If one part of the system were broken into, the attacker could do very little with it | **T19** | `docker-compose.yml` | `docker inspect` output and a refused write |
-| **Automatic flaw scan of the app's building blocks** | Known security flaws are caught before the app is released | **T20** | `ci.yml` | Trivy scan results |
-| **Automatic attack test** | The app is attacked on purpose after every change to find weaknesses first | **T8**, **T9**, **T13** | `ci.yml`, `zap-api-active.yaml` | ZAP scan reports |
 
 ## 1. Breached-Password Check
 
@@ -472,9 +471,8 @@ router.patch("/password", requireAuth, passwordLimiter, validatePasswordChange, 
 
 If the service does not answer within 2 seconds, the password is allowed and a warning is recorded (see Risks We Accept).
 
-EVIDENCE
-
-Registering with Password1 is refused because it appears in a data breach
+**Evidence**:
+![Registering with Password1 is refused because it appears in a data breach](Screenshots/Security/breached-password.png)
 
 ## 2. Automatic Sign-Out When Idle
 
@@ -491,9 +489,9 @@ config.js: the time limit, changeable with VITE_IDLE_MINUTES (default 15)
 
 **Evidence**. These were taken with the limit set to 1 minute (VITE_IDLE_MINUTES=1) so the sign-out could be shown quickly.
 
-The Still there? window counting down before the automatic sign-out
+![The Still there? window counting down before the automatic sign-out](Screenshots/Security/idle-warning.png)
 
-The login screen after an automatic sign-out
+![The login screen after an automatic sign-out](Screenshots/Security/idle-sign-out.png)
 
 ## 3. Locked-Down Containers
 
@@ -521,39 +519,9 @@ Evidence. With the app running, these commands show the settings Docker applied 
 docker inspect --format '{{.Name}} user={{.Config.User}} readonly={{.HostConfig.ReadonlyRootfs}} capdrop={{.HostConfig.CapDrop}} capadd={{.HostConfig.CapAdd}} secopt={{.HostConfig.SecurityOpt}}' $(docker compose ps -q)
 docker compose exec api sh -c "id && touch /app/test"
 ```
-docker inspect showing every container is read-only, has all capabilities dropped and has no-new-privileges
+![docker inspect showing every container is read-only, has all capabilities dropped and has no-new-privileges](Screenshots/Security/hardened-inspect.png)
 
-The API runs as node, not as the administrator, and the attempt to write a file is refused with Read-only file system:
-
-The API container refusing to write a file
-
-## 4. Automatic Flaw Scan of the App's Building Blocks (Trivy)
-
-**In plain terms**: Apps are built on top of many ready-made parts written by other people, much as a house is built from bricks, pipes and wiring from different suppliers. Sometimes a security flaw is found in one of those parts. Every time our code changes, a tool called Trivy checks every part inside our app against a public list of known flaws [47]. If it finds a serious one that already has a fix, the release is stopped until we fix it.
-
-**How it works**: npm audit only checks the JavaScript packages. Trivy also checks the operating system (Alpine Linux) and system libraries inside each finished Docker image. It runs in the CI pipeline, the automated checks GitHub runs on every push. It scans the api and client images and fails the build on any HIGH or CRITICAL finding with a fix available. The database image (mongo:7) is made by MongoDB, not by us, so its results are recorded but do not stop the build. Trivy itself is locked to an exact version (pinned by digest) so it cannot be swapped out.
-
-**What it found**: The scan failed on the nginx:1.30-alpine base image used for the website, which was behind on security updates. We added RUN apk upgrade --no-cache to frontend/Dockerfile to install the updates, and the scan passed after that.
-
-**Where the code is**: The Trivy image scan step of the docker-zap job in .github/workflows/ci.yml.
-
-**Evidence**. Results from a passing run are saved in security-reports:
-
-The Trivy scan passing in GitHub Actions
-
-## 5. Automatic Attack Test (OWASP ZAP Active Scan)
-
-**In plain terms**: The best way to find a weakness is to look for it before a criminal does. After every change, a tool called OWASP ZAP attacks a test copy of HustleHub+ on purpose. It tries the same tricks a real attacker would, like slipping harmful code into forms or reaching pages it should not. If it finds a serious weakness, the release is stopped.
-
-**How it works**: The ZAP scan described under Testing only looks at the app's responses. This one actively attacks it with injection, cross-site scripting, path traversal and similar payloads [48]. Most of the API needs a signed-in user, so the pipeline first creates a temporary freelancer account and a gig. It then gives ZAP every API route from the Postman collection, so the attack reaches the pages behind the login and not just the login page. The website itself is scanned separately.
-
-Any High risk finding fails the build. An empty report also fails it, so a scan that quietly tested nothing cannot pass as clean.
-
-**Where the code is**: The ZAP active scan (API) and ZAP active scan (client) steps in .github/workflows/ci.yml, with the attack plan in .github/zap-api-active.yaml.
-
-**Evidence**. Reports from a passing run are saved in security-reports:
-
-ZAP active scan of the API with no High risk alerts
+![The API runs as node, not as the administrator, and the attempt to write a file is refused with Read-only file system](Screenshots/Security/hardened-read-only.png)
 
 ## API Endpoints
 
