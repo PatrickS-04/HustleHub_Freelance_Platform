@@ -1,4 +1,4 @@
-# INSY7314 POE Part 3 (Final Submission)
+  # INSY7314 POE Part 3 (Final Submission)
 ## **HustleHub+ Secure Freelance Marketplace**
 ### By 
 1. Dillon Rinkwest - ST10439147
@@ -910,6 +910,37 @@ The guidelines allow working from a copy when services cannot connect to the Cla
 - It is private, so other students cannot copy the work. The lecturer is added as a collaborator to view the runs.
 - The `SONAR_TOKEN` secret is set on that repository, so SonarQube Cloud runs there too.
 
+The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Classroom added. It shows as failed on every push for the same billing reason: it never starts, so it ran no checks. The CI/CD workflow results are on the DRPS-Solutions copy.
+
+![Latest CI/CD run on main with every job passing](Screenshots/CI/ci-run.png)
+
+## Static Code Analysis
+Static analysis reads the source code without running it and looks for bugs, security flaws and code that is hard to maintain. It catches problems that tests miss, because tests only check the cases someone thought to write. Two tools run in the pipeline, and either one can fail the build.
+
+| Tool | What it checks | When it runs | How it fails the build |
+|------|----------------|--------------|------------------------|
+| **Semgrep** [50] | Pattern-based rules for JavaScript, Node.js, Express and React, hardcoded secrets, Dockerfiles and GitHub Actions workflows (`p/javascript`, `p/nodejs`, `p/expressjs`, `p/react`, `p/secrets`, `p/dockerfile`, `p/github-actions`) | Every push and pull request, on every branch | `--error` makes any finding fail the `static-analysis` job. The text and SARIF reports are uploaded as the `semgrep-report` artifact |
+| **SonarQube Cloud** [51] | Bugs, vulnerabilities, security hotspots, code smells, duplication and test coverage for `API/` and `frontend/src`. Coverage comes from the backend self-checks, the Newman run and the Vitest tests | Pushes to `main` and pull requests into it (the free plan only analyses those) | `sonar.qualitygate.wait=true` in [sonar-project.properties](sonar-project.properties) makes the job wait for the quality gate and fail if it does not pass |
+
+Semgrep runs on every branch, so a problem is found before it reaches `main`. SonarQube then checks `main` more deeply, including coverage, which Semgrep does not measure. Test files, Postman collections and coverage reports are left out of the analysis, so only the application code is judged.
+
+### Results
+The latest run on `main` passed both tools: Semgrep reported no findings, and the SonarQube Cloud quality gate passed.
+
+![SonarQube Cloud overview for main with the quality gate passed](Screenshots/CI/sonarcloud.png)
+
+### Findings and How They Were Fixed
+Every SonarQube Cloud finding was fixed in the code, and none was marked as a false positive or accepted.
+
+| Rule | Finding | Fix | Commit |
+|------|---------|-----|--------|
+| S5145 (log injection) | User input reached `console.log`. `JSON.stringify` escapes CR and LF but not U+0085, U+2028 and U+2029, which some log viewers treat as new lines, so input could forge a log line | The logger now escapes every line-break character as `\uXXXX`. The line is still valid JSON and reads back as the original value. A self-check in `npm run test:logger` covers it | `412e0cb` |
+| Unhandled promise | Start-up in [server.js](API/server.js) could fail (database down, port in use) as an unhandled rejection, with no log line | Start-up errors and the server's `error` event are caught, logged as `server.start_failed`, sent to Grafana, and the process exits with code 1. The two fire-and-forget `flush()` calls in the logger are marked with `void`, because `flush()` catches its own errors | `2cedccc` |
+| S9379 (accessibility) | `autoFocus` on the MFA code field can disorient screen reader and keyboard users | Focus moves to the code field in an effect, only once the password step is done. A test checks the field receives focus | `8e66797` |
+| Prefer `Number.parseInt` | The global `parseInt` was used in the TOTP base32 helpers | Replaced with `Number.parseInt`. The behaviour is the same | `37207ad` |
+
+The other scanners in the pipeline cover what static analysis cannot see: `npm audit` checks dependencies [38], Trivy checks the built images [52], and ZAP attacks the running application [39]. Their findings and fixes are in [CI Pipeline](#ci-pipeline) and [Security Review](#security-review-threats-and-controls).
+
 ## Logging
 The API writes structured logs through [utils/logger.js](API/utils/logger.js): one JSON object per line on stdout. Docker captures stdout, so the logs can be read with `docker compose logs api`, and because each line is JSON a log platform can filter it by any field. No logging library is needed for this, so no dependency was added.
 
@@ -991,6 +1022,28 @@ LOKI_TOKEN=glc_...
 | Login attempts per 5 minutes | Successes and failures over time, by event |
 | Bookings and transactions per 5 minutes | Booking, status change, transaction and refund events over time |
 | Warnings and errors | The raw `warn` and `error` lines, newest first, each with its `requestId`, `ip` and `userId` |
+
+**Evidence from Grafana Cloud**
+
+The dashboard with live data from the API:
+
+![Grafana dashboard with login, transaction and error panels](Grafana_Screenshots/grafana-dashboard.png)
+
+Every log line from the API in Explore:
+
+![Grafana Explore showing all API log lines](Grafana_Screenshots/grafana-all-logs.png)
+
+Failed login attempts:
+
+![Grafana Explore filtered to failed logins](Grafana_Screenshots/grafana-failed-logins.png)
+
+Bookings and transactions:
+
+![Grafana Explore filtered to booking and transaction events](Grafana_Screenshots/grafana-bookings-transactions.png)
+
+Errors:
+
+![Grafana Explore filtered to error-level lines](Grafana_Screenshots/grafana-errors.png)
 
 ## Screenshots
 
@@ -1112,3 +1165,6 @@ Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 - [47] 	South African Revenue Service, "Rates of Tax for Individuals," SARS, 2026. [Online]. Available: https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/. [Accessed 8 November 2026].
 - [48] 	South African Revenue Service, "Provisional Tax," SARS, 2026. [Online]. Available: https://www.sars.gov.za/types-of-tax/provisional-tax/. [Accessed 8 November 2026].
 - [49] 	Microsoft, "Installation," Playwright Documentation, 2026. [Online]. Available: https://playwright.dev/docs/intro. [Accessed 8 November 2026].
+- [50] 	Semgrep, "Semgrep CLI reference," Semgrep Docs, 2026. [Online]. Available: https://semgrep.dev/docs/cli-reference. [Accessed 8 November 2026].
+- [51] 	SonarSource, "Quality gates," SonarQube Cloud Documentation, 2026. [Online]. Available: https://docs.sonarsource.com/sonarqube-cloud/standards/managing-quality-gates/introduction-to-quality-gates/. [Accessed 8 November 2026].
+- [52] 	Aqua Security, "Trivy Documentation," Trivy, 2026. [Online]. Available: https://trivy.dev/latest/docs/. [Accessed 8 November 2026].
