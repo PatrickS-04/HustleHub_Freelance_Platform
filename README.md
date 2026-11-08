@@ -22,7 +22,7 @@ This README documents the complete application. Part 1 delivered a secure authen
 - **MongoDB database** - Mongoose models for users, gigs, bookings and transactions replace the in-memory store.
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
-- **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, two-factor authentication (required for admins), session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
+- **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, two-factor authentication (required for admins), account lockout, and a browser idle-session timer.
 - **Testing** - a 113-request Postman/Newman collection, backend self-checks, 60 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
@@ -33,7 +33,7 @@ Part 3 completes it:
 - **Static code analysis** - Semgrep and SonarQube Cloud run in the pipeline.
 - **Docker in the pipeline** - the full Compose stack is built and started in CI, then scanned with OWASP ZAP and Trivy and tested with Playwright.
 - **Cloud logging** - logins, bookings, transactions and errors are sent to Grafana Cloud Loki and shown on a dashboard (see [Logging](#logging)).
-- **Security review and own security features** - a threat review with every threat matched to its control, and three extra security features chosen by the group (see [Security Review](#security-review-threats-and-controls) and [Own Security Features](#own-security-features)).
+- **Security review and own security features** - a threat review with every threat matched to its control, and three extra security features chosen by the group: a breached-password check, session revocation so an idle sign-out ends the session on the server, and locked-down containers (see [Security Review](#security-review-threats-and-controls) and [Own Security Features](#own-security-features)).
 
 ### What Each Role Can Do
 
@@ -542,13 +542,13 @@ The frontend adds a second layer ([services/api.js](frontend/src/services/api.js
 **In Plain Terms**
 The POE brief lists the security every group must build, such as scrambled passwords, encrypted connections, checking what users type in, and limits on login attempts. These are covered in Security Decisions. Two-factor authentication is not counted here either, because it may fall under the brief.
 
-The three features below are extra protections our group chose to add. The threat review above showed gaps that the required features did not fully close.
+The three features below are extra protections our group chose to add. The threat review above showed gaps that the required features did not fully close. All three were built or finished in Part 3: two are new, and the third turns a Part 2 screen timer into a real sign-out on the server.
 
-| Feature | What it means for users | Threat it closes | Code | Evidence |
-| :--- | :--- | :---: | :--- | :--- |
-| **Breached-password check** | You cannot pick a password that criminals already have on their lists | **T1** | `breachedPassword.js` | Screenshot of a refused password |
-| **Automatic sign-out when idle** | If you walk away, your account will not stay open for the next person | **T4** | `useIdleLogout.js` | Screenshots of the warning and sign-out |
-| **Locked-down containers** | If one part of the system were broken into, the attacker could do very little with it | **T19** | `docker-compose.yml` | `docker inspect` output and a refused write |
+| Feature | What it means for users | Threat it closes | New in Part 3 | Code | Evidence |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **Breached-password check** | You cannot pick a password that criminals already have on their lists | **T1** | The whole feature | `breachedPassword.js` | Screenshot of a refused password |
+| **Automatic sign-out when idle** | If you walk away, your account will not stay open for the next person | **T4** | Part 2 only hid the screen. Part 3 added token revocation (`tokenVersion`), so an idle sign-out now cancels the session on the server and a copied token stops working | `useIdleLogout.js`, `auth.js` | Screenshots of the warning and sign-out |
+| **Locked-down containers** | If one part of the system were broken into, the attacker could do very little with it | **T19** | The whole feature: read-only filesystems, all capabilities dropped, no-new-privileges, non-root users | `docker-compose.yml` | `docker inspect` output and a refused write |
 
 ### 1. Breached-Password Check
 
@@ -934,7 +934,7 @@ The latest run on `main` passed both tools: Semgrep reported no findings, and th
 ![SonarQube Cloud overview for main with the quality gate passed](Screenshots/CI/SonarQube.png)
 
 ### Findings and How They Were Fixed
-Every SonarQube Cloud finding was fixed in the code, and none was marked as a false positive or accepted.
+Every SonarQube Cloud code finding was fixed in the code, and none was marked as a false positive or accepted. SonarQube Cloud also checks dependencies. It found two risks: one is fixed, and the other has no fixed release yet (see [Dependency Risks](#dependency-risks)).
 
 | Rule | Finding | Fix | Commit |
 |------|---------|-----|--------|
@@ -942,6 +942,14 @@ Every SonarQube Cloud finding was fixed in the code, and none was marked as a fa
 | Unhandled promise | Start-up in [server.js](API/server.js) could fail (database down, port in use) as an unhandled rejection, with no log line | Start-up errors and the server's `error` event are caught, logged as `server.start_failed`, sent to Grafana, and the process exits with code 1. The two fire-and-forget `flush()` calls in the logger are marked with `void`, because `flush()` catches its own errors | `2cedccc` |
 | S9379 (accessibility) | `autoFocus` on the MFA code field can disorient screen reader and keyboard users | Focus moves to the code field in an effect, only once the password step is done. A test checks the field receives focus | `8e66797` |
 | Prefer `Number.parseInt` | The global `parseInt` was used in the TOTP base32 helpers | Replaced with `Number.parseInt`. The behaviour is the same | `37207ad` |
+
+### Dependency Risks
+SonarQube Cloud's dependency scan looks at all 319 packages the app installs, including packages pulled in by other packages, which is where both risks were found.
+
+| Risk | Package | Where it runs | What we did |
+|------|---------|---------------|-------------|
+| CVE-2026-85625, prototype pollution (CVSS 8.1) | `sift` 17.1.3, used inside Mongoose | API, at runtime | **Fixed.** Mongoose pins `sift` to exactly 17.1.3, so an npm `overrides` entry in [API/package.json](API/package.json) forces 17.1.4. That release checks `hasOwnProperty` before it reads query keys, so a polluted `Object.prototype.$where` is no longer run. The backend self-checks and `npm audit` pass on the new version |
+| CVE-2026-112366, slow regular expression (CVSS 8.7) | `picomatch` 4.0.7, used by Vite and Vitest | Frontend build and tests only | **No fix released yet**, because 4.0.7 is the latest version. It is a development dependency: it matches file paths while Vite builds and Vitest runs, and the patterns come from our own config, not from users. The production image only serves the built files through nginx and does not contain it. We will upgrade as soon as a fixed version is published |
 
 The other scanners in the pipeline cover what static analysis cannot see: `npm audit` checks dependencies [38], Trivy checks the built images [52], and ZAP attacks the running application [39]. Their findings and fixes are in [CI Pipeline](#ci-pipeline) and [Security Review](#security-review-threats-and-controls).
 
