@@ -3,7 +3,7 @@ const fs = require("fs");
 const https = require("https");
 const app = require("./app");
 const connectDB = require("./config/db");
-const { logger } = require("./utils/logger");
+const { logger, flush } = require("./utils/logger");
 
 const PORT = process.env.PORT || 3443;
 
@@ -29,9 +29,20 @@ if (!process.env.MONGO_URL) {
   process.exit(1);
 }
 
+// Any start-up failure is logged (and sent to Grafana) before exiting, instead of
+// surfacing as an unhandled rejection. flush() never rejects, so void is safe.
+function failStart(err) {
+  logger.error("server.start_failed", { message: err.message });
+  void flush().finally(() => process.exit(1));
+}
+
 // Only accept traffic once the database is reachable (connectDB exits on failure).
-connectDB().then(() =>
-  https.createServer(options, app).listen(PORT, () =>
-    logger.info("server.started", { url: `https://localhost:${PORT}` })
+// listen() reports problems such as a port in use as an "error" event, not a throw.
+connectDB()
+  .then(() =>
+    https
+      .createServer(options, app)
+      .on("error", failStart)
+      .listen(PORT, () => logger.info("server.started", { url: `https://localhost:${PORT}` }))
   )
-);
+  .catch(failStart);

@@ -55,7 +55,8 @@ if (loki) {
   // unref: the timer alone never keeps the process alive.
   setInterval(flush, 5000).unref();
   // docker compose stop sends SIGTERM; send the last lines before exiting.
-  process.once("SIGTERM", () => flush().finally(() => process.exit(0)));
+  // flush() catches its own errors and never rejects, so void is safe here.
+  process.once("SIGTERM", () => void flush().finally(() => process.exit(0)));
 }
 
 const write = (level, event, fields) => {
@@ -65,7 +66,8 @@ const write = (level, event, fields) => {
   // Oldest lines go first if Loki is down for long, so memory stays bounded.
   if (buffer.length >= MAX_BUFFER) buffer.shift();
   buffer.push({ level, ms: Date.now(), line });
-  if (buffer.length >= 100) flush();
+  // Fire and forget: a failed push is logged inside flush(), which never rejects.
+  if (buffer.length >= 100) void flush();
 };
 
 const logger = {
