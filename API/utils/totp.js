@@ -7,13 +7,13 @@ const BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 function base32Encode(bytes) {
   const bits = [...bytes].map((b) => b.toString(2).padStart(8, "0")).join("");
   const chunks = bits.match(/.{1,5}/g);
-  return chunks.map((c) => BASE32[parseInt(c.padEnd(5, "0"), 2)]).join("");
+  return chunks.map((c) => BASE32[Number.parseInt(c.padEnd(5, "0"), 2)]).join("");
 }
 
 function base32Decode(text) {
   const bits = [...text].map((c) => BASE32.indexOf(c).toString(2).padStart(5, "0")).join("");
   const chunks = bits.match(/.{8}/g);
-  return Buffer.from(chunks.map((c) => parseInt(c, 2)));
+  return Buffer.from(chunks.map((c) => Number.parseInt(c, 2)));
 }
 
 const generateTotpSecret = () => base32Encode(crypto.randomBytes(20));
