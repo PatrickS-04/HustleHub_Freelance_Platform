@@ -15,6 +15,10 @@ HustleHub+ is a freelance marketplace platform that requires security to ensure 
 
 On the HustleHub+ platform freelancers use the platform to advertise their services to clients so that they can get their services booked and achieve financial gain. Clients can browse and gain information on possible services to ensure proper communication on provided services. Admins are there to ensure the proper running of the platform to ensure security and functionality for all users.
 
+### Pipeline runs
+<img width="1473" height="627" alt="image" src="https://github.com/user-attachments/assets/d4275e9f-a909-4ba9-8dad-8d3534b17618" />
+
+
 ### What Each Part Delivered
 This README documents the complete application. Part 1 delivered a secure authentication API with users held in memory. Part 2 turned it into the full MERN application:
 
