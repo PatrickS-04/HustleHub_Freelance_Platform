@@ -1,4 +1,4 @@
-# INSY7314 POE Part 2
+# INSY7314 POE Part 3 (Final Submission)
 ## **HustleHub+ Secure Freelance Marketplace**
 ### By 
 1. Dillon Rinkwest - ST10439147
@@ -15,8 +15,8 @@ HustleHub+ is a freelance marketplace platform that requires security to ensure 
 
 On the HustleHub+ platform freelancers use the platform to advertise their services to clients so that they can get their services booked and achieve financial gain. Clients can browse and gain information on possible services to ensure proper communication on provided services. Admins are there to ensure the proper running of the platform to ensure security and functionality for all users.
 
-### What Part 2 Adds
-Part 1 delivered a secure authentication API with users held in memory. Part 2 turns it into the full MERN application:
+### What Each Part Delivered
+This README documents the complete application. Part 1 delivered a secure authentication API with users held in memory. Part 2 turned it into the full MERN application:
 
 - **React frontend** - a single-page app built with Vite [1], with a separate dashboard for clients, freelancers and admins.
 - **MongoDB database** - Mongoose models for users, gigs, bookings and transactions replace the in-memory store.
@@ -25,6 +25,15 @@ Part 1 delivered a secure authentication API with users held in memory. Part 2 t
 - **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, two-factor authentication (required for admins), session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
 - **Testing** - a 99-request Postman/Newman collection, backend self-checks, 49 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
+
+Part 3 completes it:
+
+- **Tax and income dashboard** - an estimate of each freelancer's income tax using the SARS 2026/27 rates, with every step of the working shown, plus income charts by month and by gig (see [Tax and Income Dashboard](#tax-and-income-dashboard)).
+- **CI/CD pipeline** - backend unit and Newman integration tests, frontend unit tests and Playwright end-to-end tests, builds, dependency audits and security scans. Any failure fails the build (see [CI Pipeline](#ci-pipeline)).
+- **Static code analysis** - Semgrep and SonarQube Cloud run in the pipeline.
+- **Docker in the pipeline** - the full Compose stack is built and started in CI, then scanned with OWASP ZAP and Trivy and tested with Playwright.
+- **Cloud logging** - logins, bookings, transactions and errors are sent to Grafana Cloud Loki and shown on a dashboard (see [Logging](#logging)).
+- **Security review and own security features** - a threat review with every threat matched to its control, and three extra security features chosen by the group (see [Security Review](#security-review-threats-and-controls) and [Own Security Features](#own-security-features)).
 
 ### What Each Role Can Do
 
@@ -99,7 +108,7 @@ The separation of routes, middleware, controllers and models within their respec
 
 ![HustleHub+ architecture](HustleHubArchitecture.png)
 
-The diagram covers the full MERN design. Part 1 implemented the request pipeline and authentication. **Part 2 implements the boxes that were deferred to it:** the React SPA, MongoDB/Mongoose, `express-mongo-sanitize` + `hpp`, and the domain services (Gigs, Bookings, Transactions, Income/Tax). Docker Compose and the CI pipeline, originally planned for Part 3, are also in place. Part 3 adds structured logging (see [Logging](#logging)). **Still to do:** the cloud log sink and a real deployment step. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is identical in every part.
+The diagram covers the full MERN design. Part 1 implemented the request pipeline and authentication. **Part 2 implements the boxes that were deferred to it:** the React SPA, MongoDB/Mongoose, `express-mongo-sanitize` + `hpp`, and the domain services (Gigs, Bookings, Transactions, Income/Tax). Part 3 adds the tax dashboard, the full CI/CD pipeline with static analysis, Docker in the pipeline and cloud logging to Grafana Cloud (see [Logging](#logging)). Deployment to a hosting provider was optional and was not done. The request flow (client → HTTPS → middleware pipeline → validation → auth → RBAC → controllers → services) is identical in every part.
 
 ### Request Pipeline
 Every request passes through the same middleware, in this order ([app.js](API/app.js)):
@@ -134,6 +143,92 @@ Four Mongoose models ([API/models](API/models)):
 
 A booking moves **Pending → Accepted → Completed**. A freelancer may decline a pending booking and a client may cancel one; either marks the transaction as refunded. A freelancer's income is the sum of their transactions whose booking is Accepted or Completed.
 
+## Tax and Income Dashboard
+
+A freelancer's **Earnings** tab shows what they have earned and an estimate of the income tax they owe on it. The API works out every figure ([controllers/incomeController.js](API/controllers/incomeController.js)), and the screen only displays it ([screens/Earnings.jsx](frontend/src/screens/Earnings.jsx)).
+
+![Freelancer Earnings screen with income totals, estimated tax and charts](Screenshots/freelancer-earnings.png)
+
+### What the Freelancer Sees
+
+| Part of the screen | What it shows |
+|--------------------|---------------|
+| **Summary cards** | Total income, paid out (Completed bookings), in progress (Accepted bookings) and the estimated tax for the current tax year |
+| **How your tax estimate works** | The tax worked out step by step: the income in each bracket, the tax on it, the rebate taken off and the result, plus the effective and marginal rates in plain words |
+| **Income by month** | A bar chart of income per month, by the booking's start date |
+| **Income by gig** | A donut chart of which gigs earn the most. The top four are shown and the rest are grouped as "Other" |
+| **Transactions** | Every earning booking with its `TX-` reference, client and amount |
+
+The charts are drawn with plain SVG ([components/Charts.jsx](frontend/src/components/Charts.jsx)), so no charting library was added. Each chart has an `aria-label` that reads out its values for screen readers.
+
+### How South African Income Tax Works
+We based the calculation on how SARS taxes individuals [47]:
+
+- **The tax is progressive.** Income is split into brackets, and each rate applies only to the part of the income inside its bracket. Earning more never lowers what you keep, because only the extra rands are taxed at the higher rate.
+- **Everyone gets a primary rebate.** It is subtracted from the tax, not from the income. For 2026/27 it is **R17,820**.
+- **The tax threshold follows from the rebate.** Below **R99,000** a person under 65 owes nothing, because 18% of R99,000 is R17,820, exactly the rebate.
+- **The tax year runs from 1 March to the end of February.** So January 2027 falls in the 2026/27 year.
+
+SARS 2026/27 rates for individuals (1 March 2026 to 28 February 2027) [47]:
+
+| Taxable income (R) | Rate |
+|--------------------|------|
+| 0 – 245,100 | 18% of taxable income |
+| 245,101 – 383,100 | 44,118 + 26% of the amount above 245,100 |
+| 383,101 – 530,200 | 79,998 + 31% of the amount above 383,100 |
+| 530,201 – 695,800 | 125,599 + 36% of the amount above 530,200 |
+| 695,801 – 887,000 | 185,215 + 39% of the amount above 695,800 |
+| 887,001 – 1,878,600 | 259,783 + 41% of the amount above 887,000 |
+| 1,878,601 and above | 666,339 + 45% of the amount above 1,878,600 |
+
+### How the Estimate Is Calculated
+1. **Choose the income.** Only bookings that are Accepted or Completed count. Pending bookings have not been agreed yet, and Declined or Cancelled ones were refunded. Only bookings dated in the **current tax year** count, because the brackets apply to one year's income.
+2. **Tax each bracket.** The income is walked through the brackets from the bottom, and each part is taxed at its own rate. Each part is rounded to the cent, so the lines on screen add up exactly.
+3. **Take off the rebate.** The primary rebate is subtracted. The result never goes below zero.
+4. **Show the rates.** The *effective rate* is the share of all income that goes to tax. The *marginal rate* is the rate on the next rand earned.
+
+**Worked example: R300,000 of income in 2026/27**
+
+| Step | Amount |
+|------|--------|
+| First R245,100 at 18% | R44,118.00 |
+| Next R54,900 (R245,101 – R300,000) at 26% | R14,274.00 |
+| Tax before rebate | R58,392.00 |
+| Less primary rebate | − R17,820.00 |
+| **Estimated tax** | **R40,572.00** |
+| Effective rate (40,572 ÷ 300,000) | 13.52% |
+| Marginal rate | 26% |
+
+This gives the same answer as SARS's own formula for the second bracket: R44,118 + 26% × (R300,000 − R245,100) − R17,820 = R40,572.
+
+### What the Estimate Leaves Out
+The screen says clearly that the figure is a guide and not tax advice. It treats booking income as taxable income, so it does not:
+
+- subtract business expenses a freelancer can claim
+- include income from outside HustleHub+
+- apply the extra rebates for people aged 65 and over (R9,765) or 75 and over (R3,249) [47], because the app does not store a user's age
+
+Freelancers earn income that is not a salary, so SARS treats them as provisional taxpayers. They pay tax in advance in two payments: by the end of August and by the last business day of February [48]. The estimate helps a freelancer plan for those payments, but the app does not file anything with SARS. The rates are held in one table in the controller, and the response names the rates year, so updating them for a new tax year means changing one table.
+
+### Keeping the Income Data Secure
+- **Only the freelancer can see their own income.** `GET /api/income` takes the freelancer's id from their verified sign-in, never from the request, so changing a number in the request cannot show someone else's figures (threat **T13**). Clients and admins get `403`.
+- **The calculation happens on the server.** The browser cannot change the figures it is shown.
+- **Prices cannot be changed after booking.** Each booking stores the price agreed at booking time, so editing or deleting a gig later does not change past income (threat **T6**).
+- **The data is protected in transit and is not cached.** It is sent only over HTTPS, and `Cache-Control: no-store` stops the browser keeping a copy on a shared computer (threats **T11** and **T15**).
+- **Every transaction is logged.** Each one is recorded with who made it, and the records are sent to Grafana Cloud (see [Logging](#logging)).
+
+### How It Is Tested
+`npm run test:income` ([controllers/income.check.js](API/controllers/income.check.js)) runs in CI and checks:
+
+- the worked example above, to the cent
+- the R99,000 threshold: R99,000 owes R0, and R100,000 owes R180
+- the top bracket: R2,000,000 owes R703,149, with a marginal rate of 45%
+- rounding to the cent
+- the tax-year boundaries: 28 February and 1 March
+- that only Accepted and Completed bookings count as income
+
+The Newman collection's **04 Income** folder also checks over HTTP that only freelancers can reach the endpoint.
+
 ## Security Review: Threats and Controls
 
 **In Plain Terms**
@@ -159,7 +254,7 @@ To make sure no type of attack was missed, we sorted the threats with STRIDE, a 
 
 We also matched each threat to the OWASP Top 10 [12], the best-known list of the ten most common security problems in web applications (A01 to A10). This shows the app covers every one of them.
 
-## Threat → Control Table
+### Threat → Control Table
 
 Each row reads left to right. The first part of the "How we stop it" column explains the protection in plain language. The technical detail follows it for readers who want it. The "Where" column links to the code, and the Security Decisions section after this one explains each control in full.
 
@@ -190,7 +285,7 @@ Each row reads left to right. The first part of the "How we stop it" column expl
 | **T22** | The app is started with a weak or missing secret key | S, I | A05 | The app refuses to start until it is set up safely. It needs a JWT_SECRET of at least 32 characters and a database address. Secret files are never uploaded to GitHub | `server.js`, `docker-compose.yml` | \[34\] |
 | **T23** | The server is tricked into fetching a web address chosen by the attacker | I | A10 | The server never visits a web address supplied by a user. Its only outside calls go to two fixed services: the breached-password check and the log service | `breachedPassword.js`, `logger.js` | \[12\] |
 
-## OWASP Top 10 Coverage
+### OWASP Top 10 Coverage
 
 Every category on the OWASP Top 10, 2021 list is covered by at least one control above.
 
@@ -207,19 +302,19 @@ Every category on the OWASP Top 10, 2021 list is covered by at least one control
 | **A09** Security Logging and Monitoring Failures | Attacks going unrecorded or unnoticed | **T17** |
 | **A10** Server-Side Request Forgery | Tricking the server into contacting other systems | **T23** |
 
-## Risks We Accept
+### Risks We Accept
 
 No system is perfectly secure. These are the remaining gaps we know about, and why each is acceptable for this project:
 
-**Test security certificate**: The certificate that encrypts traffic is one we made ourselves for testing, so browsers show a warning. A live version would use a certificate from a trusted provider.
-**Request limits are counted per server**: Each copy of the API keeps its own count. Running several copies would need a shared counter such as Redis. Today there is only one copy.
-**The inactivity timer runs in the browser**: If someone had already stolen a user's sign-in pass, it would keep working until it expires (at most 1 hour) or the user logs out. Both of those cancel it.
-**The breached-password check is skipped if the outside service is down**: If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
-**Changing the main secret key affects two-factor**: The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
-**Payments are simulated**: No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
-**Security checks now have to be run by hand**: GitHub Actions has been switched off for our organisation's repositories, so the checks that used to run automatically on every push no longer do. Until it is available again, npm audit and the tests in Testing need to be run manually before each release.
+- **Test security certificate**: The certificate that encrypts traffic is one we made ourselves for testing, so browsers show a warning. A live version would use a certificate from a trusted provider.
+- **Request limits are counted per server**: Each copy of the API keeps its own count. Running several copies would need a shared counter such as Redis. Today there is only one copy.
+- **The inactivity timer runs in the browser**: If someone had already stolen a user's sign-in pass, it would keep working until it expires (at most 1 hour) or the user logs out. Both of those cancel it.
+- **The breached-password check is skipped if the outside service is down**: If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
+- **Changing the main secret key affects two-factor**: The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
+- **Payments are simulated**: No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
+- **The pipeline runs on a copy of the repository**: GitHub Actions will not start jobs on the Classroom50 organisation because of a billing problem, so the pipeline runs on a private copy with the same commits (see [Where the Pipeline Runs](#where-the-pipeline-runs)). Every push goes to both repositories, so every change is still checked automatically.
 
-### Security Decisions
+## Security Decisions
 Every decision below is driven by the same fact: HustleHub+ handles user credentials, authentication tokens, and financial records (booking income, tax estimates), so the confidentiality and integrity of that data are the priority.
 
 ### Password Hashing
@@ -235,7 +330,7 @@ HustleHub+ uses **bcrypt** with a cost factor of 12 ([controllers/authController
 - bcrypt is a deliberately slow, *adaptive* hash. The cost factor sets how many key-expansion rounds are run; it can be raised as hardware gets faster without any other code change.
 - bcrypt generates and stores a unique random salt per hash, so two users with the same password get different hashes and precomputed "rainbow table" attacks do not work.
 - Cost 12 is above the OWASP minimum of 10 [3]. It adds roughly a quarter of a second per hash - unnoticeable to a user logging in, but expensive for an attacker trying millions of guesses.
-- `argon2id` (memory-hard, harder to attack with GPUs) remains a possible future upgrade; Part 2 keeps bcrypt, the well-audited, dependency-light choice.
+- `argon2id` (memory-hard, harder to attack with GPUs) remains a possible future upgrade; the app keeps bcrypt, the well-audited, dependency-light choice.
 
 Password hashes are never logged and never returned in any API response. The `passwordHash` field is excluded from every database query by default (`select: false`), and is only loaded for login and password change.
 
@@ -442,7 +537,7 @@ The frontend adds a second layer ([services/api.js](frontend/src/services/api.js
 - **Secrets are never baked into an image or committed.** Certificates are mounted read-only at run time, environment values come from `.env` files, and `.env` and `certs` are in `.gitignore` and `.dockerignore`.
 - **Deleting a user removes their data.** Their gigs, bookings and transactions are deleted with the account, so nothing is left pointing at a user that no longer exists.
 
-### Own Security Features
+## Own Security Features
 
 **In Plain Terms**
 The POE brief lists the security every group must build, such as scrambled passwords, encrypted connections, checking what users type in, and limits on login attempts. These are covered in Security Decisions. Two-factor authentication is not counted here either, because it may fall under the brief.
@@ -455,7 +550,7 @@ The three features below are extra protections our group chose to add. The threa
 | **Automatic sign-out when idle** | If you walk away, your account will not stay open for the next person | **T4** | `useIdleLogout.js` | Screenshots of the warning and sign-out |
 | **Locked-down containers** | If one part of the system were broken into, the attacker could do very little with it | **T19** | `docker-compose.yml` | `docker inspect` output and a refused write |
 
-## 1. Breached-Password Check
+### 1. Breached-Password Check
 
 **In plain terms**: Over the years, billions of passwords have been leaked in data breaches at other companies. Criminals collect these lists and try them on every site they can, so a password on one of those lists is unsafe even if it looks strong. When you sign up or change your password, HustleHub+ checks it against these lists, without ever revealing your password to anyone. If it is on a list, you are asked to choose another.
 
@@ -474,7 +569,7 @@ If the service does not answer within 2 seconds, the password is allowed and a w
 **Evidence**:
 ![Registering with Password1 is refused because it appears in a data breach](Screenshots/Security/breached-password.png)
 
-## 2. Automatic Sign-Out When Idle
+### 2. Automatic Sign-Out When Idle
 
 **In plain terms**: If you forget to log out on a shared or public computer, the next person could see your bookings and earnings. HustleHub+ signs you out after 15 minutes without activity. A minute before that, it asks "Still there?" and counts down, so you can choose to stay signed in.
 
@@ -482,10 +577,10 @@ If the service does not answer within 2 seconds, the password is allowed and a w
 
 **Where the code is**:
 
-hooks/useIdleLogout.js: watches for activity and decides when to warn and when to sign out
-components/IdleWarning.jsx: the "Still there?" countdown window
-components/Dashboard.jsx: signs out on the server and shows "You were signed out because of inactivity"
-config.js: the time limit, changeable with VITE_IDLE_MINUTES (default 15)
+- [hooks/useIdleLogout.js](frontend/src/hooks/useIdleLogout.js): watches for activity and decides when to warn and when to sign out
+- [components/IdleWarning.jsx](frontend/src/components/IdleWarning.jsx): the "Still there?" countdown window
+- [components/Dashboard.jsx](frontend/src/components/Dashboard.jsx): signs out on the server and shows "You were signed out because of inactivity"
+- [config.js](frontend/src/config.js): the time limit, changeable with `VITE_IDLE_MINUTES` (default 15)
 
 **Evidence**. These were taken with the limit set to 1 minute (VITE_IDLE_MINUTES=1) so the sign-out could be shown quickly.
 
@@ -493,7 +588,7 @@ config.js: the time limit, changeable with VITE_IDLE_MINUTES (default 15)
 
 ![The login screen after an automatic sign-out](Screenshots/Security/idle-sign-out.png)
 
-## 3. Locked-Down Containers
+### 3. Locked-Down Containers
 
 **In plain terms**: HustleHub+ runs as three separate "containers": the website, the API and the database. Each is a sealed box with only what that part needs. We went further than just using containers and locked each box down. Think of it as giving each worker a key to only their own room, in a room where nothing can be moved. Even if an attacker got into one box, they could not change its files, could not give themselves more power, and could not reach the database from the internet.
 
@@ -764,19 +859,56 @@ npm run test:run
 | `password.test.js` | password rule: accepted case plus too short, missing upper/lower/number, too long |
 | `api.test.js` | `4xx` messages shown; `429` friendly message; `5xx` never leaks server internals; `401` on a protected route signs the user out |
 
+### End-to-end tests (Playwright)
+The unit tests mock the API. The [Playwright](https://playwright.dev/) [49] suite instead drives a real Chromium browser against the full Docker stack: the React client, the API and MongoDB. It checks that the parts work together the way a user would use them ([frontend/e2e](frontend/e2e)).
+
+| Test | What it proves |
+|------|----------------|
+| **A client books a gig and both sides see the same transaction reference** | A freelancer and a client register; the freelancer creates a gig; the client books it and gets a `TX-` reference for R1,500; the client's bookings show it as Pending; the freelancer sees the same reference and accepts it; the client's receipt shows the same reference, client and amount. This covers authentication, gig creation, booking and transaction recording from start to finish |
+| **A wrong password gets a generic error and stays on the login screen** | The error is the same "Invalid email or password." whether or not the account exists, the password box is cleared, and no dashboard is shown |
+| **Logging out ends the session, even after a reload** | After logout, reloading shows the login screen and `/api/auth/me` returns `401`, so the session is cancelled on the server and not only hidden in the browser |
+
+Every run creates new accounts with random emails and passwords, so it never depends on earlier data. To run it locally:
+
+```bash
+docker compose up -d --build
+cd frontend
+npm ci
+npx playwright install chromium
+npm run test:e2e
+npx playwright show-report
+```
+
+The API's rate limits are counted per process, and one run uses 2 logins and 3 registrations, so run `docker compose restart api` before running the suite again. More detail is in [frontend/README.md](frontend/README.md).
+
+![Playwright report: 3 of 3 tests passed](frontend/Playwright_Test_Report.png)
+
 ## CI Pipeline
 [.github/workflows/ci.yml](.github/workflows/ci.yml) runs on every push and pull request using GitHub Actions [42].
 
 | Job | Steps |
 |-----|-------|
-| **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the six self-checks; then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
+| **backend-test** | install from the lockfile; syntax check of every JavaScript file; `npm audit` at high severity; the seven self-checks (unit tests); then start the real API over HTTPS against a MongoDB service container and run the full Newman collection |
 | **frontend-build** | install from the lockfile; `npm audit` at high severity; lint with Oxlint; run the Vitest tests; production build |
 | **static-analysis** | scan the code, Dockerfiles and workflows with Semgrep; any finding fails the job; the report is uploaded as the `semgrep-report` artifact |
 | **sonarcloud** | runs only on pushes to `main` and pull requests into it, because the free plan only analyses those; scan the code with SonarQube Cloud using the settings in `sonar-project.properties`; a failed quality gate fails the job |
 | **docker-zap** | build the Docker images; start the full Compose stack with throwaway secrets; run an OWASP ZAP active scan against the API (signed in, with routes from the Postman collection) and the client; scan the images with Trivy; the reports are uploaded as the `security-scan-reports` artifact |
-| **deploy** | runs only on `main`, and only after all the other jobs pass. It is a placeholder for now; the real deployment step is planned for Part 3 |
+| **e2e** | build the Docker images; start the full Compose stack with throwaway secrets; install Chromium; run the Playwright end-to-end tests against it; the HTML report, screenshots and, for a failure, a trace are uploaded as the `playwright-report` artifact. It has its own stack, separate from **docker-zap**, because the ZAP active scan uses up the same per-IP rate limits |
+| **deploy** | runs only on `main`, and only after all the other jobs pass. It is a placeholder: deployment to a hosting provider was optional for this POE and was not done |
 
-A failing check, test, audit, Semgrep finding, SonarQube quality gate or Docker build in any job fails the build. So does a High ZAP alert, a ZAP scan that covers nothing, or a fixable HIGH or CRITICAL Trivy finding in the `api` or `client` image. Lower ZAP alerts do not fail the build, so they are reviewed in the report. `mongo:7` is an upstream image, so its Trivy results are report-only.
+A failing check, test, audit, Semgrep finding, SonarQube quality gate, Docker build or Playwright test in any job fails the build. So does a High ZAP alert, a ZAP scan that covers nothing, or a fixable HIGH or CRITICAL Trivy finding in the `api` or `client` image. Lower ZAP alerts do not fail the build, so they are reviewed in the report. `mongo:7` is an upstream image, so its Trivy results are report-only.
+
+### Where the Pipeline Runs
+GitHub Actions will not start any job on the Classroom50 organisation's repositories. Every run there fails within seconds with this message: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* That is a billing problem on the organisation, not a problem with the code or the workflow.
+
+The guidelines allow working from a copy when services cannot connect to the Classroom50 repository, so the pipeline runs on a copy:
+
+**CI repository: [DRPS-Solutions/INSY7314_POE_Part3](https://github.com/DRPS-Solutions/INSY7314_POE_Part3)**. Its runs are at [Actions](https://github.com/DRPS-Solutions/INSY7314_POE_Part3/actions).
+
+- It holds the same commits and branches as the Classroom50 repository, by the same authors.
+- Every push goes to both repositories, so each commit submitted here is also built and tested there.
+- It is private, so other students cannot copy the work. The lecturer is added as a collaborator to view the runs.
+- The `SONAR_TOKEN` secret is set on that repository, so SonarQube Cloud runs there too.
 
 ## Logging
 The API writes structured logs through [utils/logger.js](API/utils/logger.js): one JSON object per line on stdout. Docker captures stdout, so the logs can be read with `docker compose logs api`, and because each line is JSON a log platform can filter it by any field. No logging library is needed for this, so no dependency was added.
@@ -975,3 +1107,8 @@ Youtube Video Link: https://youtu.be/LDcBwhAfzEg
 - [42] 	GitHub, "GitHub Actions documentation," GitHub Docs, 2026. [Online]. Available: https://docs.github.com/en/actions. [Accessed 11 October 2026].
 - [43] 	OWASP, "Logging Cheat Sheet," OWASP Cheat Sheet Series, 2026. [Online]. Available: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html. [Accessed 2 November 2026].
 - [44] 	Grafana Labs, "Loki HTTP API," Grafana Loki Documentation, 2026. [Online]. Available: https://grafana.com/docs/loki/latest/reference/loki-http-api/. [Accessed 6 November 2026].
+- [45] 	Microsoft, "Threats - Microsoft Threat Modeling Tool," Microsoft Learn, 2026. [Online]. Available: https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats. [Accessed 8 November 2026].
+- [46] 	T. Hunt, "Have I Been Pwned API v3: Pwned Passwords," Have I Been Pwned, 2026. [Online]. Available: https://haveibeenpwned.com/API/v3#PwnedPasswords. [Accessed 8 November 2026].
+- [47] 	South African Revenue Service, "Rates of Tax for Individuals," SARS, 2026. [Online]. Available: https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/. [Accessed 8 November 2026].
+- [48] 	South African Revenue Service, "Provisional Tax," SARS, 2026. [Online]. Available: https://www.sars.gov.za/types-of-tax/provisional-tax/. [Accessed 8 November 2026].
+- [49] 	Microsoft, "Installation," Playwright Documentation, 2026. [Online]. Available: https://playwright.dev/docs/intro. [Accessed 8 November 2026].
