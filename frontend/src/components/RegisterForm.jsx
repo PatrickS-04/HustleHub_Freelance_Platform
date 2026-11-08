@@ -15,7 +15,9 @@ function validate({ name, email, password }) {
   if (!/^[A-Za-z][A-Za-z '-]{1,49}$/.test(name.trim())) {
     return 'Name must be 2-50 letters.'
   }
-  if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+  // Rough shape only (the API runs validator.isEmail). Domain labels exclude
+  // '.', so each character has one place to go and there is no backtracking.
+  if (!/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email.trim())) {
     return 'Enter a valid email address.'
   }
   return passwordProblem(password)
