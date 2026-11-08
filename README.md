@@ -312,7 +312,6 @@ No system is perfectly secure. These are the remaining gaps we know about, and w
 - **The breached-password check is skipped if the outside service is down**: If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
 - **Changing the main secret key affects two-factor**: The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
 - **Payments are simulated**: No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
-- **The pipeline also runs on a copy of the repository**: GitHub Actions on the Classroom50 organisation stopped for a while because of an insufficient-funds billing problem. It works again, but as a precaution the pipeline also runs on a private copy with the same commits (see [Where the Pipeline Runs](#where-the-pipeline-runs)). Every push goes to both repositories.
 
 ## Security Decisions
 Every decision below is driven by the same fact: HustleHub+ handles user credentials, authentication tokens, and financial records (booking income, tax estimates), so the confidentiality and integrity of that data are the priority.
@@ -905,16 +904,7 @@ A failing check, test, audit, Semgrep finding, SonarQube quality gate, Docker bu
 ### Where the Pipeline Runs
 The pipeline runs on the Classroom50 repository. For a while, though, GitHub Actions would not start any job there. Every run failed within seconds with this message: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* That was an insufficient-funds billing problem on the organisation, not a problem with the code or the workflow. It has since been fixed.
 
-Because of that outage, and as a precaution in case it happens again, the pipeline also runs on a copy. The guidelines allow working from a copy when services cannot connect to the Classroom50 repository:
-
-**CI repository: [DRPS-Solutions/INSY7314_POE_Part3](https://github.com/DRPS-Solutions/INSY7314_POE_Part3)**. Its runs are at [Actions](https://github.com/DRPS-Solutions/INSY7314_POE_Part3/actions).
-
-- It holds the same commits and branches as the Classroom50 repository, by the same authors.
-- Every push goes to both repositories, so each commit submitted here is also built and tested there.
-- It is private, so other students cannot copy the work. The lecturer is added as a collaborator to view the runs.
-- The `SONAR_TOKEN` secret is set on that repository, so SonarQube Cloud runs there too.
-
-The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Classroom added. Runs from the billing outage show as failed because they never started, so they ran no checks. Runs from that period are on the DRPS-Solutions copy.
+The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Classroom added. Runs from the billing outage show as failed because they never started, so they ran no checks.
 
 ![CI/CD run on main with every job passing](Screenshots/CI/CI-run1.png)
 
