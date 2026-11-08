@@ -312,7 +312,7 @@ No system is perfectly secure. These are the remaining gaps we know about, and w
 - **The breached-password check is skipped if the outside service is down**: If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
 - **Changing the main secret key affects two-factor**: The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
 - **Payments are simulated**: No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
-- **The pipeline runs on a copy of the repository**: GitHub Actions will not start jobs on the Classroom50 organisation because of a billing problem, so the pipeline runs on a private copy with the same commits (see [Where the Pipeline Runs](#where-the-pipeline-runs)). Every push goes to both repositories, so every change is still checked automatically.
+- **The pipeline also runs on a copy of the repository**: GitHub Actions on the Classroom50 organisation stopped for a while because of an insufficient-funds billing problem. It works again, but as a precaution the pipeline also runs on a private copy with the same commits (see [Where the Pipeline Runs](#where-the-pipeline-runs)). Every push goes to both repositories.
 
 ## Security Decisions
 Every decision below is driven by the same fact: HustleHub+ handles user credentials, authentication tokens, and financial records (booking income, tax estimates), so the confidentiality and integrity of that data are the priority.
@@ -899,9 +899,9 @@ The API's rate limits are counted per process, and one run uses 2 logins and 3 r
 A failing check, test, audit, Semgrep finding, SonarQube quality gate, Docker build or Playwright test in any job fails the build. So does a High ZAP alert, a ZAP scan that covers nothing, or a fixable HIGH or CRITICAL Trivy finding in the `api` or `client` image. Lower ZAP alerts do not fail the build, so they are reviewed in the report. `mongo:7` is an upstream image, so its Trivy results are report-only.
 
 ### Where the Pipeline Runs
-GitHub Actions will not start any job on the Classroom50 organisation's repositories. Every run there fails within seconds with this message: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* That is a billing problem on the organisation, not a problem with the code or the workflow.
+The pipeline runs on the Classroom50 repository. For a while, though, GitHub Actions would not start any job there. Every run failed within seconds with this message: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* That was an insufficient-funds billing problem on the organisation, not a problem with the code or the workflow. It has since been fixed.
 
-The guidelines allow working from a copy when services cannot connect to the Classroom50 repository, so the pipeline runs on a copy:
+Because of that outage, and as a precaution in case it happens again, the pipeline also runs on a copy. The guidelines allow working from a copy when services cannot connect to the Classroom50 repository:
 
 **CI repository: [DRPS-Solutions/INSY7314_POE_Part3](https://github.com/DRPS-Solutions/INSY7314_POE_Part3)**. Its runs are at [Actions](https://github.com/DRPS-Solutions/INSY7314_POE_Part3/actions).
 
@@ -910,9 +910,13 @@ The guidelines allow working from a copy when services cannot connect to the Cla
 - It is private, so other students cannot copy the work. The lecturer is added as a collaborator to view the runs.
 - The `SONAR_TOKEN` secret is set on that repository, so SonarQube Cloud runs there too.
 
-The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Classroom added. It shows as failed on every push for the same billing reason: it never starts, so it ran no checks. The CI/CD workflow results are on the DRPS-Solutions copy.
+The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Classroom added. Runs from the billing outage show as failed because they never started, so they ran no checks. Runs from that period are on the DRPS-Solutions copy.
 
-![Latest CI/CD run on main with every job passing](Screenshots/CI/ci-run.png)
+![CI/CD run on main with every job passing](Screenshots/CI/CI-run1.png)
+
+![Run summary: Vitest report with 60 of 60 frontend tests passing](Screenshots/CI/CI-run2.png)
+
+![Artifacts uploaded by the run: coverage, Playwright, security scan and Semgrep reports](Screenshots/CI/CI-run3.png)
 
 ## Static Code Analysis
 Static analysis reads the source code without running it and looks for bugs, security flaws and code that is hard to maintain. It catches problems that tests miss, because tests only check the cases someone thought to write. Two tools run in the pipeline, and either one can fail the build.
@@ -927,7 +931,7 @@ Semgrep runs on every branch, so a problem is found before it reaches `main`. So
 ### Results
 The latest run on `main` passed both tools: Semgrep reported no findings, and the SonarQube Cloud quality gate passed.
 
-![SonarQube Cloud overview for main with the quality gate passed](Screenshots/CI/sonarcloud.png)
+![SonarQube Cloud overview for main with the quality gate passed](Screenshots/CI/SonarQube.png)
 
 ### Findings and How They Were Fixed
 Every SonarQube Cloud finding was fixed in the code, and none was marked as a false positive or accepted.
