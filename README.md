@@ -943,7 +943,7 @@ Logs are a target too, so they follow the OWASP logging guidance [43]:
 - **Personal data is kept to a minimum.** Users are identified by id. A failed login does not record the submitted email, because people sometimes type a password into that box.
 - **Query strings are left out** of logged paths, because they can hold user data.
 - **Client errors have no message or stack trace**, because those can repeat what the user submitted.
-- **Log injection is blocked.** JSON encoding escapes line breaks in user input, so input cannot forge an extra log line.
+- **Log injection is blocked.** JSON encoding escapes CR and LF in user input. It leaves the Unicode line breaks U+0085, U+2028 and U+2029 untouched, and some log viewers treat those as new lines, so the logger escapes them as well. SonarQube Cloud raised this as a finding (rule S5145), which is how the gap was found. Input therefore cannot forge an extra log line, and the escaped value still reads back exactly as it was logged.
 
 `npm run test:logger` checks the masking and injection rules in CI.
 

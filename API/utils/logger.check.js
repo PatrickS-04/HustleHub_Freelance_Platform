@@ -26,6 +26,13 @@ assert.strictEqual(JSON.parse(line).password, "[REDACTED]");
 const forged = format("warn", "x", { path: '/a\n{"level":"info","event":"auth.login.success"}' });
 assert.strictEqual(forged.split("\n").length, 1);
 
+// ...including with the line breaks JSON.stringify leaves raw (NEL, U+2028, U+2029),
+// and the escaped value still parses back to exactly what was logged
+const sneaky = '/a\r\n\u0085\u2028\u2029{"level":"info","event":"auth.login.success"}';
+const escaped = format("warn", "x", { path: sneaky });
+assert.ok(!/[\r\n\u0085\u2028\u2029]/.test(escaped), escaped);
+assert.strictEqual(JSON.parse(escaped).path, sneaky);
+
 // request context
 assert.deepStrictEqual(requestContext({ id: "r1", ip: "1.2.3.4", user: { id: "u1" } }), {
   requestId: "r1",

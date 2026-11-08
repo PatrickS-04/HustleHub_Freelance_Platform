@@ -7,8 +7,18 @@ const SENSITIVE_KEY = /pass|token|secret|authorization|cookie/i;
 // Safety net: anything under a sensitive key is masked, however deeply nested.
 const redact = (key, value) => (SENSITIVE_KEY.test(key) ? "[REDACTED]" : value);
 
+// JSON.stringify escapes CR and LF, but leaves U+0085 (NEL), U+2028 and U+2029 raw,
+// and some log viewers treat those as line breaks. Every line-break character is
+// written as a \uXXXX escape, so user input can never start a new log line. The
+// result is still valid JSON and parses back to exactly the original value.
+const LINE_BREAKS = /[\r\n\u0085\u2028\u2029]/g;
+const escapeLineBreak = (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`;
+
 const format = (level, event, fields = {}) =>
-  JSON.stringify({ timestamp: new Date().toISOString(), level, event, ...fields }, redact);
+  JSON.stringify({ timestamp: new Date().toISOString(), level, event, ...fields }, redact).replace(
+    LINE_BREAKS,
+    escapeLineBreak
+  );
 
 // Loki push body: one stream per level, so Grafana can filter by {level="warn"}
 // without parsing. Labels stay few and fixed; everything else is in the JSON line.
