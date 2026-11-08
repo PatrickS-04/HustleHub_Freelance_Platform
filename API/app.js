@@ -12,6 +12,8 @@ const { noSqlInjection, parameterPollution } = require("./middleware/sanitize");
 const requestLogger = require("./middleware/requestLogger");
 
 const app = express();
+// Helmet also strips this; disabling it here keeps it off even without helmet.
+app.disable("x-powered-by");
 
 // Only the known frontend origin may call the API from a browser, and only it
 // may send credentials (the auth cookie). Everything else is blocked by CORS.
