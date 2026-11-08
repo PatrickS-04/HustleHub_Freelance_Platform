@@ -91,7 +91,8 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
   }, [notice])
 
   // The API has the final say: if the booking changed in the meantime it
-  // answers 409 with a reason, which is shown instead.
+  // answers 409 with a reason, which is shown instead. Never rejects, since
+  // every error ends up in the notice, so callers can fire it with `void`.
   async function apply(booking, action) {
     setBusy(booking.id)
     try {
@@ -106,7 +107,7 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
 
   function handleAction(booking, action) {
     if (action.confirm) setConfirming({ booking, action })
-    else apply(booking, action)
+    else void apply(booking, action)
   }
 
   const active = FILTERS.find((f) => f.id === filter) || FILTERS[0]
@@ -258,7 +259,7 @@ function BookingsList({ bookings, role, onStatus, onReview }) {
           confirmLabel={confirming.action.label}
           onCancel={() => setConfirming(null)}
           onConfirm={() => {
-            apply(confirming.booking, confirming.action)
+            void apply(confirming.booking, confirming.action)
             setConfirming(null)
           }}
         />
