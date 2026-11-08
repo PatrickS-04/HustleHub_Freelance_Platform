@@ -4,7 +4,7 @@ const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
 // booking's start date. Bookings start today or later, so the window ends at
 // the latest month with data, or the current month if that is later.
 export function monthlySeries(totals, now) {
-  const latest = Object.keys(totals).sort().pop()
+  const latest = Object.keys(totals).sort((a, b) => a.localeCompare(b)).pop()
   const current = monthKey(now)
   const end = latest && latest > current ? latest : current
   const [year, month] = end.split('-').map(Number)

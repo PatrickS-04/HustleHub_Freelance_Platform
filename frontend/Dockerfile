@@ -3,7 +3,9 @@ FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
+COPY index.html vite.config.js ./
+COPY public ./public
+COPY src ./src
 # Baked into the bundle at build time; must match the API's public address.
 ARG VITE_API_URL=https://localhost:3443
 ENV VITE_API_URL=$VITE_API_URL
