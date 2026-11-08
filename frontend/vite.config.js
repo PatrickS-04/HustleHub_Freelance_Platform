@@ -53,6 +53,8 @@ export default defineConfig(({ command, mode }) => {
       setupFiles: './src/test/setup.js',
       css: false,
       exclude: [...configDefaults.exclude, 'e2e/**'],
+      // lcov is read by SonarQube Cloud (see sonar-project.properties).
+      coverage: { include: ['src/**'], reporter: ['lcov', 'text-summary'] },
     },
     server: {
       port: 5173,
