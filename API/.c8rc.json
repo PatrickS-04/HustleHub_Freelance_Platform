@@ -1,0 +1,5 @@
+{
+  "all": true,
+  "exclude": ["**/*.check.js", "postman/**", "coverage/**"],
+  "reporter": ["lcov", "text-summary"]
+}

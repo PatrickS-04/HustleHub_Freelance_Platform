@@ -1,6 +1,8 @@
 const Booking = require("../models/Booking");
 const Gig = require("../models/Gig");
 const Transaction = require("../models/Transaction");
+const { logger, requestContext } = require("../utils/logger");
+const { isAdminWithMfa } = require("../middleware/auth");
 
 // Allowed status changes per role. Mirrors STATUS_ACTIONS in the frontend.
 const TRANSITIONS = {
@@ -76,9 +78,24 @@ async function createBooking(req, res, next) {
       });
     } catch (err) {
       // Manual rollback: Mongo multi-document transactions need a replica set; switch to a session if one is used
+      logger.error("transaction.create_failed", { ...requestContext(req), bookingId: booking.id });
       await booking.deleteOne();
       throw err;
     }
+
+    logger.info("booking.created", {
+      ...requestContext(req),
+      bookingId: booking.id,
+      gigId: gig.id,
+      freelancerId: String(booking.freelancer),
+    });
+    logger.info("transaction.created", {
+      ...requestContext(req),
+      reference: tx.reference,
+      bookingId: booking.id,
+      amount: tx.amount,
+      status: tx.status,
+    });
 
     await booking.populate(POPULATE);
     res.status(201).json({ message: "Booking confirmed (simulated payment).", booking: toBooking(booking, tx.reference) });
@@ -112,7 +129,7 @@ async function getBooking(req, res, next) {
   try {
     const booking = await Booking.findById(req.params.id).populate(POPULATE);
     // 404 rather than 403 so other users can't probe which booking ids exist.
-    if (!booking || (!partyRole(booking, req.user) && req.user.role !== "admin")) {
+    if (!booking || (!partyRole(booking, req.user) && !isAdminWithMfa(req.user))) {
       return res.status(404).json({ error: "Booking not found." });
     }
     const [shaped] = await withReferences([booking]);
@@ -133,11 +150,14 @@ async function updateStatus(req, res, next) {
       return res.status(409).json({ error: `A ${role} cannot change a ${booking.status} booking to ${status}.` });
     }
 
+    const from = booking.status;
     booking.status = status;
     await booking.save();
+    logger.info("booking.status_changed", { ...requestContext(req), bookingId: booking.id, from, to: status, by: role });
     // Simulated refund: declined/cancelled bookings no longer count as income.
     if (status === "Declined" || status === "Cancelled") {
       await Transaction.updateOne({ booking: booking._id }, { status: "Refunded" });
+      logger.info("transaction.refunded", { ...requestContext(req), bookingId: booking.id });
     }
 
     const [shaped] = await withReferences([booking]);

@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
+import { configDefaults } from 'vitest/config'
 
 // The API only accepts the origin https://localhost:5173 (CORS + SameSite=Strict
 // cookie), so the dev server must run over HTTPS. Reuse the API's local cert.
@@ -22,6 +23,9 @@ export default defineConfig(({ command, mode }) => {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'no-referrer',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    'Cross-Origin-Resource-Policy': 'same-origin',
   }
 
   // Strict CSP for the built app (`npm run preview`). The dev server gets the
@@ -48,6 +52,9 @@ export default defineConfig(({ command, mode }) => {
       globals: true,
       setupFiles: './src/test/setup.js',
       css: false,
+      exclude: [...configDefaults.exclude, 'e2e/**'],
+      // lcov is read by SonarQube Cloud (see sonar-project.properties).
+      coverage: { include: ['src/**'], reporter: ['lcov', 'text-summary'] },
     },
     server: {
       port: 5173,

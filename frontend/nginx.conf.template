@@ -1,4 +1,11 @@
-# HTTPS only - same headers as `npm run preview` in vite.config.js.
+# Hashed build files never change, so they can be cached. Everything else,
+# index.html included, is never stored so a new deploy is picked up straight away.
+map $uri $cache_control {
+    ~^/assets/ "public, max-age=31536000, immutable";
+    default    "no-cache, no-store, must-revalidate";
+}
+
+# HTTPS only - same security headers as `npm run preview` in vite.config.js.
 server {
     listen 443 ssl;
     server_name localhost;
@@ -19,6 +26,10 @@ server {
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+    add_header Cross-Origin-Embedder-Policy "require-corp" always;
+    add_header Cross-Origin-Resource-Policy "same-origin" always;
+    add_header Cache-Control $cache_control always;
 
     location / {
         try_files $uri /index.html;

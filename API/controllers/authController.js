@@ -1,9 +1,29 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
+const { tokenFromRequest, userFromToken } = require("../middleware/auth");
+const {
+  generateTotpSecret,
+  matchTotp,
+  totpUri,
+  qrDataUrl,
+  encryptSecret,
+  decryptSecret,
+  generateRecoveryCodes,
+  hashRecoveryCode,
+} = require("../utils/totp");
+const { logger, requestContext } = require("../utils/logger");
 
 const SALT_ROUNDS = 12;
 const COOKIE_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour, matches the JWT expiry
+// Compared against when the email is unknown, so that login takes as long as a
+// wrong password and response time can't reveal which emails have accounts.
+const DUMMY_HASH = bcrypt.hashSync("no-account-has-this-hash", SALT_ROUNDS);
+// Catches guessing spread across many IPs, which loginLimiter can't see. Set
+// above that limiter's 5 per IP so one person mistyping hits the limiter first
+// and is told to wait. Temporary, so an attacker can't lock someone out for good.
+const MAX_FAILED_LOGINS = 10;
+const LOCK_MS = 15 * 60 * 1000;
 
 // The httpOnly cookie is the real token transport. The token is echoed in the
 // JSON body only when EXPOSE_TOKEN_IN_BODY=true (for Postman / Newman, which have
@@ -53,6 +73,7 @@ async function register(req, res, next) {
 
     const token = generateToken(user);
     setAuthCookie(res, token);
+    logger.info("auth.register.success", { ...requestContext(req), userId: user.id, role: user.role });
 
     return res.status(201).json({
       message: "User registered successfully.",
@@ -73,34 +94,105 @@ async function register(req, res, next) {
   }
 }
 
+// Counts a wrong password and locks the account once the limit is reached.
+// Limitation: failures only clear on a successful login or a lock, so old ones add up; store the first failure's time if that locks people out.
+async function recordFailedLogin(req, user) {
+  const updated = await User.findByIdAndUpdate(
+    user.id,
+    { $inc: { failedLogins: 1 } },
+    { returnDocument: "after" }
+  ).select("+failedLogins");
+  if (!updated || updated.failedLogins < MAX_FAILED_LOGINS) return;
+
+  await User.updateOne(
+    { _id: user.id },
+    { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCK_MS) }
+  );
+  logger.warn("auth.account_locked", { ...requestContext(req), userId: user.id });
+}
+
+// Accepts a code from the user's app or one of their recovery codes. Each update
+// only succeeds if the code hasn't been used, so one can't be spent twice, even
+// by two requests at the same moment. Needs user.mfaSecret to be selected.
+async function consumeMfaCode(req, user, code) {
+  const step = matchTotp(decryptSecret(user.mfaSecret), code);
+  if (step !== null) {
+    const result = await User.updateOne(
+      { _id: user.id, $or: [{ mfaLastStep: { $lt: step } }, { mfaLastStep: null }] },
+      { mfaLastStep: step }
+    );
+    return result.modifiedCount === 1;
+  }
+
+  const hash = hashRecoveryCode(code);
+  const result = await User.updateOne(
+    { _id: user.id, mfaRecoveryHashes: hash },
+    { $pull: { mfaRecoveryHashes: hash } }
+  );
+  if (result.modifiedCount !== 1) return false;
+  logger.warn("auth.mfa.recovery_code_used", { ...requestContext(req), userId: user.id });
+  return true;
+}
+
 async function login(req, res, next) {
   try {
-    const { email, password } = req.body;
+    const { email, password, code } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    const user = await User.findOne({ email }).select("+passwordHash");
+    const user = await User.findOne({ email }).select("+passwordHash +failedLogins +lockedUntil +mfaSecret");
 
     // Deliberately identical response whether the email doesn't exist or the
     // password is wrong - prevents attackers from enumerating valid accounts.
+    // The log may record the real reason; it is never sent to the client. The
+    // submitted email is left out: people sometimes type a password in that box.
     if (!user) {
+      await bcrypt.compare(password, DUMMY_HASH);
+      logger.warn("auth.login.failed", { ...requestContext(req), reason: "unknown_email" });
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
+    // Compared even when locked, and answered with the same 401, so neither the
+    // response nor its timing shows that the account exists or is locked.
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordMatches) {
+    if (user.lockedUntil > Date.now()) {
+      logger.warn("auth.login.failed", { ...requestContext(req), reason: "account_locked", userId: user.id });
       return res.status(401).json({ error: "Invalid email or password." });
     }
+
+    if (!passwordMatches) {
+      // Not awaited: unknown emails do no database write, so waiting here would
+      // make wrong passwords measurably slower and reveal the account exists.
+      recordFailedLogin(req, user).catch((err) =>
+        logger.error("auth.login.record_failed", { ...requestContext(req), userId: user.id, message: err.message })
+      );
+      logger.warn("auth.login.failed", { ...requestContext(req), reason: "wrong_password", userId: user.id });
+      return res.status(401).json({ error: "Invalid email or password." });
+    }
+
+    // The right password alone gets no session, and doesn't clear earlier failures.
+    // Wrong codes count towards the lockout, which is what stops codes being guessed.
+    if (user.mfaEnabled) {
+      if (!code) return res.status(200).json({ mfaRequired: true });
+      if (!(await consumeMfaCode(req, user, code))) {
+        await recordFailedLogin(req, user);
+        logger.warn("auth.login.failed", { ...requestContext(req), reason: "wrong_mfa_code", userId: user.id });
+        return res.status(401).json({ error: "Invalid authentication code." });
+      }
+    }
+
+    if (user.failedLogins) await User.updateOne({ _id: user.id }, { failedLogins: 0 });
 
     const token = generateToken(user);
     setAuthCookie(res, token);
+    logger.info("auth.login.success", { ...requestContext(req), userId: user.id, role: user.role });
 
     return res.status(200).json({
       message: "Login successful.",
       ...tokenInBody(token),
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, mfaEnabled: user.mfaEnabled },
     });
   } catch (err) {
     next(err);
@@ -132,8 +224,8 @@ async function updateMe(req, res, next) {
 }
 
 // Changes the logged-in user's password after checking the current one.
-// Every other session is signed out (requireAuth rejects tokens issued before
-// passwordChangedAt) and this one gets a fresh token so it stays logged in.
+// Every other session is signed out (requireAuth rejects tokens with an old
+// tokenVersion) and this one gets a fresh token so it stays logged in.
 async function changePassword(req, res, next) {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -142,15 +234,18 @@ async function changePassword(req, res, next) {
 
     // 400 rather than 401: a 401 would make the frontend sign the user out.
     const matches = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!matches) return res.status(400).json({ error: "Current password is incorrect." });
+    if (!matches) {
+      logger.warn("auth.password_change.failed", requestContext(req));
+      return res.status(400).json({ error: "Current password is incorrect." });
+    }
 
     user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    // Whole seconds, to line up with the JWT `iat` claim.
-    user.passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+    user.tokenVersion += 1;
     await user.save();
 
     const token = generateToken(user);
     setAuthCookie(res, token);
+    logger.info("auth.password_change.success", requestContext(req));
 
     return res.status(200).json({
       message: "Password changed. Other sessions have been signed out.",
@@ -161,11 +256,135 @@ async function changePassword(req, res, next) {
   }
 }
 
+// Step 1 of turning on two-factor authentication. Asks for the password so that
+// someone with a stolen session can't lock the real owner out with their own app.
+// Nothing takes effect until mfaEnable confirms a code from the app.
+async function mfaSetup(req, res, next) {
+  try {
+    const user = await User.findById(req.user.id).select("+passwordHash");
+    if (!user) return res.status(401).json({ error: "Authentication required." });
+    if (user.mfaEnabled) {
+      return res.status(409).json({ error: "Two-factor authentication is already on." });
+    }
+
+    // 400 rather than 401: a 401 would make the frontend sign the user out.
+    if (!(await bcrypt.compare(req.body.password, user.passwordHash))) {
+      logger.warn("auth.mfa.setup_failed", requestContext(req));
+      return res.status(400).json({ error: "Password is incorrect." });
+    }
+
+    const secret = generateTotpSecret();
+    user.mfaSecret = encryptSecret(secret);
+    await user.save();
+
+    return res.status(200).json({ secret, qrCode: qrDataUrl(totpUri(secret, user.email)) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Step 2: a correct code proves the app is set up. Any session that was already
+// open is signed out, and the recovery codes are only ever shown here.
+async function mfaEnable(req, res, next) {
+  try {
+    const user = await User.findById(req.user.id).select("+mfaSecret");
+    if (!user) return res.status(401).json({ error: "Authentication required." });
+    if (user.mfaEnabled) {
+      return res.status(409).json({ error: "Two-factor authentication is already on." });
+    }
+    if (!user.mfaSecret) return res.status(400).json({ error: "Start two-factor setup first." });
+
+    const step = matchTotp(decryptSecret(user.mfaSecret), req.body.code);
+    if (step === null) {
+      logger.warn("auth.mfa.enable_failed", requestContext(req));
+      return res.status(400).json({ error: "That code didn't match. Check your app and try again." });
+    }
+
+    const recoveryCodes = generateRecoveryCodes();
+    user.mfaEnabled = true;
+    user.mfaLastStep = step;
+    user.mfaRecoveryHashes = recoveryCodes.map(hashRecoveryCode);
+    user.tokenVersion += 1;
+    await user.save();
+
+    const token = generateToken(user);
+    setAuthCookie(res, token);
+    logger.info("auth.mfa.enabled", requestContext(req));
+
+    return res.status(200).json({
+      message: "Two-factor authentication is on.",
+      ...tokenInBody(token),
+      recoveryCodes,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Needs the password and a code, so a stolen session or password alone can't
+// remove the protection.
+async function mfaDisable(req, res, next) {
+  try {
+    const user = await User.findById(req.user.id).select("+passwordHash +mfaSecret");
+    if (!user) return res.status(401).json({ error: "Authentication required." });
+    if (!user.mfaEnabled) {
+      return res.status(409).json({ error: "Two-factor authentication is already off." });
+    }
+
+    const passwordMatches = await bcrypt.compare(req.body.password, user.passwordHash);
+    if (!passwordMatches || !(await consumeMfaCode(req, user, req.body.code))) {
+      logger.warn("auth.mfa.disable_failed", requestContext(req));
+      return res.status(400).json({ error: "Password or authentication code is incorrect." });
+    }
+
+    user.mfaEnabled = false;
+    user.mfaSecret = undefined;
+    user.mfaLastStep = undefined;
+    user.mfaRecoveryHashes = [];
+    user.tokenVersion += 1;
+    await user.save();
+
+    const token = generateToken(user);
+    setAuthCookie(res, token);
+    logger.warn("auth.mfa.disabled", requestContext(req));
+
+    return res.status(200).json({
+      message: "Two-factor authentication is off.",
+      ...tokenInBody(token),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 // The cookie is httpOnly, so only the server can remove it. Attributes must
 // match those used in setAuthCookie or the browser will not clear it.
-function logout(req, res) {
+// Also revokes the user's tokens, so a stolen copy stops working too. That signs
+// out all their devices. Only a currently valid token can do this, so an old
+// stolen one can't be replayed here to keep signing them out. Failures are logged
+// rather than returned because the cookie must still be cleared.
+async function logout(req, res) {
+  const token = tokenFromRequest(req);
+  if (token) {
+    try {
+      const user = await userFromToken(token);
+      if (user) await User.updateOne({ _id: user.id }, { $inc: { tokenVersion: 1 } });
+    } catch (err) {
+      logger.warn("auth.logout.revoke_failed", { ...requestContext(req), message: err.message });
+    }
+  }
   res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "strict" });
   return res.status(200).json({ message: "Logged out." });
 }
 
-module.exports = { register, login, logout, updateMe, changePassword };
+module.exports = {
+  register,
+  login,
+  logout,
+  updateMe,
+  changePassword,
+  mfaSetup,
+  mfaEnable,
+  mfaDisable,
+  SALT_ROUNDS,
+};

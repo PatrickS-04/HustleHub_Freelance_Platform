@@ -17,9 +17,9 @@ jobs:
         ports:
           - 27017:27017
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "20"
           cache: npm
@@ -33,27 +33,20 @@ jobs:
         run: git ls-files '*.js' | grep -v node_modules | xargs -n1 node --check
 
       - name: Audit dependencies
-        run: |
-          for i in 1 2 3; do
-            out=$(npm audit --audit-level=high 2>&1) && { echo "$out"; exit 0; }
-            echo "$out"
-            # npm exits 1 both for real vulns and for endpoint errors; tell them apart by the message
-            if ! echo "$out" | grep -qiE 'audit endpoint returned an error|Service Unavailable|Bad Request|ECONNRESET|ETIMEDOUT'; then
-              exit 1  # genuine vulnerabilities at/above high
-            fi
-            echo "audit endpoint error (attempt $i), retrying in 30s..."
-            sleep 30
-          done
-          echo "::warning::npm audit endpoint unavailable after 3 attempts, skipping"
+        run: bash ../.github/scripts/npm-audit.sh
 
       # Pure-logic self-checks (node --check-style asserts), no server needed.
+      # NODE_V8_COVERAGE here and on the server below; c8 merges both for Sonar.
       - name: Unit tests
         run: |
+          export NODE_V8_COVERAGE=$PWD/coverage/tmp
           npm run test:auth
+          npm run test:totp
           npm run test:gigs
           npm run test:bookings
           npm run test:income
           npm run test:sanitize
+          npm run test:logger
 
       - name: Boot API and run Postman/Newman tests
         env:
@@ -73,7 +66,8 @@ jobs:
           mkdir -p certs
           openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
             -keyout certs/key.pem -out certs/cert.pem -subj "/CN=localhost"
-          node server.js &
+          # Node only writes coverage on a normal exit, so SIGTERM must exit cleanly.
+          NODE_V8_COVERAGE=$PWD/coverage/tmp node -e "process.on('SIGTERM', () => process.exit(0)); require('./server.js')" &
           PID=$!
           for i in $(seq 1 20); do
             curl -ksf https://localhost:3443/health && break || sleep 1
@@ -81,6 +75,18 @@ jobs:
           curl -ksf https://localhost:3443/health
           npm run test:api
           kill $PID
+          wait $PID
+
+      # Paths in the report are relative to API/; Sonar resolves them from the repo root.
+      - name: Coverage report
+        run: |
+          npx c8 report
+          sed -i 's#^SF:#SF:API/#' coverage/lcov.info
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: api-coverage
+          path: API/coverage/lcov.info
 
   frontend-build:
     runs-on: ubuntu-latest
@@ -88,9 +94,9 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # Vitest 5 and jsdom 30 need Node 22+ (Node 20 crashes loading undici).
           node-version: "22"
@@ -99,20 +105,229 @@ jobs:
 
       - run: npm ci
 
+      - name: Audit dependencies
+        run: bash ../.github/scripts/npm-audit.sh
+
       - name: Lint
         run: npm run lint
 
+      # Paths in the report are relative to frontend/; Sonar resolves them from the repo root.
       - name: Unit tests
-        run: npm run test:run
+        run: |
+          npm run test:run -- --coverage
+          sed -i 's#^SF:#SF:frontend/#' coverage/lcov.info
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
 
       - name: Build
         run: npm run build
 
-  deploy:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # --error fails the job on any finding; the reports upload either way.
+      - name: Semgrep
+        run: |
+          mkdir -p reports
+          chmod 777 reports
+          docker run --rm -v "$PWD:/src" semgrep/semgrep semgrep scan --error \
+            --config p/javascript --config p/nodejs --config p/expressjs --config p/react \
+            --config p/secrets --config p/dockerfile --config p/github-actions \
+            --text-output=reports/semgrep.txt --sarif-output=reports/semgrep.sarif
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: semgrep-report
+          path: reports/
+
+  sonarcloud:
+    # The free plan only analyses main and PRs into it; Semgrep covers the others.
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && github.base_ref == 'main')
     needs: [backend-test, frontend-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Sonar needs the full history
+
+      # Coverage from the test jobs, back at the paths sonar-project.properties reads.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: api-coverage
+          path: API/coverage
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+
+      # Settings are in sonar-project.properties; a failed quality gate fails the job.
+      - uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  docker-zap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Throwaway values for this run. The key must be world-readable because
+      # the api container runs as the node user, not as the runner's user.
+      - name: Create certificate and env files
+        run: |
+          mkdir -p API/certs reports
+          chmod 777 reports
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout API/certs/key.pem -out API/certs/cert.pem -subj "/CN=localhost"
+          chmod 644 API/certs/key.pem
+          printf 'MONGO_USER=ci\nMONGO_PASSWORD=%s\nMONGO_APP_PASSWORD=%s\n' \
+            "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+          printf 'JWT_SECRET=%s\nAPP_NAME=HustleHubPlusAPI\nCORS_ORIGIN=https://localhost:5173\n' \
+            "$(openssl rand -hex 32)" > API/.env
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start stack
+        run: |
+          docker compose up -d
+          for url in https://localhost:3443/health https://localhost:5173; do
+            for i in $(seq 1 30); do
+              curl -ksf "$url" > /dev/null && break || sleep 2
+            done
+            curl -ksf "$url" > /dev/null
+          done
+
+      # Active scan as a throwaway freelancer, plan in .github/zap-api-active.yaml.
+      # High alerts fail the job, lower ones are in the report. An empty report
+      # means nothing was scanned, which must not pass as clean.
+      - name: ZAP active scan (API)
+        run: |
+          set -o pipefail
+          base=https://localhost:3443
+          token=$(curl -ksSf -c - -o /dev/null -X POST "$base/api/auth/register" -H 'Content-Type: application/json' \
+            -d "{\"name\":\"Zap Scanner\",\"email\":\"zap@example.com\",\"password\":\"Aa1!$(openssl rand -hex 16)\",\"role\":\"freelancer\"}" \
+            | awk '$6=="token"{print $7}')
+          gig=$(curl -ksSf -X POST "$base/api/gigs" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+            -d '{"title":"ZAP scan gig","description":"Created for the ZAP active scan to target.","category":"Design","price":100,"deliveryDays":3}' \
+            | jq -r .gig.id)
+          sed "s#{{base_url}}#$base#g; s#{{gigId}}#$gig#g" "API/postman/HustleHub+ Part2.postman_collection.json" > "$RUNNER_TEMP/collection.json"
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" -v "$RUNNER_TEMP/collection.json:/zap/collection.json:ro" \
+            -v "$PWD/.github/zap-api-active.yaml:/zap/plan.yaml:ro" -e ZAP_TARGET="$base" -e ZAP_TOKEN="$token" \
+            ghcr.io/zaproxy/zaproxy:stable zap.sh -cmd -autorun /zap/plan.yaml
+          jq -e '.site | length > 0' reports/zap-api-active.json
+
+      # Spider and active scan. -I keeps warnings from failing the script, so High alerts are checked after.
+      - name: ZAP active scan (client)
+        if: always()
+        run: |
+          docker run --rm --network host -v "$PWD/reports:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-full-scan.py -t https://localhost:5173 -m 1 -T 15 -I -r zap-client.html -J zap-client.json
+          jq -e '(.site | length > 0) and ([.site[].alerts[] | select(.riskcode == "3")] | length == 0)' reports/zap-client.json
+
+      # The images built here fail on fixable HIGH/CRITICAL. mongo:7 is upstream's
+      # and carries findings in tools this stack never runs, so it is report-only.
+      - name: Trivy image scan
+        if: always()
+        run: |
+          set -o pipefail
+          trivy() {
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c \
+              image --quiet --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL "$@"
+          }
+          status=0
+          for image in $(docker compose config --images | grep -v '^mongo'); do
+            trivy --exit-code 1 "$image" | tee "reports/trivy-$image.txt" || status=1
+          done
+          trivy mongo:7 | tee reports/trivy-mongo.txt
+          exit $status
+
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: security-scan-reports
+          path: reports/
+
+  deploy:
+    needs: [backend-test, frontend-build, static-analysis, sonarcloud, docker-zap, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     # environment: production
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: echo "Add real deploy step here (SSH / render / fly / etc.)"
+
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+ 
+      - name: Create certificate and env files
+        run: |
+          mkdir -p API/certs
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout API/certs/key.pem -out API/certs/cert.pem -subj "/CN=localhost"
+          chmod 644 API/certs/key.pem
+          printf 'MONGO_USER=ci\nMONGO_PASSWORD=%s\nMONGO_APP_PASSWORD=%s\n' \
+            "$(openssl rand -hex 24)" "$(openssl rand -hex 24)" > .env
+          printf 'JWT_SECRET=%s\nAPP_NAME=HustleHubPlusAPI\nCORS_ORIGIN=https://localhost:5173\n' \
+            "$(openssl rand -hex 32)" > API/.env
+ 
+      - name: Build images
+        run: docker compose build
+ 
+      - name: Start stack
+        run: |
+          docker compose up -d
+          for url in https://localhost:3443/health https://localhost:5173; do
+            for i in $(seq 1 30); do
+              curl -ksf "$url" > /dev/null && break || sleep 2
+            done
+            curl -ksf "$url" > /dev/null
+          done
+ 
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+ 
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+ 
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+ 
+      - name: Playwright E2E tests
+        working-directory: frontend
+        run: npm run test:e2e
+ 
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --no-color
+ 
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/e2e-results/
+ 
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
+ 

@@ -47,7 +47,8 @@ function Dashboard({ user: authUser, onLogout }) {
   const [view, setView] = useState(isAdmin ? 'users' : 'overview')
   // The display name can be edited in Settings (saved through PATCH /api/auth/me).
   const [displayName, setDisplayName] = useState(authUser.name)
-  const user = { ...authUser, name: displayName }
+  const [mfaEnabled, setMfaEnabled] = useState(authUser.mfaEnabled)
+  const user = { ...authUser, name: displayName, mfaEnabled }
   // Gigs: a freelancer gets their own (paused ones too), everyone else gets the
   // live gigs they can browse. Bookings: the API only ever returns the user's
   // own (clients: ones they made, freelancers: ones on their gigs).
@@ -183,7 +184,7 @@ function Dashboard({ user: authUser, onLogout }) {
       />
     )
   } else if (view === 'settings') {
-    screen = <Settings user={user} onNameChange={changeName} />
+    screen = <Settings user={user} onNameChange={changeName} onMfaChange={setMfaEnabled} />
   } else if (view === 'gigs' && isFreelancer) {
     screen = (
       <MyGigs

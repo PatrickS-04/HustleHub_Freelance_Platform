@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { currentTheme, setTheme } from '../theme'
 import PasswordStrength from '../components/PasswordStrength'
+import MfaPanel from './MfaPanel'
 import { passwordProblem } from '../utils/password'
 import { changePassword } from '../services/api'
 import '../components/Bookings.css'
@@ -21,7 +22,7 @@ const NOTIFICATIONS = {
   ],
 }
 
-function Settings({ user, onNameChange }) {
+function Settings({ user, onNameChange, onMfaChange }) {
   const [theme, setThemeState] = useState(currentTheme)
   const [notice, setNotice] = useState('')
 
@@ -192,66 +193,70 @@ function Settings({ user, onNameChange }) {
           </section>
         </div>
 
-        <section className="panel">
-          <h2>Change password</h2>
-          <form onSubmit={savePassword} noValidate>
-            <div className="field">
-              <label htmlFor="pw-current">Current password</label>
-              <input
-                id="pw-current"
-                type={showPw ? 'text' : 'password'}
-                autoComplete="current-password"
-                value={pw.current}
-                onChange={setField('current')}
-              />
-            </div>
+        <div className="settings-col">
+          <MfaPanel enabled={user.mfaEnabled} isAdmin={user.role === 'admin'} onChange={onMfaChange} />
 
-            <div className="field">
-              <label htmlFor="pw-new">New password</label>
-              <input
-                id="pw-new"
-                type={showPw ? 'text' : 'password'}
-                autoComplete="new-password"
-                value={pw.next}
-                onChange={setField('next')}
-              />
-              <PasswordStrength password={pw.next} />
-            </div>
+          <section className="panel">
+            <h2>Change password</h2>
+            <form onSubmit={savePassword} noValidate>
+              <div className="field">
+                <label htmlFor="pw-current">Current password</label>
+                <input
+                  id="pw-current"
+                  type={showPw ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={pw.current}
+                  onChange={setField('current')}
+                />
+              </div>
 
-            <div className="field">
-              <label htmlFor="pw-confirm">Confirm new password</label>
-              <input
-                id="pw-confirm"
-                type={showPw ? 'text' : 'password'}
-                autoComplete="new-password"
-                value={pw.confirm}
-                onChange={setField('confirm')}
-              />
-            </div>
+              <div className="field">
+                <label htmlFor="pw-new">New password</label>
+                <input
+                  id="pw-new"
+                  type={showPw ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={pw.next}
+                  onChange={setField('next')}
+                />
+                <PasswordStrength password={pw.next} />
+              </div>
 
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={showPw}
-                onChange={(e) => setShowPw(e.target.checked)}
-              />
-              Show passwords
-            </label>
+              <div className="field">
+                <label htmlFor="pw-confirm">Confirm new password</label>
+                <input
+                  id="pw-confirm"
+                  type={showPw ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={pw.confirm}
+                  onChange={setField('confirm')}
+                />
+              </div>
 
-            {pwError && (
-              <p className="auth-error" role="alert">
-                {pwError}
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={showPw}
+                  onChange={(e) => setShowPw(e.target.checked)}
+                />
+                Show passwords
+              </label>
+
+              {pwError && (
+                <p className="auth-error" role="alert">
+                  {pwError}
+                </p>
+              )}
+
+              <button type="submit" className="btn-primary" disabled={savingPw}>
+                {savingPw ? 'Updating...' : 'Update password'}
+              </button>
+              <p className="muted settings-hint">
+                Changing your password signs you out on every other device.
               </p>
-            )}
-
-            <button type="submit" className="btn-primary" disabled={savingPw}>
-              {savingPw ? 'Updating...' : 'Update password'}
-            </button>
-            <p className="muted settings-hint">
-              Changing your password signs you out on every other device.
-            </p>
-          </form>
-        </section>
+            </form>
+          </section>
+        </div>
       </div>
     </>
   )
