@@ -1,71 +1,80 @@
 # Command:  npm run test:run -- --reporter=verbose
-# Result:   9 test files, 60 tests, 0 failures
+# Result:   12 test files, 69 tests, 0 failures
 
 
- RUN  v5.0.3 C:/3rdYear/INSY7314/Part 3/frontend
+ RUN  v5.0.3 C:/3rdYear/INSY7314/Part2/INSY7314_POE_Part_2/frontend
 
- ✓ src/utils/password.test.js > passwordProblem > accepts a password that meets the rule 8ms
- ✓ src/utils/password.test.js > passwordProblem > rejects a password that is too short 1ms
+ ✓ src/services/api.test.js > api client > sends credentials as JSON with the cookie included 4ms
+ ✓ src/services/api.test.js > api client > shows the API message for 4xx errors 2ms
+ ✓ src/services/api.test.js > api client > maps 429 to a friendly rate-limit message 1ms
+ ✓ src/services/api.test.js > api client > never shows server internals for 5xx errors 1ms
+ ✓ src/services/api.test.js > api client > reports an unreachable server 1ms
+ ✓ src/services/api.test.js > api client > signs the user out when a protected request returns 401 1ms
+ ✓ src/services/api.test.js > api client > does not sign out on a 401 from login or the startup session check 1ms
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > renders nothing for an empty password 19ms
+ ✓ src/utils/months.test.js > monthlySeries > ends on the current month when there is no later data 22ms
+ ✓ src/utils/months.test.js > monthlySeries > extends to the latest month with data and fills gaps with 0 2ms
+ ✓ src/utils/months.test.js > totalsByMonth > sums prices per start month 0ms
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates abc as Too weak 256ms
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates abcdefgh as Weak 72ms
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefgh as Fair 32ms
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefg1 as Good 42ms
+ ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefg1! as Strong 46ms
+ ✓ src/screens/MfaPanel.test.jsx > MfaPanel > tells an admin that admin features are locked until it is on 52ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > renders the email and password fields and the submit button 289ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > shows the notice it is given (e.g. why the user was signed out) 40ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > toggles password visibility 148ms
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > renders the registration fields 304ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > lists every user with name, email and role 439ms
+ ✓ src/components/ReviewModal.test.jsx > ReviewModal star picker > previews on hover and falls back to the chosen rating on leave 672ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > filters by role using the chips 101ms
+ ✓ src/components/BookingsList.test.jsx > BookingsList status actions > applies an action without confirmation straight away 514ms
+ ✓ src/components/ReviewModal.test.jsx > ReviewModal star picker > requires a rating before submitting 102ms
+ ✓ src/screens/MfaPanel.test.jsx > MfaPanel > shows the QR code and key after the password is accepted 798ms
+ ✓ src/components/BookingsList.test.jsx > BookingsList status actions > asks first for a confirmed action, then applies it 179ms
+ ✓ src/components/BookingsList.test.jsx > BookingsList status actions > shows the API reason when the change is rejected 73ms
+ ✓ src/screens/AdminGigs.test.jsx > AdminGigs > removes a gig only after confirmation 578ms
+ ✓ src/screens/MfaPanel.test.jsx > MfaPanel > shows the API error when the password is wrong, and clears it 218ms
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > shows a client the browse, bookings and spending tabs 350ms
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > shows a freelancer the gigs, bookings and earnings tabs 51ms
+ ✓ src/screens/AdminGigs.test.jsx > AdminGigs > keeps the gig and shows the API's reason when the removal is refused 144ms
+ ✓ src/screens/AdminGigs.test.jsx > AdminBookings > lists every booking with both parties and offers no status actions 20ms
+ ✓ src/components/ReviewModal.test.jsx > ReviewModal star picker > submits the rating and trimmed comment, then closes 458ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > filters by name or email using the search box 443ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > shows the API error when the list cannot be loaded 15ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > sends trimmed credentials and passes the user up on success 716ms
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > gives an admin the users, gigs and bookings tabs, and loads gigs and bookings only when opened 28ms
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > moves between tabs when a tab is clicked 126ms
+ ✓ src/components/Dashboard.test.jsx > Dashboard by role > logs out through the API and tells the app 103ms
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects a weak password without calling the API 862ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > opens a user detail page and goes back 168ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > deletes a user only after confirmation and removes them from the list 181ms
+ ✓ src/screens/MfaPanel.test.jsx > MfaPanel > shows the recovery codes once a code is confirmed, then lets them be dismissed 514ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > keeps the user when the delete is cancelled 191ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > shows the API error and clears the password on a failed login 575ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > shows the API's reason when a delete is refused 207ms
+ ✓ src/screens/AdminUsers.test.jsx > AdminUsers > does not offer to delete the admin's own account 44ms
+ ✓ src/screens/MfaPanel.test.jsx > MfaPanel > stays on the QR code after a wrong code 437ms
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects an invalid email without calling the API 713ms
+ ✓ src/utils/password.test.js > passwordProblem > accepts a password that meets the rule 1ms
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is too short 0ms
  ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing an uppercase letter 0ms
- ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing a lowercase letter 1ms
- ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing a number 1ms
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing a lowercase letter 0ms
+ ✓ src/utils/password.test.js > passwordProblem > rejects a password that is missing a number 0ms
  ✓ src/utils/password.test.js > passwordProblem > rejects a password that is too long 0ms
  ✓ src/utils/password.test.js > passwordProblem > rejects a password that is over 72 bytes but not 72 characters 0ms
  ✓ src/utils/password.test.js > passwordProblem > accepts a password of exactly 72 bytes 0ms
- ✓ src/services/api.test.js > api client > sends credentials as JSON with the cookie included 16ms
- ✓ src/services/api.test.js > api client > shows the API message for 4xx errors 9ms
- ✓ src/services/api.test.js > api client > maps 429 to a friendly rate-limit message 6ms
- ✓ src/services/api.test.js > api client > never shows server internals for 5xx errors 1ms
- ✓ src/services/api.test.js > api client > reports an unreachable server 4ms
- ✓ src/services/api.test.js > api client > signs the user out when a protected request returns 401 1ms
- ✓ src/services/api.test.js > api client > does not sign out on a 401 from login or the startup session check 6ms
- ✓ src/screens/MfaPanel.test.jsx > MfaPanel > tells an admin that admin features are locked until it is on 181ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > renders the email and password fields and the submit button 739ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > shows the notice it is given (e.g. why the user was signed out) 69ms
- ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > renders nothing for an empty password 75ms
- ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates abc as Too weak 533ms
- ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates abcdefgh as Weak 50ms
- ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefgh as Fair 28ms
- ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefg1 as Good 35ms
- ✓ src/components/PasswordStrength.test.jsx > PasswordStrength > rates Abcdefg1! as Strong 27ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > toggles password visibility 245ms
- ✓ src/components/RegisterForm.test.jsx > RegisterForm > renders the registration fields 774ms
- ✓ src/screens/MfaPanel.test.jsx > MfaPanel > shows the QR code and key after the password is accepted 1067ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > lists every user with name, email and role 883ms
- ✓ src/screens/MfaPanel.test.jsx > MfaPanel > shows the API error when the password is wrong, and clears it 354ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > filters by role using the chips 352ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > sends trimmed credentials and passes the user up on success 939ms
- ✓ src/screens/AdminGigs.test.jsx > AdminGigs > removes a gig only after confirmation 1156ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > filters by name or email using the search box 541ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > shows the API error when the list cannot be loaded 37ms
- ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects a weak password without calling the API 1280ms
- ✓ src/screens/AdminGigs.test.jsx > AdminGigs > keeps the gig and shows the API's reason when the removal is refused 382ms
- ✓ src/screens/AdminGigs.test.jsx > AdminBookings > lists every booking with both parties and offers no status actions 34ms
- ✓ src/screens/MfaPanel.test.jsx > MfaPanel > shows the recovery codes once a code is confirmed, then lets them be dismissed 842ms
- ✓ src/components/Dashboard.test.jsx > Dashboard by role > shows a client the browse, bookings and spending tabs 836ms
- ✓ src/components/Dashboard.test.jsx > Dashboard by role > shows a freelancer the gigs, bookings and earnings tabs 44ms
- ✓ src/components/Dashboard.test.jsx > Dashboard by role > gives an admin the users, gigs and bookings tabs, and loads gigs and bookings only when opened 27ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > opens a user detail page and goes back 333ms
- ✓ src/components/Dashboard.test.jsx > Dashboard by role > moves between tabs when a tab is clicked 153ms
- ✓ src/components/Dashboard.test.jsx > Dashboard by role > logs out through the API and tells the app 97ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > shows the API error and clears the password on a failed login 798ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > deletes a user only after confirmation and removes them from the list 224ms
- ✓ src/screens/MfaPanel.test.jsx > MfaPanel > stays on the QR code after a wrong code 480ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > keeps the user when the delete is cancelled 222ms
- ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects an invalid email without calling the API 789ms
- ✓ src/screens/MfaPanel.test.jsx > MfaPanel > turns off with the password and a code 349ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > pauses the button after the API rate-limits the user (429) 520ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > shows the API's reason when a delete is refused 219ms
- ✓ src/screens/AdminUsers.test.jsx > AdminUsers > does not offer to delete the admin's own account 88ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > asks for a code when the account needs one, then signs in with it 772ms
- ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects a name containing script characters 1005ms
- ✓ src/components/RegisterForm.test.jsx > RegisterForm > registers a valid user as a client by default 718ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > stays on the code step after a wrong code, keeping the password for the next try 979ms
- ✓ src/components/RegisterForm.test.jsx > RegisterForm > shows the API error when the email is already taken 714ms
- ✓ src/components/LoginForm.test.jsx > LoginForm > goes back to the password step and clears the password 625ms
+ ✓ src/screens/MfaPanel.test.jsx > MfaPanel > turns off with the password and a code 368ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > pauses the button after the API rate-limits the user (429) 527ms
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > rejects a name containing script characters 983ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > asks for a code when the account needs one, then signs in with it 797ms
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > registers a valid user as a client by default 731ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > stays on the code step after a wrong code, keeping the password for the next try 966ms
+ ✓ src/components/RegisterForm.test.jsx > RegisterForm > shows the API error when the email is already taken 704ms
+ ✓ src/components/LoginForm.test.jsx > LoginForm > goes back to the password step and clears the password 611ms
  ✓ src/components/LoginForm.test.jsx > LoginForm > switches to registration 61ms
 
- Test Files  9 passed (9)
-      Tests  60 passed (60)
-   Start at  17:56:24
-   Duration  12.59s (environment 40%, tests 26%, setup 18%, import 8%, transform 7%, worker 1%)
+ Test Files  12 passed (12)
+      Tests  69 passed (69)
+   Start at  20:49:07
+   Duration  8.91s (environment 50%, tests 28%, setup 9%, import 6%, transform 5%, worker 1%)

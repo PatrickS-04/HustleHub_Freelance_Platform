@@ -846,7 +846,7 @@ npm install
 npm run test:run
 ```
 
-`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **9 test files, 60 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
+`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **12 test files, 69 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
 
 | Test file | What it checks |
 |-----------|----------------|
@@ -856,7 +856,11 @@ npm run test:run
 | `Dashboard.test.jsx` | role-based navigation: client, freelancer and admin each see only their own tabs, and nothing outside the role is requested |
 | `AdminGigs.test.jsx` | admin removes a gig only after confirmation; a refused removal keeps the gig and shows the reason; the admin bookings list shows both parties and offers no status actions |
 | `AdminUsers.test.jsx` | user list, role filter and search; detail page; delete only after confirmation; refused deletes shown; no delete option for your own account |
+| `MfaPanel.test.jsx` | two-factor setup: admin warning while it is off; QR code and key after the password; wrong password and wrong code handled; recovery codes shown once; turning it off needs the password and a code |
+| `BookingsList.test.jsx` | a status change without confirmation is applied at once; a confirmed one waits for the dialog; an API refusal is shown and the buttons are enabled again |
+| `ReviewModal.test.jsx` | stars light up on hover and fall back to the chosen rating; a rating is required; the rating and trimmed comment are submitted |
 | `password.test.js` | password rule: accepted case plus too short, missing upper/lower/number, too long |
+| `months.test.js` | income chart window ends on the current or latest month with data; empty months are 0; totals per start month |
 | `api.test.js` | `4xx` messages shown; `429` friendly message; `5xx` never leaks server internals; `401` on a protected route signs the user out |
 
 ### End-to-end tests (Playwright)
@@ -914,7 +918,7 @@ The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Cl
 
 ![CI/CD run on main with every job passing](Screenshots/CI/CI-run1.png)
 
-![Run summary: Vitest report with 60 of 60 frontend tests passing](Screenshots/CI/CI-run2.png)
+![Run summary: Vitest report with 60 of 60 frontend tests passing (the suite has since grown to 69)](Screenshots/CI/CI-run2.png)
 
 ![Artifacts uploaded by the run: coverage, Playwright, security scan and Semgrep reports](Screenshots/CI/CI-run3.png)
 
@@ -942,6 +946,14 @@ Every SonarQube Cloud code finding was fixed in the code, and none was marked as
 | Unhandled promise | Start-up in [server.js](API/server.js) could fail (database down, port in use) as an unhandled rejection, with no log line | Start-up errors and the server's `error` event are caught, logged as `server.start_failed`, sent to Grafana, and the process exits with code 1. The two fire-and-forget `flush()` calls in the logger are marked with `void`, because `flush()` catches its own errors | `2cedccc` |
 | S9379 (accessibility) | `autoFocus` on the MFA code field can disorient screen reader and keyboard users | Focus moves to the code field in an effect, only once the password step is done. A test checks the field receives focus | `8e66797` |
 | Prefer `Number.parseInt` | The global `parseInt` was used in the TOTP base32 helpers | Replaced with `Number.parseInt`. The behaviour is the same | `37207ad` |
+| S6470 (Docker build context) | Both Dockerfiles used `COPY . .`, which copies everything in the folder into the image. A new file such as a key or a `.env` would be added without anyone noticing | Each Dockerfile now copies only what the app needs: `server.js`, `app.js` and the six source folders for the API; `index.html`, `vite.config.js`, `public` and `src` for the client build. `.dockerignore` still applies as a second layer | `ed5db52` |
+| Docker `npm` lifecycle scripts | `npm ci` runs every package's install scripts, so a compromised dependency could run code while the image is built | `npm ci --ignore-scripts` in both Dockerfiles. No package the app installs needs an install script (the only one in the lockfile, `fsevents`, is macOS-only and is never installed on Alpine), and both images still build | `43e12fc` |
+| Sort without a compare function | The income chart found the latest month with a bare `.sort()` | Uses `localeCompare`. The month keys are zero-padded `YYYY-MM`, so the order is the same; `months.test.js` checks the chart window | `ed5db52` |
+| Floating promises | Two booking status changes in `BookingsList.jsx` called an `async` function without handling its promise | Marked with `void`, because `apply` catches every error itself and shows it to the user. `BookingsList.test.jsx` checks the direct action, the confirmed action and the error message | `ad705a3` |
+| Slow regular expression (ReDoS) | The sign-up email check `^\S+@\S+\.\S+$` backtracks, because `\S` also matches `.`. A long input of dots took 736&nbsp;ms | The pattern keeps `@` out of the local part and `.` out of each domain label, so it cannot backtrack: the same input now takes 1&nbsp;ms. It also rejects `a@b..c` and `a@b@c.d`, which the old one let through. The API still runs `validator.isEmail` | `cb3c74d` |
+| Accessibility: radiogroup must be focusable | The star rating's `radiogroup` had a mouse handler but could not take focus | The handler moved onto each star, which are focusable buttons, so the group itself has none. The stars now touch, so the highlight does not flicker between them. `ReviewModal.test.jsx` checks hovering and leaving | `4b5764c` |
+| Framework version disclosure | Express sends `X-Powered-By: Express` by default. Helmet already removed it, but in another file | `app.disable("x-powered-by")` in `app.js`, so the header stays off even if the Helmet settings change | `29e07b2` |
+| Quality gate: coverage on new code | The fixes above added lines that no test ran, so new-code coverage was 42.9% against the required 80% | New Vitest files for `months.js`, `BookingsList.jsx` and `ReviewModal.jsx`. Coverage on new code is now 100% and the quality gate passes | `29e07b2` |
 
 ### Dependency Risks
 SonarQube Cloud's dependency scan looks at all 319 packages the app installs, including packages pulled in by other packages, which is where both risks were found.
