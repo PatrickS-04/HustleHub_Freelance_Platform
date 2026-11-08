@@ -1,4 +1,4 @@
-# INSY7314 POE Part 3 (Final Submission)
+  # INSY7314 POE Part 3 (Final Submission)
 ## **HustleHub+ Secure Freelance Marketplace**
 ### By 
 1. Dillon Rinkwest - ST10439147
@@ -23,7 +23,7 @@ This README documents the complete application. Part 1 delivered a secure authen
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
 - **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, two-factor authentication (required for admins), session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
-- **Testing** - a 99-request Postman/Newman collection, backend self-checks, 49 frontend tests, `npm audit` and an OWASP ZAP scan.
+- **Testing** - a 113-request Postman/Newman collection, backend self-checks, 60 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
 Part 3 completes it:
@@ -312,7 +312,7 @@ No system is perfectly secure. These are the remaining gaps we know about, and w
 - **The breached-password check is skipped if the outside service is down**: If Have I Been Pwned does not answer within 2 seconds, the password is allowed and a warning is recorded. We decided an outage at another company should not stop people signing up.
 - **Changing the main secret key affects two-factor**: The key that protects two-factor codes is based on JWT_SECRET, so changing it would mean users have to set up two-factor again.
 - **Payments are simulated**: No real money moves. Real payments would bring extra card-industry rules (PCI DSS) that are outside this project.
-- **The pipeline runs on a copy of the repository**: GitHub Actions will not start jobs on the Classroom50 organisation because of a billing problem, so the pipeline runs on a private copy with the same commits (see [Where the Pipeline Runs](#where-the-pipeline-runs)). Every push goes to both repositories, so every change is still checked automatically.
+- **The pipeline also runs on a copy of the repository**: GitHub Actions on the Classroom50 organisation stopped for a while because of an insufficient-funds billing problem. It works again, but as a precaution the pipeline also runs on a private copy with the same commits (see [Where the Pipeline Runs](#where-the-pipeline-runs)). Every push goes to both repositories.
 
 ## Security Decisions
 Every decision below is driven by the same fact: HustleHub+ handles user credentials, authentication tokens, and financial records (booking income, tax estimates), so the confidentiality and integrity of that data are the priority.
@@ -773,12 +773,12 @@ The result should show `modifiedCount: 1`. Emails are stored in lowercase, so `m
 ## Testing
 
 ### Postman / Newman
-The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) runs **109 requests / 168 assertions** across ten folders:
+The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) holds **113 requests** across ten folders:
 
 - **00 Health, 01 Auth, 05 Account** - register, login, `/me`, profile and password changes, with their `400`/`401`/`409` failure paths.
 - **02 Gigs, 03 Bookings, 04 Income** - the domain flows, including validation failures, ownership checks, review rules and the freelancer-only income summary.
 - **06 Error handling** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the controlled error message so nothing internal leaks.
-- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword`/`adminCode` are set (the account needs two-factor on, and `adminCode` is a current code from its app), which leaves 99 requests / 151 assertions (this is what CI runs).
+- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword`/`adminCode` are set (the account needs two-factor on, and `adminCode` is a current code from its app), which leaves 107 requests / 169 assertions (this is what CI runs).
 - **09 Rate limiting** - runs last and asserts the `429` response, its message and the rate-limit headers on both the booking and the login endpoint.
 
 The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.
@@ -790,11 +790,11 @@ cd API
 npm run test:api
 ```
 
-![Newman run summary: 99 requests and 151 assertions executed, 0 failed](newman-run.png)
+![Newman run summary: 107 requests and 169 assertions executed, 0 failed](newman-run.png)
 
-The run above is without the admin credentials set, so the admin folder is skipped: **99/99 requests, 151/151 assertions, 0 failures**.
+The run above is without the admin credentials set, so the admin folder is skipped: **107/107 requests, 169/169 assertions, 0 failures**.
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. Add `EXPOSE_TOKEN_IN_BODY=true` to `API/.env` and restart the API before the run so the tests can read the token from the response body, then remove it again. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. That run is from 12 October, before the 05 Account folder gained its two-factor requests, so it has fewer requests than the run above. Add `EXPOSE_TOKEN_IN_BODY=true` to `API/.env` and restart the API before the run so the tests can read the token from the response body, then remove it again. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
 
 ### npm audit
 `npm audit` checks every dependency against the public vulnerability database [38]. The API has **0 known vulnerabilities**:
@@ -846,7 +846,7 @@ npm install
 npm run test:run
 ```
 
-`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **8 test files, 49 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
+`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **9 test files, 60 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
 
 | Test file | What it checks |
 |-----------|----------------|
@@ -899,9 +899,9 @@ The API's rate limits are counted per process, and one run uses 2 logins and 3 r
 A failing check, test, audit, Semgrep finding, SonarQube quality gate, Docker build or Playwright test in any job fails the build. So does a High ZAP alert, a ZAP scan that covers nothing, or a fixable HIGH or CRITICAL Trivy finding in the `api` or `client` image. Lower ZAP alerts do not fail the build, so they are reviewed in the report. `mongo:7` is an upstream image, so its Trivy results are report-only.
 
 ### Where the Pipeline Runs
-GitHub Actions will not start any job on the Classroom50 organisation's repositories. Every run there fails within seconds with this message: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* That is a billing problem on the organisation, not a problem with the code or the workflow.
+The pipeline runs on the Classroom50 repository. For a while, though, GitHub Actions would not start any job there. Every run failed within seconds with this message: *"The job was not started because recent account payments have failed or your spending limit needs to be increased."* That was an insufficient-funds billing problem on the organisation, not a problem with the code or the workflow. It has since been fixed.
 
-The guidelines allow working from a copy when services cannot connect to the Classroom50 repository, so the pipeline runs on a copy:
+Because of that outage, and as a precaution in case it happens again, the pipeline also runs on a copy. The guidelines allow working from a copy when services cannot connect to the Classroom50 repository:
 
 **CI repository: [DRPS-Solutions/INSY7314_POE_Part3](https://github.com/DRPS-Solutions/INSY7314_POE_Part3)**. Its runs are at [Actions](https://github.com/DRPS-Solutions/INSY7314_POE_Part3/actions).
 
@@ -909,6 +909,41 @@ The guidelines allow working from a copy when services cannot connect to the Cla
 - Every push goes to both repositories, so each commit submitted here is also built and tested there.
 - It is private, so other students cannot copy the work. The lecturer is added as a collaborator to view the runs.
 - The `SONAR_TOKEN` secret is set on that repository, so SonarQube Cloud runs there too.
+
+The Classroom50 repository also has the `autograde.yaml` workflow that GitHub Classroom added. Runs from the billing outage show as failed because they never started, so they ran no checks. Runs from that period are on the DRPS-Solutions copy.
+
+![CI/CD run on main with every job passing](Screenshots/CI/CI-run1.png)
+
+![Run summary: Vitest report with 60 of 60 frontend tests passing](Screenshots/CI/CI-run2.png)
+
+![Artifacts uploaded by the run: coverage, Playwright, security scan and Semgrep reports](Screenshots/CI/CI-run3.png)
+
+## Static Code Analysis
+Static analysis reads the source code without running it and looks for bugs, security flaws and code that is hard to maintain. It catches problems that tests miss, because tests only check the cases someone thought to write. Two tools run in the pipeline, and either one can fail the build.
+
+| Tool | What it checks | When it runs | How it fails the build |
+|------|----------------|--------------|------------------------|
+| **Semgrep** [50] | Pattern-based rules for JavaScript, Node.js, Express and React, hardcoded secrets, Dockerfiles and GitHub Actions workflows (`p/javascript`, `p/nodejs`, `p/expressjs`, `p/react`, `p/secrets`, `p/dockerfile`, `p/github-actions`) | Every push and pull request, on every branch | `--error` makes any finding fail the `static-analysis` job. The text and SARIF reports are uploaded as the `semgrep-report` artifact |
+| **SonarQube Cloud** [51] | Bugs, vulnerabilities, security hotspots, code smells, duplication and test coverage for `API/` and `frontend/src`. Coverage comes from the backend self-checks, the Newman run and the Vitest tests | Pushes to `main` and pull requests into it (the free plan only analyses those) | `sonar.qualitygate.wait=true` in [sonar-project.properties](sonar-project.properties) makes the job wait for the quality gate and fail if it does not pass |
+
+Semgrep runs on every branch, so a problem is found before it reaches `main`. SonarQube then checks `main` more deeply, including coverage, which Semgrep does not measure. Test files, Postman collections and coverage reports are left out of the analysis, so only the application code is judged.
+
+### Results
+The latest run on `main` passed both tools: Semgrep reported no findings, and the SonarQube Cloud quality gate passed.
+
+![SonarQube Cloud overview for main with the quality gate passed](Screenshots/CI/SonarQube.png)
+
+### Findings and How They Were Fixed
+Every SonarQube Cloud finding was fixed in the code, and none was marked as a false positive or accepted.
+
+| Rule | Finding | Fix | Commit |
+|------|---------|-----|--------|
+| S5145 (log injection) | User input reached `console.log`. `JSON.stringify` escapes CR and LF but not U+0085, U+2028 and U+2029, which some log viewers treat as new lines, so input could forge a log line | The logger now escapes every line-break character as `\uXXXX`. The line is still valid JSON and reads back as the original value. A self-check in `npm run test:logger` covers it | `412e0cb` |
+| Unhandled promise | Start-up in [server.js](API/server.js) could fail (database down, port in use) as an unhandled rejection, with no log line | Start-up errors and the server's `error` event are caught, logged as `server.start_failed`, sent to Grafana, and the process exits with code 1. The two fire-and-forget `flush()` calls in the logger are marked with `void`, because `flush()` catches its own errors | `2cedccc` |
+| S9379 (accessibility) | `autoFocus` on the MFA code field can disorient screen reader and keyboard users | Focus moves to the code field in an effect, only once the password step is done. A test checks the field receives focus | `8e66797` |
+| Prefer `Number.parseInt` | The global `parseInt` was used in the TOTP base32 helpers | Replaced with `Number.parseInt`. The behaviour is the same | `37207ad` |
+
+The other scanners in the pipeline cover what static analysis cannot see: `npm audit` checks dependencies [38], Trivy checks the built images [52], and ZAP attacks the running application [39]. Their findings and fixes are in [CI Pipeline](#ci-pipeline) and [Security Review](#security-review-threats-and-controls).
 
 ## Logging
 The API writes structured logs through [utils/logger.js](API/utils/logger.js): one JSON object per line on stdout. Docker captures stdout, so the logs can be read with `docker compose logs api`, and because each line is JSON a log platform can filter it by any field. No logging library is needed for this, so no dependency was added.
@@ -991,6 +1026,28 @@ LOKI_TOKEN=glc_...
 | Login attempts per 5 minutes | Successes and failures over time, by event |
 | Bookings and transactions per 5 minutes | Booking, status change, transaction and refund events over time |
 | Warnings and errors | The raw `warn` and `error` lines, newest first, each with its `requestId`, `ip` and `userId` |
+
+**Evidence from Grafana Cloud**
+
+The dashboard with live data from the API:
+
+![Grafana dashboard with login, transaction and error panels](Grafana_Screenshots/grafana-dashboard.png)
+
+Every log line from the API in Explore:
+
+![Grafana Explore showing all API log lines](Grafana_Screenshots/grafana-all-logs.png)
+
+Failed login attempts:
+
+![Grafana Explore filtered to failed logins](Grafana_Screenshots/grafana-failed-logins.png)
+
+Bookings and transactions:
+
+![Grafana Explore filtered to booking and transaction events](Grafana_Screenshots/grafana-bookings-transactions.png)
+
+Errors:
+
+![Grafana Explore filtered to error-level lines](Grafana_Screenshots/grafana-errors.png)
 
 ## Screenshots
 
@@ -1112,3 +1169,6 @@ Youtube Video Link: https://youtu.be/y9wzNLk55N0
 - [47] 	South African Revenue Service, "Rates of Tax for Individuals," SARS, 2026. [Online]. Available: https://www.sars.gov.za/tax-rates/income-tax/rates-of-tax-for-individuals/. [Accessed 8 November 2026].
 - [48] 	South African Revenue Service, "Provisional Tax," SARS, 2026. [Online]. Available: https://www.sars.gov.za/types-of-tax/provisional-tax/. [Accessed 8 November 2026].
 - [49] 	Microsoft, "Installation," Playwright Documentation, 2026. [Online]. Available: https://playwright.dev/docs/intro. [Accessed 8 November 2026].
+- [50] 	Semgrep, "Semgrep CLI reference," Semgrep Docs, 2026. [Online]. Available: https://semgrep.dev/docs/cli-reference. [Accessed 8 November 2026].
+- [51] 	SonarSource, "Quality gates," SonarQube Cloud Documentation, 2026. [Online]. Available: https://docs.sonarsource.com/sonarqube-cloud/standards/managing-quality-gates/introduction-to-quality-gates/. [Accessed 8 November 2026].
+- [52] 	Aqua Security, "Trivy Documentation," Trivy, 2026. [Online]. Available: https://trivy.dev/latest/docs/. [Accessed 8 November 2026].
