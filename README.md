@@ -23,7 +23,7 @@ This README documents the complete application. Part 1 delivered a secure authen
 - **Domain services** - gigs, bookings with a status workflow and reviews, simulated transactions, and a freelancer income summary with a tax estimate.
 - **Access control** - role checks and ownership checks on every protected route, plus admin user management.
 - **More security controls** - NoSQL-injection and parameter-pollution protection, HTML stripping, per-endpoint rate limiters, two-factor authentication (required for admins), session revocation on logout and password change, account lockout, breached-password rejection, and an idle-session timeout.
-- **Testing** - a 99-request Postman/Newman collection, backend self-checks, 49 frontend tests, `npm audit` and an OWASP ZAP scan.
+- **Testing** - a 113-request Postman/Newman collection, backend self-checks, 60 frontend tests, `npm audit` and an OWASP ZAP scan.
 - **DevOps** - Docker Compose for the whole stack and a GitHub Actions pipeline.
 
 Part 3 completes it:
@@ -773,12 +773,12 @@ The result should show `modifiedCount: 1`. Emails are stored in lowercase, so `m
 ## Testing
 
 ### Postman / Newman
-The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) runs **109 requests / 168 assertions** across ten folders:
+The Part 2 collection ([API/postman/HustleHub+ Part2.postman_collection.json](API/postman/HustleHub+%20Part2.postman_collection.json)) holds **113 requests** across ten folders:
 
 - **00 Health, 01 Auth, 05 Account** - register, login, `/me`, profile and password changes, with their `400`/`401`/`409` failure paths.
 - **02 Gigs, 03 Bookings, 04 Income** - the domain flows, including validation failures, ownership checks, review rules and the freelancer-only income summary.
 - **06 Error handling** - unknown route (`404`), malformed JSON (`400`), body over 10&nbsp;KB (`413`), each asserting the controlled error message so nothing internal leaks.
-- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword`/`adminCode` are set (the account needs two-factor on, and `adminCode` is a current code from its app), which leaves 99 requests / 151 assertions (this is what CI runs).
+- **07 Users - access control, 08 Admin** - role checks (`403`); the admin folder is skipped unless `adminEmail`/`adminPassword`/`adminCode` are set (the account needs two-factor on, and `adminCode` is a current code from its app), which leaves 107 requests / 169 assertions (this is what CI runs).
 - **09 Rate limiting** - runs last and asserts the `429` response, its message and the rate-limit headers on both the booking and the login endpoint.
 
 The Part 1 collection (13 requests / 17 assertions) is kept beside it and runs with `npm run test:api:part1`.
@@ -790,11 +790,11 @@ cd API
 npm run test:api
 ```
 
-![Newman run summary: 99 requests and 151 assertions executed, 0 failed](newman-run.png)
+![Newman run summary: 107 requests and 169 assertions executed, 0 failed](newman-run.png)
 
-The run above is without the admin credentials set, so the admin folder is skipped: **99/99 requests, 151/151 assertions, 0 failures**.
+The run above is without the admin credentials set, so the admin folder is skipped: **107/107 requests, 169/169 assertions, 0 failures**.
 
-A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. Add `EXPOSE_TOKEN_IN_BODY=true` to `API/.env` and restart the API before the run so the tests can read the token from the response body, then remove it again. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
+A captured run is committed at [API/postman/newman/newman-run.txt](API/postman/newman/newman-run.txt) (JSON export beside it): **109/109 requests, 168/168 assertions, 0 failures**, with the admin folder included. That run is from 12 October, before the 05 Account folder gained its two-factor requests, so it has fewer requests than the run above. Add `EXPOSE_TOKEN_IN_BODY=true` to `API/.env` and restart the API before the run so the tests can read the token from the response body, then remove it again. The rate limiters are counted per API process and the collection uses up part of their allowance, so restart the API before each run. Screenshots of the saved response examples are in [the accompanying PDF](Screenshots/HustleHub+%20Postman%20Part%202%20Collections.pdf).
 
 ### npm audit
 `npm audit` checks every dependency against the public vulnerability database [38]. The API has **0 known vulnerabilities**:
@@ -846,7 +846,7 @@ npm install
 npm run test:run
 ```
 
-`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **8 test files, 49 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
+`npm test` runs the same tests in watch mode. A captured run is committed at [frontend/test-results/vitest-run.txt](frontend/test-results/vitest-run.txt): **9 test files, 60 tests, 0 failures**. The CI pipeline runs `npm run test:run` in the frontend job, so a failing test fails the build.
 
 | Test file | What it checks |
 |-----------|----------------|
