@@ -73,6 +73,8 @@ describe('LoginForm', () => {
     render(<LoginForm onLogin={onLogin} onSwitch={vi.fn()} />)
     const u = await fillAndSubmit()
     expect(onLogin).not.toHaveBeenCalled()
+    // Focus follows the user to the new field, since the password field is gone.
+    expect(await screen.findByLabelText('Authentication code')).toHaveFocus()
 
     await u.type(await screen.findByLabelText('Authentication code'), ' 123456 ')
     await u.click(screen.getByRole('button', { name: 'Verify' }))

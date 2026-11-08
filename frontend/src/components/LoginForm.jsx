@@ -17,6 +17,14 @@ function LoginForm({ onLogin, onSwitch, notice }) {
   const [needsCode, setNeedsCode] = useState(false)
   const [code, setCode] = useState('')
   const failures = useRef(0)
+  const codeInput = useRef(null)
+
+  // The code field only appears after the user submits their password, and the
+  // password field it replaces is gone, so focus is moved to it here. This is a
+  // response to the user's action, not autofocus on page load (Sonar S9379).
+  useEffect(() => {
+    if (needsCode) codeInput.current?.focus()
+  }, [needsCode])
 
   useEffect(() => {
     if (cooldown <= 0) return
@@ -86,7 +94,7 @@ function LoginForm({ onLogin, onSwitch, notice }) {
               placeholder="123456"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              autoFocus
+              ref={codeInput}
               required
             />
             <p className="muted">Enter the 6-digit code from your authenticator app, or a recovery code.</p>
