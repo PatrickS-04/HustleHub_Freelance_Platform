@@ -1130,7 +1130,7 @@ Every role can change their display name and password. Email and role cannot be 
 
 ## Demonstration Video
 
-Youtube Video Link: https://youtu.be/VyvByO1Idyk
+Youtube Video Link: https://youtu.be/y9wzNLk55N0
 
 ## References
 
